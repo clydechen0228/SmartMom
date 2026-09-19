@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional, Union
 import numpy as np
 import torch
 
+from .calibrate import apply_calibration_payload, calibration_payload, fit_temperature_map
 from .common import (
     QTYPES,
     amp_dtype,
@@ -102,12 +103,17 @@ class Agent:
         device: Optional[str] = None,
         token: Optional[str] = None,
         subfolder: Optional[str] = None,
+        calibration: Optional[str] = None,
     ):
         """Load a Laya checkpoint.
 
         `subfolder` selects one checkpoint from a repo that bundles several, e.g.
         `Agent("convaiinnovations/laya", subfolder="multilingual")`. Only that subfolder is
         downloaded, so bundling does not cost every user the whole family.
+
+        `calibration` is an optional JSON path with `temperature` and `temperature_by_options`.
+        It is applied after the checkpoint config, so a fitted map overrides shipped scalars
+        without rewriting `model.safetensors`.
         """
         from safetensors.torch import load_file
         from transformers import AutoTokenizer
@@ -193,6 +199,8 @@ class Agent:
 
         self.temperature = self.cfg.get("temperature", [1.0, 1.0, 1.0])
         self.temperature_by_options = self.cfg.get("temperature_by_options", {})
+        if calibration:
+            self.load_calibration(calibration)
         self.dtype = amp_dtype(self.cfg.get("amp_dtype", "fp16"))
 
         if self.device.type == "cuda" and torch.cuda.get_device_capability(self.device)[0] < 8:
@@ -238,19 +246,8 @@ class Agent:
         return {"t": t, "ins": ins, "crit": crit}
 
     @torch.no_grad()
-    def system_one(self, state: Union[str, dict, list], questions: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
-        """Evaluate typed questions across state in a single, parallel forward pass.
-
-        Args:
-            state: Text string, JSON dict, or conversation turn list.
-            questions: Dictionary mapping question_id -> question definition.
-                - choice: {"type": "choice", "instructions": "...", "criteria": {"optA": "...", ...}}
-                - score:  {"type": "score",  "instructions": "...", "criteria": ["lvl0", "lvl1", ...]}
-                - noul:   {"type": "noul",   "instructions": "..."}
-
-        Returns:
-            Dictionary with answers, probabilities, calibrated confidence, and token usage.
-        """
+    def _forward_logits(self, state: Union[str, dict, list], questions: Dict[str, Dict[str, Any]]):
+        """Tokenize and forward. Returns raw logits before temperature scaling."""
         ids = list(questions.keys())
         items = []
         max_len = self.cfg.get("max_len", 512)
@@ -293,9 +290,26 @@ class Agent:
 
         logits = logits.float().cpu().numpy()
         act = torch.softmax(act.float(), -1).cpu().numpy()
+        n_tokens = int(b["attention_mask"].sum())
+        return ids, items, logits, act, n_tokens
+
+    @torch.no_grad()
+    def system_one(self, state: Union[str, dict, list], questions: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+        """Evaluate typed questions across state in a single, parallel forward pass.
+
+        Args:
+            state: Text string, JSON dict, or conversation turn list.
+            questions: Dictionary mapping question_id -> question definition.
+                - choice: {"type": "choice", "instructions": "...", "criteria": {"optA": "...", ...}}
+                - score:  {"type": "score",  "instructions": "...", "criteria": ["lvl0", "lvl1", ...]}
+                - noul:   {"type": "noul",   "instructions": "..."}
+
+        Returns:
+            Dictionary with answers, probabilities, calibrated confidence, and token usage.
+        """
+        ids, items, logits, act, n_tokens = self._forward_logits(state, questions)
 
         answers = {}
-        n_tokens = int(b["attention_mask"].sum())
 
         for r, qid in enumerate(ids):
             q = self._to_internal(questions[qid])
@@ -344,17 +358,46 @@ class Agent:
 
     predict = system_one
 
+    def fit_temperatures(self, records, compute_ece: bool = False) -> Dict[str, Any]:
+        """Fit per-bucket temperatures from CPU records and store them on this agent.
+
+        `records` are `(qtype, logits, target, k)`. Build them with
+        `laya.calibrate.records_from_labeled` when you have labeled forwards; this method
+        does not download weights or write `model.safetensors`.
+        """
+        result = fit_temperature_map(records, compute_ece=compute_ece)
+        self.temperature = list(result["temperature"])
+        self.temperature_by_options = dict(result["temperature_by_options"])
+        return result
+
+    def save_calibration(self, path: str) -> None:
+        """Write `temperature` and `temperature_by_options` JSON. Does not write weights."""
+        payload = calibration_payload(self.temperature, self.temperature_by_options)
+        with open(path, "w") as f:
+            json.dump(payload, f, indent=2)
+            f.write("\n")
+
+    def load_calibration(self, path: str) -> None:
+        """Read a JSON map written by `save_calibration` onto this agent."""
+        with open(path) as f:
+            payload = json.load(f)
+        apply_calibration_payload(self, payload)
+
 
 RLAgent = Agent
 
 
 def load(model_id_or_path: str = "convaiinnovations/laya", device: Optional[str] = None,
-         token: Optional[str] = None, subfolder: Optional[str] = None) -> Agent:
+         token: Optional[str] = None, subfolder: Optional[str] = None,
+         calibration: Optional[str] = None) -> Agent:
     """Load a Laya agent.
 
     `subfolder` picks one checkpoint out of a repo that bundles several:
 
         laya.load("convaiinnovations/laya")                           # English (repo root)
         laya.load("convaiinnovations/laya", subfolder="multilingual")
+
+    `calibration` is the same optional JSON path accepted by `Agent`.
     """
-    return Agent(model_id_or_path, device=device, token=token, subfolder=subfolder)
+    return Agent(model_id_or_path, device=device, token=token, subfolder=subfolder,
+                 calibration=calibration)
