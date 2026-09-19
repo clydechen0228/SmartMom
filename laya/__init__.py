@@ -1,6 +1,7 @@
 """Laya: Fast, non-autoregressive System 1 decision engine with calibrated probabilities."""
 
 from .agent import Agent, RLAgent, load
+from .calibrate import fit_one_temperature, fit_temperature_map, fit_temperatures
 from .common import (
     QTYPES,
     QTYPE_NAMES,
@@ -27,6 +28,9 @@ __all__ = [
     "Agent",
     "RLAgent",
     "load",
+    "fit_temperatures",
+    "fit_one_temperature",
+    "fit_temperature_map",
     "Router",
     "RouteDecision",
     "DEFAULT_MODELS",
