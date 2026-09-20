@@ -7,12 +7,14 @@ import numpy as np
 import torch
 
 from .common import (
+    HEAD_OPTION_SLACK,
     QTYPES,
     amp_dtype,
     build_model,
     build_sequence,
     collate_items,
     confidence_from_probs,
+    head_budget_for,
     render_options,
     temp_bucket,
 )
@@ -237,8 +239,60 @@ class Agent:
             ins = json.dumps(ins)
         return {"t": t, "ins": ins, "crit": crit}
 
+    @staticmethod
+    def _resolve_head_budget(questions, cfg):
+        """Return (head_max_len, max_len, report) for one predict call.
+
+        Does not load weights. `questions` is the public predict dict. One forward
+        uses one cfg, so the returned head is the max required across questions
+        that can still fit 4 tokens per option in the encoder.
+        """
+        head0 = int(cfg.get("head_max_len", 192))
+        max0 = int(cfg.get("max_len", 512))
+        enc = cfg.get("encoder_max_len", cfg.get("encoder_max", max0))
+        enc = int(enc)
+        applied_head, applied_max = head0, max0
+        budgets = {}
+        for qid, qdef in questions.items():
+            q = Agent._to_internal(qdef)
+            k = len(render_options(q))
+            b = head_budget_for(k, head0, max0, enc)
+            budgets[qid] = b
+            if b.ok:
+                if b.head_max_len > applied_head:
+                    applied_head = b.head_max_len
+                if b.max_len > applied_max:
+                    applied_max = b.max_len
+        raised_call = applied_head != head0 or applied_max != max0
+        report = {}
+        for qid, b in budgets.items():
+            if b.ok:
+                tpo = max(1, (applied_head - HEAD_OPTION_SLACK) // max(1, b.k)) if b.k else 0
+                report[qid] = {
+                    "k": b.k,
+                    "tokens_per_option": tpo,
+                    "head_max_len": applied_head,
+                    "max_len": applied_max,
+                    "raised": raised_call,
+                }
+            else:
+                report[qid] = {
+                    "k": b.k,
+                    "tokens_per_option": b.tokens_per_option,
+                    "head_max_len": b.head_max_len,
+                    "max_len": b.max_len,
+                    "raised": False,
+                }
+        return applied_head, applied_max, report
+
     @torch.no_grad()
-    def system_one(self, state: Union[str, dict, list], questions: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    def system_one(
+        self,
+        state: Union[str, dict, list],
+        questions: Dict[str, Dict[str, Any]],
+        auto_head_budget: bool = False,
+        persist: bool = False,
+    ) -> Dict[str, Any]:
         """Evaluate typed questions across state in a single, parallel forward pass.
 
         Args:
@@ -247,6 +301,11 @@ class Agent:
                 - choice: {"type": "choice", "instructions": "...", "criteria": {"optA": "...", ...}}
                 - score:  {"type": "score",  "instructions": "...", "criteria": ["lvl0", "lvl1", ...]}
                 - noul:   {"type": "noul",   "instructions": "..."}
+            auto_head_budget: Raise head_max_len for this call when options would
+                otherwise get fewer than 4 tokens. Also honors cfg["auto_head_budget"].
+                Default False, so existing predict calls stay byte-identical.
+            persist: Write the allocated head_max_len / max_len back to self.cfg.
+                Default False.
 
         Returns:
             Dictionary with answers, probabilities, calibrated confidence, and token usage.
@@ -255,6 +314,13 @@ class Agent:
         items = []
         max_len = self.cfg.get("max_len", 512)
         head_max_len = self.cfg.get("head_max_len", 192)
+        auto = bool(auto_head_budget or self.cfg.get("auto_head_budget"))
+        head_budget_report = None
+        if auto:
+            head_max_len, max_len, head_budget_report = self._resolve_head_budget(questions, self.cfg)
+            if persist:
+                self.cfg["head_max_len"] = head_max_len
+                self.cfg["max_len"] = max_len
 
         for qid in ids:
             q = self._to_internal(questions[qid])
@@ -336,10 +402,13 @@ class Agent:
                     "action": ext,
                 }
 
+        usage = {"input_tokens": n_tokens, "output_tokens": 0}
+        if head_budget_report is not None:
+            usage["head_budget"] = head_budget_report
         return {
             "model": "laya-rl-agent",
             "answers": answers,
-            "usage": {"input_tokens": n_tokens, "output_tokens": 0},
+            "usage": usage,
         }
 
     predict = system_one
