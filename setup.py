@@ -17,6 +17,12 @@ setup(
         "huggingface_hub>=0.20.0",
         "numpy>=1.20.0",
     ],
+    extras_require={
+        "serve": ["fastapi>=0.110.0", "uvicorn>=0.27.0"],
+    },
+    entry_points={
+        "console_scripts": ["laya-serve = laya.serve:main"],
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
