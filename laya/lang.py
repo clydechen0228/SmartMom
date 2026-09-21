@@ -60,8 +60,13 @@ _STOP = {
            "questo", "questa", "anche", "come", "più", "sono", "nella", "alla"},
     "nl": {"het", "een", "van", "is", "op", "te", "dat", "niet", "met", "voor", "zijn", "aan",
            "door", "maar", "ook", "worden", "deze", "naar", "wordt"},
+    # "her", "ne", "men", "de" are left out: they collide with English and French words.
+    "az": {"və", "ve", "bir", "bu", "ki", "üçün", "ucun", "ilə", "ile", "olan", "olub", "olmasa",
+           "var", "yox", "yoxdur", "mən", "sən", "biz", "siz", "onlar", "daha", "çox", "cox",
+           "hər", "nə", "kimi", "görə", "sonra", "əgər", "eger", "deyil", "lakin", "amma",
+           "ancaq", "artıq", "artiq", "də", "isə", "həm", "yalnız", "yalniz"},
 }
-_NON_EN_DIACRITICS = set("àâäãáåçéèêëíìîïñóòôöõøúùûüýÿßæœđłşţğıåäö")
+_NON_EN_DIACRITICS = set("àâäãáåçéèêëíìîïñóòôöõøúùûüýÿßæœđłşţğıåäöə")
 _WORD = re.compile(r"[^\W\d_]+", re.UNICODE)
 
 
@@ -97,7 +102,7 @@ def detect_script(text: str) -> str:
         if not ch.isalpha():
             continue
         cp = ord(ch)
-        if cp < 0x0250 or 0x1E00 <= cp <= 0x1EFF:      # Latin + Latin Extended Additional
+        if cp < 0x02B0 or 0x1E00 <= cp <= 0x1EFF:      # Latin + IPA Extensions (ə) + Latin Ext. Additional
             latin += 1
             continue
         for name, ranges in _SCRIPT_RANGES:
@@ -118,7 +123,7 @@ def script_profile(text: str) -> Dict[str, float]:
         if not ch.isalpha():
             continue
         cp = ord(ch)
-        if cp < 0x0250 or 0x1E00 <= cp <= 0x1EFF:
+        if cp < 0x02B0 or 0x1E00 <= cp <= 0x1EFF:
             counts["latin"] += 1
             continue
         for name, ranges in _SCRIPT_RANGES:
@@ -137,7 +142,8 @@ def guess_latin_language(text: str) -> Optional[str]:
     Scores function-word hits per language and requires the winner to beat English by a margin,
     so ordinary English is never misrouted. Short inputs usually return None on purpose.
     """
-    words = [w.lower() for w in _WORD.findall(text)]
+    # Python lowercases the dotted capital I to 'i' + a combining dot, which never matches a word list
+    words = _WORD.findall(text.replace("İ", "i").lower())
     if len(words) < 4:
         return None
     scores = {lg: sum(1 for w in words if w in sw) for lg, sw in _STOP.items()}
