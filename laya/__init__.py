@@ -25,6 +25,7 @@ from .shortlist import embed_fn_from_agent, predict_shortlist, shortlist_choice
 
 __version__ = "0.3.5"
 __all__ = [
+    # Core agent
     "Agent",
     "RLAgent",
     "load",
@@ -37,13 +38,16 @@ __all__ = [
     "detect_language",
     "detect_script",
     "is_english",
+    # Email helpers
     "clean_email_body",
     "email_questions",
     "email_state",
+    # Presets
     "guard_questions",
     "moderation_questions",
     "router_questions",
     "triage_questions",
+    # Training utilities
     "proper_reward",
     "td_lambda_targets",
     "ece_score",
@@ -51,5 +55,6 @@ __all__ = [
     "render_options",
     "QTYPES",
     "QTYPE_NAMES",
+    # Version
     "__version__",
 ]
