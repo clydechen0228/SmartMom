@@ -65,6 +65,22 @@ for field in ("python_requires", "install_requires", "classifiers"):
         "metadata belongs in pyproject.toml only",
     )
 
+# The release job checks the git tag against pyproject, but laya.__version__ is what the server
+# and SDK report at runtime, so the two strings must not drift apart.
+static_version = re.search(r'^version\s*=\s*"([^"]+)"', pyproject, re.M)
+check_true("pyproject/declares a static version", static_version is not None)
+init_version = re.search(r'^__version__\s*=\s*"([^"]+)"', read(os.path.join("laya", "__init__.py")), re.M)
+check_true("laya/__init__ declares a literal __version__", init_version is not None)
+check(
+    "version/pyproject matches laya.__version__",
+    static_version.group(1) if static_version else None,
+    init_version.group(1) if init_version else None,
+)
+for label, match in (("pyproject", static_version), ("laya/__init__", init_version)):
+    value = match.group(1) if match else ""
+    parts = value.split(".")
+    check_true("%s/version is X.Y.Z" % label, len(parts) == 3 and all(p.isdigit() for p in parts), "got %r" % value)
+
 workflow = read(os.path.join(".github", "workflows", "ci.yml"))
 ci_versions = [version_tuple(v) for v in re.findall(r'"(\d+\.\d+)"', workflow)]
 stale = [".".join(str(p) for p in v) for v in ci_versions if v < floor]
