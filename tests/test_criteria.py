@@ -116,6 +116,30 @@ check_true("fallback/no bare cuda probe for the warning",
            "torch.cuda.is_available() or getattr(torch.version" not in _src)
 
 
+# --------------------------------------------------------------- build_sequence left truncation
+# With no room left for the state, `st[-0:]` kept all of it: the closing [SEP] was replaced by the
+# *first* state token, i.e. the wrong end of the state and an unterminated sequence.
+from laya.common import build_sequence  # noqa: E402
+
+
+class _Tok:
+    mask_token, mask_token_id, cls_token_id, sep_token_id = "[MASK]", 1, 2, 3
+
+    def __init__(self):
+        self.vocab = {}
+
+    def __call__(self, text, add_special_tokens=False):
+        return {"input_ids": [self.vocab.setdefault(w, 100 + len(self.vocab)) for w in text.split()]}
+
+
+_tok, _q = _Tok(), {"t": "noul", "ins": "Is it urgent?", "crit": None}
+_full = len(build_sequence(_tok, "", _q, 10 ** 6)[0])     # prompt + closing [SEP], no state
+for room, kept in [(0, []), (2, ["two", "three"]), (10, ["one", "two", "three"])]:
+    ids = build_sequence(_tok, "one two three", _q, _full + room, truncate_left=True)[0]
+    check("truncate_left/room=%d keeps the tail" % room, ids[_full - 1:],
+          [_tok.vocab[w] for w in kept] + [_tok.sep_token_id])
+
+
 print("\n%d passed, %d failed" % (len(PASS), len(FAIL)))
 for f in FAIL:
     print("  FAIL " + f)
