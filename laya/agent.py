@@ -115,6 +115,10 @@ class Agent:
         It is applied after the checkpoint config, so a fitted map overrides shipped scalars
         without rewriting `model.safetensors`.
         """
+        # Retained so `save_calibration` can record which checkpoint the map was fitted for.
+        self.model_id_or_path = model_id_or_path
+        self.subfolder = subfolder
+
         from safetensors.torch import load_file
         from transformers import AutoTokenizer
 
@@ -358,27 +362,38 @@ class Agent:
 
     predict = system_one
 
-    def fit_temperatures(self, records, compute_ece: bool = False) -> Dict[str, Any]:
+    def fit_temperatures(self, records, compute_ece: bool = False, seed: int = 0) -> Dict[str, Any]:
         """Fit per-bucket temperatures from CPU records and store them on this agent.
 
         `records` are `(qtype, logits, target, k)`. Build them with
         `laya.calibrate.records_from_labeled` when you have labeled forwards; this method
-        does not download weights or write `model.safetensors`.
+        does not download weights or write `model.safetensors`. `seed` only affects the
+        held-out ECE split when `compute_ece` is true.
         """
-        result = fit_temperature_map(records, compute_ece=compute_ece)
+        result = fit_temperature_map(records, compute_ece=compute_ece, seed=seed)
         self.temperature = list(result["temperature"])
         self.temperature_by_options = dict(result["temperature_by_options"])
         return result
 
     def save_calibration(self, path: str) -> None:
-        """Write `temperature` and `temperature_by_options` JSON. Does not write weights."""
-        payload = calibration_payload(self.temperature, self.temperature_by_options)
+        """Write temperatures and the checkpoint they were fitted for. Does not write weights."""
+        payload = calibration_payload(
+            self.temperature,
+            self.temperature_by_options,
+            model_id_or_path=getattr(self, "model_id_or_path", None),
+            subfolder=getattr(self, "subfolder", None),
+            config=getattr(self, "cfg", None),
+        )
         with open(path, "w") as f:
             json.dump(payload, f, indent=2)
             f.write("\n")
 
     def load_calibration(self, path: str) -> None:
-        """Read a JSON map written by `save_calibration` onto this agent."""
+        """Read a JSON map written by `save_calibration` onto this agent.
+
+        A file with no `version` is treated as version 1 and still loads. A newer file
+        whose recorded checkpoint does not match this agent warns and still loads.
+        """
         with open(path) as f:
             payload = json.load(f)
         apply_calibration_payload(self, payload)
