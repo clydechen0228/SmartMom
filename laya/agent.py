@@ -18,6 +18,7 @@ from .common import (
     collate_items,
     confidence_from_probs,
     render_options,
+    serialize_state,
     temp_bucket,
 )
 
@@ -218,12 +219,24 @@ class Agent:
                 "confidence; clamping %s. Treat confidence from the affected buckets as uncalibrated."
                 % (TEMP_MIN, TEMP_MAX, ", ".join(rejected)),
                 RuntimeWarning, stacklevel=2)
-        self.dtype = amp_dtype(self.cfg.get("amp_dtype", "fp16"))
-
-        if self.device.type == "cuda" and torch.cuda.get_device_capability(self.device)[0] < 8:
+        # Autocast policy. CUDA and MPS both support fp16/bf16 autocast and are much faster with
+        # it; the shipped checkpoints are trained in reduced precision. CPU bf16 is only a win on
+        # hardware with native BF16, so it stays opt-in via LAYA_CPU_AMP=bf16.
+        self.dtype = torch.float32
+        self.amp_enabled = False
+        if self.device.type == "cuda":
+            self.amp_enabled = True
+            if torch.cuda.get_device_capability(self.device)[0] < 8:
+                self.dtype = torch.float16
+            else:
+                self.dtype = amp_dtype(self.cfg.get("amp_dtype", "fp16"))
+        elif self.device.type == "mps":
+            self.amp_enabled = True
             self.dtype = torch.float16
-        elif self.device.type in ("cpu", "mps"):
-            self.dtype = torch.float32
+        elif self.device.type == "cpu":
+            if os.environ.get("LAYA_CPU_AMP", "").lower() in ("bf16", "bfloat16"):
+                self.amp_enabled = True
+                self.dtype = torch.bfloat16
 
         # 2. Place on device with graceful fallback to CPU on memory error
         fell_back_from = fell_back_why = None
@@ -236,6 +249,7 @@ class Agent:
                 fell_back_from, fell_back_why = self.device, e
                 self.device = torch.device("cpu")
                 self.dtype = torch.float32
+                self.amp_enabled = False
                 self.model.to(self.device).eval()
             else:
                 raise e
@@ -262,6 +276,37 @@ class Agent:
             ins = json.dumps(ins)
         return {"t": t, "ins": ins, "crit": crit}
 
+    def _forward(self, b: Dict[str, torch.Tensor]):
+        return self.model(
+            b["input_ids"].to(self.device),
+            b["attention_mask"].to(self.device),
+            b["marker_pos"].to(self.device),
+            b["marker_mask"].to(self.device),
+            b["qtype"].to(self.device),
+        )
+
+    def _infer(self, b: Dict[str, torch.Tensor]):
+        """Run the forward pass, falling back gracefully on OOM or unsupported autocast."""
+        try:
+            with torch.autocast(device_type=self.device.type, dtype=self.dtype, enabled=self.amp_enabled):
+                return self._forward(b)
+        except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
+            low = str(e).lower()
+            if self.device.type != "cpu" and ("memory" in low or "cuda" in low):
+                print("Warning: GPU memory exceeded during inference. Falling back to CPU...")
+                self.device = torch.device("cpu")
+                self.dtype = torch.float32
+                self.amp_enabled = False
+                self.model.to(self.device)
+                return self._forward(b)
+            if self.amp_enabled and self.device.type in ("mps", "cpu"):
+                # Not every MPS/CPU build implements autocast for every op. Drop to full
+                # precision once rather than failing the request.
+                self.amp_enabled = False
+                self.dtype = torch.float32
+                return self._forward(b)
+            raise
+
     @torch.no_grad()
     def system_one(self, state: Union[str, dict, list], questions: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
         """Evaluate typed questions across state in a single, parallel forward pass.
@@ -281,40 +326,28 @@ class Agent:
         max_len = self.cfg.get("max_len", 512)
         head_max_len = self.cfg.get("head_max_len", 192)
 
+        # Normalise each question once, and tokenize the shared state once. The state token ids
+        # are identical for every question, so re-serializing and re-tokenizing it inside
+        # build_sequence per question was pure duplicated work.
+        internal = {qid: self._to_internal(questions[qid]) for qid in ids}
+        state_ids = self.tok(
+            serialize_state(state).replace(self.tok.mask_token, " "),
+            add_special_tokens=False,
+            truncation=True,
+            max_length=max_len,
+        )["input_ids"]
+
         for qid in ids:
-            q = self._to_internal(questions[qid])
-            seq, markers = build_sequence(self.tok, state, q, max_len, head_max_len)
+            q = internal[qid]
+            seq, markers = build_sequence(
+                self.tok, state, q, max_len, head_max_len, state_ids=state_ids
+            )
             if len(markers) != len(render_options(q)):
                 raise ValueError("question %r options exceed head_max_len=%d" % (qid, head_max_len))
             items.append({"ids": seq, "markers": markers, "qtype": QTYPES[q["t"]]})
 
         b = collate_items([items], self.tok.pad_token_id)
-        use_amp = self.device.type == "cuda"
-
-        try:
-            with torch.autocast(device_type=self.device.type, dtype=self.dtype, enabled=use_amp):
-                logits, act = self.model(
-                    b["input_ids"].to(self.device),
-                    b["attention_mask"].to(self.device),
-                    b["marker_pos"].to(self.device),
-                    b["marker_mask"].to(self.device),
-                    b["qtype"].to(self.device),
-                )
-        except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
-            if self.device.type != "cpu" and ("memory" in str(e).lower() or "cuda" in str(e).lower()):
-                print("Warning: GPU memory exceeded during inference. Falling back to CPU...")
-                self.device = torch.device("cpu")
-                self.dtype = torch.float32
-                self.model.to(self.device)
-                logits, act = self.model(
-                    b["input_ids"].to(self.device),
-                    b["attention_mask"].to(self.device),
-                    b["marker_pos"].to(self.device),
-                    b["marker_mask"].to(self.device),
-                    b["qtype"].to(self.device),
-                )
-            else:
-                raise e
+        logits, act = self._infer(b)
 
         logits = logits.float().cpu().numpy()
         act = torch.softmax(act.float(), -1).cpu().numpy()
@@ -323,7 +356,7 @@ class Agent:
         n_tokens = int(b["attention_mask"].sum())
 
         for r, qid in enumerate(ids):
-            q = self._to_internal(questions[qid])
+            q = internal[qid]
             k = len(items[r]["markers"])
             qt = QTYPES[q["t"]]
             t_scale = self.temperature_by_options.get(temp_bucket(qt, k), self.temperature[qt])
