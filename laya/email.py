@@ -1,6 +1,6 @@
 """Email utilities for cleaning and structuring email inputs in laya."""
 import re
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 _QUOTE_HEADERS = [
     re.compile(r"^\s*On .{0,300}wrote:\s*$", re.I),
@@ -21,6 +21,42 @@ _DISCLAIMER = re.compile(
 _SENTENCE = re.compile(r"(?<=[.!?])\s+")
 
 
+def _starts_new_sentence(line: str) -> bool:
+    """First letter is uppercase: a fresh sentence, not a wrapped line.
+
+    Lines in uncased scripts (CJK, Devanagari, ...) never start a new piece,
+    so wrapped boilerplate in those scripts still drops whole.
+    """
+    for ch in line:
+        if ch.isalpha():
+            return ch.isupper()
+    return False
+
+
+def _split_fused_lines(sentence: str) -> List[str]:
+    """Split a fused boilerplate-positive sentence at sentence-starting newlines.
+
+    An unpunctuated request line glued to a disclaimer line ("locked\\nThis ...")
+    splits at the newline because the next line starts uppercase; a lowercase
+    continuation ("are\\nconfidential") belongs to the same sentence, so a wrapped
+    boilerplate footer still drops whole.
+    """
+    if "\n" not in sentence:
+        return [sentence]
+    pieces, buf = [], ""
+    for line in (ln.strip() for ln in sentence.split("\n")):
+        if not line:
+            continue
+        if buf and _starts_new_sentence(line):
+            pieces.append(buf)
+            buf = line
+        else:
+            buf = (buf + " " + line) if buf else line
+    if buf:
+        pieces.append(buf)
+    return pieces
+
+
 def _strip_disclaimer(paragraph: str) -> str:
     """Drop boilerplate disclaimer text from one paragraph.
 
@@ -31,7 +67,10 @@ def _strip_disclaimer(paragraph: str) -> str:
     if not _DISCLAIMER.search(paragraph):
         return paragraph                     # nothing to do: keep the original line structure
     parts = [p.strip() for p in _SENTENCE.split(paragraph) if p.strip()]
-    return " ".join(p for p in parts if not _DISCLAIMER.search(p))
+    pieces = []
+    for p in parts:
+        pieces.extend(_split_fused_lines(p) if _DISCLAIMER.search(p) else [p])
+    return " ".join(p for p in pieces if not _DISCLAIMER.search(p))
 
 
 def clean_email_body(body: str, max_chars: int = 3000) -> str:

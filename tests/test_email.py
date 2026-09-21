@@ -44,9 +44,40 @@ check(
     "My account is locked. Please unlock it.",
 )
 check(
-    "inline footer/no terminal punctuation still recovers the request",
+    "inline footer/unpunctuated request line is fully recovered",
     clean_email_body("My account is locked\n%s\nPlease unlock it." % DISCLAIMER),
-    "Please unlock it.",
+    "My account is locked Please unlock it.",
+)
+check(
+    "inline footer/fused request without a trailing sentence",
+    clean_email_body("Please unlock my account\n%s" % DISCLAIMER),
+    "Please unlock my account",
+)
+check(
+    "inline footer/fused order reference is fully recovered",
+    clean_email_body("RMA 5521 is still pending\n%s\nPlease advise." % DISCLAIMER),
+    "RMA 5521 is still pending Please advise.",
+)
+check(
+    # Keep-ward trade-off, documented on purpose: a capitalised continuation of a
+    # boilerplate sentence can be a real fragment ("...in error,\nPlease delete it."),
+    # so it stays. Leaving one boilerplate line behind is harmless; dropping the
+    # request is not.
+    "inline footer/capitalised continuation stays",
+    clean_email_body("If you have received this message in error,\nPlease delete it."),
+    "Please delete it.",
+)
+check(
+    # Documented boundary: an all-lowercase fused request ("locked\nthis email ...")
+    # is indistinguishable from a wrapped boilerplate footer, so the first line is
+    # still lost. Only a newline followed by an uppercase letter splits.
+    "inline footer/lowercase fusion still recovers the tail",
+    clean_email_body(
+        "my account is locked\n"
+        "this email is confidential and intended solely for the named addressee.\n"
+        "please unlock it."
+    ),
+    "please unlock it.",
 )
 check(
     "inline footer/body is never emptied",
