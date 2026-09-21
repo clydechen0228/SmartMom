@@ -210,6 +210,81 @@ res_td = r2.predict({"message": "anything"}, QD, model="typed-decisions")
 ok("explicit typed-decisions honoured", res_td["routing"]["model"] == "typed-decisions")
 ok("routing payload serialises", isinstance(json.dumps(res_td["routing"]), str))
 
+
+# ------------------------------------------------- 6. Batch inference matches one-by-one
+head("6. predict_batch matches system_one, decision-for-decision (real forward passes)")
+BATCH_STATES = [
+    {"message": "I was charged twice for invoice 4411, please refund it today."},
+    {"message": "The dashboard has been down for an hour and my team is blocked."},
+    {"message": "What is the price of the enterprise plan? No rush at all."},
+    {"message": "Cannot reset my password, the email never arrives."},
+    {"message": "Thanks, everything is working great now!"},
+]
+# The English checkpoint was freed above; load a fresh agent for this section.
+ba = laya.load(LOCAL["multilingual"], device=DEVICE)
+# fp16 autocast on GPU reorders reductions across padding widths, so numbers can wobble in the
+# 4th decimal; CPU fp32 is exact. Decisions (argmax) must be identical either way.
+ATOL = 5e-3 if str(ba.device) != "cpu" else 0.0
+
+single = [ba.predict(s, QD) for s in BATCH_STATES]
+batched = ba.predict_batch(BATCH_STATES, QD)
+chunked = ba.predict_batch(BATCH_STATES, QD, batch_size=2)
+
+ok("batch returns one result per state", len(batched) == len(BATCH_STATES),
+   "got %d" % len(batched))
+ok("empty batch returns []", ba.predict_batch([], QD) == [])
+try:
+    ba.predict_batch("a bare string", QD)
+    ok("bare state rejected", False, "no TypeError raised")
+except TypeError:
+    ok("bare state rejected", True)
+
+
+def _num_close(x, y, atol):
+    return abs(x - y) <= atol
+
+
+def _answers_agree(a, b, atol):
+    if set(a) != set(b):
+        return False, "question ids differ"
+    for qid in a:
+        x, y = a[qid], b[qid]
+        if x["type"] != y["type"]:
+            return False, "%s: type" % qid
+        if x["type"] == "choice":
+            if x["choice"] != y["choice"]:
+                return False, "%s: choice %s vs %s" % (qid, x["choice"], y["choice"])
+            for kk in x["probabilities"]:
+                if not _num_close(x["probabilities"][kk], y["probabilities"][kk], atol):
+                    return False, "%s: prob[%s]" % (qid, kk)
+        elif x["type"] == "score":
+            if not _num_close(x["score"], y["score"], atol):
+                return False, "%s: score %s vs %s" % (qid, x["score"], y["score"])
+        elif x["type"] == "noul":
+            if not _num_close(x["noul"], y["noul"], atol):
+                return False, "%s: noul %s vs %s" % (qid, x["noul"], y["noul"])
+    return True, ""
+
+
+bad = 0
+for i, (s, b) in enumerate(zip(single, batched)):
+    agree, why = _answers_agree(s["answers"], b["answers"], ATOL)
+    if not agree:
+        bad += 1
+        print("   FAIL state %d: %s" % (i, why), flush=True)
+    if s["usage"]["input_tokens"] != b["usage"]["input_tokens"]:
+        bad += 1
+        print("   FAIL state %d: token count %d vs %d"
+              % (i, s["usage"]["input_tokens"], b["usage"]["input_tokens"]), flush=True)
+ok("batched == one-by-one (decisions + numbers within atol %.0e)" % ATOL, bad == 0,
+   "%d states diverged" % bad)
+
+bad_chunk = sum(0 if _answers_agree(b["answers"], c["answers"], ATOL)[0] else 1
+                for b, c in zip(batched, chunked))
+ok("batch_size chunking matches one big pass", bad_chunk == 0, "%d diverged" % bad_chunk)
+print("   verified %d states across full / chunked / one-by-one paths" % len(BATCH_STATES), flush=True)
+del ba
+
 # ---------------------------------------------------------------- summary
 head("SUMMARY")
 for n in NOTES:
