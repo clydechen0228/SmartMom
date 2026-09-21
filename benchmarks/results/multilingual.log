@@ -1,0 +1,38 @@
+Fetching 5 files:   0%|          | 0/5 [00:00<?, ?it/s]Fetching 5 files: 100%|██████████| 5/5 [00:00<00:00, 2273.58it/s]
+
+== NVIDIA GeForce RTX 4070 Ti SUPER  convaiinnovations/laya/multilingual  dtype=torch.bfloat16
+== numerics: max |p - p_fp32| over all options
+2026-09-20 12:20:45  [TileLang:tilelang.language.eager.builder:WARNING] (tl_kernels.py:109): Immutable value `v` is re-bound; use T.alloc_var to create a mutable variable.
+2026-09-20 12:20:45  [TileLang:tilelang.language.eager.builder:WARNING] (tl_kernels.py:109): Immutable value `v` is re-bound; use T.alloc_var to create a mutable variable.
+2026-09-20 12:20:45  [TileLang:tilelang.language.eager.builder:WARNING] (tl_kernels.py:42): Immutable value `v` is re-bound; use T.alloc_var to create a mutable variable.
+2026-09-20 12:20:45  [TileLang:tilelang.language.eager.builder:WARNING] (tl_kernels.py:42): Immutable value `v` is re-bound; use T.alloc_var to create a mutable variable.
+2026-09-20 12:20:45  [TileLang:tilelang.language.eager.builder:WARNING] (tl_kernels.py:42): Immutable value `v` is re-bound; use T.alloc_var to create a mutable variable.
+2026-09-20 12:20:45  [TileLang:tilelang.language.eager.builder:WARNING] (tl_kernels.py:42): Immutable value `v` is re-bound; use T.alloc_var to create a mutable variable.
+short x1   L=  72  stock-bf16=0.0000  fast=0.0000  fast-vs-stock=0.0000  argmax agree=1.00
+short x3   L=  72  stock-bf16=0.0006  fast=0.0007  fast-vs-stock=0.0013  argmax agree=1.00
+short x30  L=  72  stock-bf16=0.0006  fast=0.0007  fast-vs-stock=0.0013  argmax agree=1.00
+long x3    L= 966  stock-bf16=0.0024  fast=0.0025  fast-vs-stock=0.0003  argmax agree=1.00
+long x30   L= 966  stock-bf16=0.0024  fast=0.0025  fast-vs-stock=0.0004  argmax agree=1.00
+
+== model forward latency (ms)
+case           L     stock      fast  speedup
+short x1      72     13.67      4.66     2.9x
+short x3      72     14.21      2.88     4.9x
+short x30     72     15.54     11.19     1.4x
+long x3      966     24.47     18.02     1.4x
+long x30     966    283.59    152.49     1.9x
+
+== end-to-end agent.predict() incl. tokenization (ms)
+short x1   stock=   14.09  fast=    2.79    5.1x
+short x3   stock=   14.97  fast=    3.85    3.9x
+short x30  stock=   22.19  fast=   17.78    1.2x
+long x3    stock=   28.59  fast=   21.77    1.3x
+long x30   stock=  320.74  fast=  187.60    1.7x
+
+== accuracy on real datasets (1000 samples each), stock vs fast
+dataset    acc stock  acc fast  ECE stock  ECE fast  agree  stock ms/it  fast ms/it
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+ag_news        0.923     0.923      0.051     0.050  0.996         14.9         3.2
+emotion        0.538     0.540      0.332     0.332  0.992         14.3         2.9
+saved benchmarks/results/fast_multilingual_rtx4070.json
+ALLDONE

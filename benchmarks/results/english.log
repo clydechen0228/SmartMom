@@ -1,0 +1,53 @@
+Fetching 38 files:   0%|          | 0/38 [00:00<?, ?it/s]Fetching 38 files: 100%|██████████| 38/38 [00:00<00:00, 4522.16it/s]
+
+== NVIDIA GeForce RTX 4070 Ti SUPER  convaiinnovations/laya/  dtype=torch.bfloat16
+== numerics: max |p - p_fp32| over all options
+2026-09-20 12:16:20  [TileLang:tilelang.language.eager.builder:WARNING] (tl_kernels.py:109): Immutable value `v` is re-bound; use T.alloc_var to create a mutable variable.
+2026-09-20 12:16:20  [TileLang:tilelang.language.eager.builder:WARNING] (tl_kernels.py:109): Immutable value `v` is re-bound; use T.alloc_var to create a mutable variable.
+2026-09-20 12:16:20  [TileLang:tilelang.language.eager.builder:WARNING] (tl_kernels.py:42): Immutable value `v` is re-bound; use T.alloc_var to create a mutable variable.
+2026-09-20 12:16:20  [TileLang:tilelang.language.eager.builder:WARNING] (tl_kernels.py:42): Immutable value `v` is re-bound; use T.alloc_var to create a mutable variable.
+2026-09-20 12:16:20  [TileLang:tilelang.language.eager.builder:WARNING] (tl_kernels.py:42): Immutable value `v` is re-bound; use T.alloc_var to create a mutable variable.
+2026-09-20 12:16:20  [TileLang:tilelang.language.eager.builder:WARNING] (tl_kernels.py:42): Immutable value `v` is re-bound; use T.alloc_var to create a mutable variable.
+2026-09-20 12:16:20  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang begins to compile kernel `main` with `out_idx=None`
+2026-09-20 12:16:25  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:145): TileLang completes to compile kernel `main`
+2026-09-20 12:16:25  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang begins to compile kernel `main` with `out_idx=None`
+2026-09-20 12:16:32  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:145): TileLang completes to compile kernel `main`
+short x1   L=  72  stock-bf16=0.0000  fast=0.0001  fast-vs-stock=0.0001  argmax agree=1.00
+short x3   L=  72  stock-bf16=0.0132  fast=0.0044  fast-vs-stock=0.0088  argmax agree=1.00
+short x30  L=  72  stock-bf16=0.0020  fast=0.0044  fast-vs-stock=0.0049  argmax agree=1.00
+2026-09-20 12:16:37  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang begins to compile kernel `main` with `out_idx=None`
+2026-09-20 12:16:41  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:145): TileLang completes to compile kernel `main`
+2026-09-20 12:16:42  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang begins to compile kernel `main` with `out_idx=None`
+2026-09-20 12:16:47  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:145): TileLang completes to compile kernel `main`
+long x3    L= 512  stock-bf16=0.0043  fast=0.0037  fast-vs-stock=0.0077  argmax agree=1.00
+2026-09-20 12:16:59  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang begins to compile kernel `main` with `out_idx=None`
+2026-09-20 12:17:02  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:145): TileLang completes to compile kernel `main`
+2026-09-20 12:17:02  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang begins to compile kernel `main` with `out_idx=None`
+2026-09-20 12:17:06  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:145): TileLang completes to compile kernel `main`
+long x30   L= 512  stock-bf16=0.0017  fast=0.0037  fast-vs-stock=0.0051  argmax agree=1.00
+
+== model forward latency (ms)
+case           L     stock      fast  speedup
+short x1      72     17.02      4.29     4.0x
+short x3      72     18.08      5.48     3.3x
+short x30     72     35.47     28.24     1.3x
+long x3      512     27.12     23.36     1.2x
+long x30     512    287.80    187.12     1.5x
+
+== end-to-end agent.predict() incl. tokenization (ms)
+short x1   stock=   17.66  fast=    4.64    3.8x
+short x3   stock=   18.87  fast=    6.61    2.9x
+short x30  stock=   43.22  fast=   35.70    1.2x
+long x3    stock=   31.52  fast=   27.59    1.1x
+long x30   stock=  327.53  fast=  232.14    1.4x
+
+== accuracy on real datasets (1000 samples each), stock vs fast
+dataset    acc stock  acc fast  ECE stock  ECE fast  agree  stock ms/it  fast ms/it
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-09-20 12:18:06  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang begins to compile kernel `main` with `out_idx=None`
+2026-09-20 12:18:10  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:145): TileLang completes to compile kernel `main`
+2026-09-20 12:18:11  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang begins to compile kernel `main` with `out_idx=None`
+2026-09-20 12:18:15  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:145): TileLang completes to compile kernel `main`
+ag_news        0.922     0.925      0.032     0.032  0.995         19.1        15.0
+emotion        0.588     0.588      0.314     0.315  0.996         17.4         4.4
+saved benchmarks/results/fast_english_rtx4070.json
