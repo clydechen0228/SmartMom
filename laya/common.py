@@ -54,8 +54,13 @@ def build_sequence(
     head_max_len: int = 192,
     option_order: Optional[List[int]] = None,
     truncate_left: bool = False,
+    state_ids: Optional[List[int]] = None,
 ):
-    """Format: [CLS] <type> instructions [SEP] [MASK] opt0 [MASK] opt1 ... [SEP] state [SEP]."""
+    """Format: [CLS] <type> instructions [SEP] [MASK] opt0 [MASK] opt1 ... [SEP] state [SEP].
+
+    `state_ids` lets a caller tokenize the shared state once and reuse it across every question,
+    instead of re-serializing and re-tokenizing the same document per question.
+    """
     mask_tok = tok.mask_token
     opts = render_options(q)
     order = option_order if option_order is not None else list(range(len(opts)))
@@ -63,10 +68,16 @@ def build_sequence(
     head_ids = tok("%s question: %s" % (q["t"], ins), add_special_tokens=False)["input_ids"]
     opt_ids = []
     for i in order:
-        opt_ids.append(
-            [tok.mask_token_id]
-            + tok(" " + opts[i].replace(mask_tok, " "), add_special_tokens=False)["input_ids"][:48]
-        )
+        # Cap at the tokenizer, not after the fact: `[:48]` still makes the tokenizer process the
+        # whole (possibly long) description. truncation=True, max_length=48 keeps the first 48
+        # tokens, which is exactly what the previous slice produced.
+        opt_tokens = tok(
+            " " + opts[i].replace(mask_tok, " "),
+            add_special_tokens=False,
+            truncation=True,
+            max_length=48,
+        )["input_ids"]
+        opt_ids.append([tok.mask_token_id] + opt_tokens)
     opt_budget = head_max_len - sum(len(o) for o in opt_ids)
     if opt_budget < 16:
         per = max(4, (head_max_len - 16) // max(1, len(opt_ids)))
@@ -80,8 +91,9 @@ def build_sequence(
         ids.extend(o)
     ids.append(tok.sep_token_id)
     room = max(0, max_len - len(ids) - 1)
-    st = tok(serialize_state(state).replace(mask_tok, " "), add_special_tokens=False)["input_ids"]
-    st = st[-room:] if truncate_left else st[:room]
+    if state_ids is None:
+        state_ids = tok(serialize_state(state).replace(mask_tok, " "), add_special_tokens=False)["input_ids"]
+    st = state_ids[-room:] if truncate_left else state_ids[:room]
     ids = ids + st + [tok.sep_token_id]
     return ids[:max_len], [m for m in markers if m < max_len]
 
