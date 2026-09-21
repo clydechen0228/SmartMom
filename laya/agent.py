@@ -1,7 +1,7 @@
 """High-level inference runtime for laya System 1 decision models."""
 import json
 import os
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import torch
@@ -237,69 +237,54 @@ class Agent:
             ins = json.dumps(ins)
         return {"t": t, "ins": ins, "crit": crit}
 
-    @torch.no_grad()
-    def system_one(self, state: Union[str, dict, list], questions: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
-        """Evaluate typed questions across state in a single, parallel forward pass.
-
-        Args:
-            state: Text string, JSON dict, or conversation turn list.
-            questions: Dictionary mapping question_id -> question definition.
-                - choice: {"type": "choice", "instructions": "...", "criteria": {"optA": "...", ...}}
-                - score:  {"type": "score",  "instructions": "...", "criteria": ["lvl0", "lvl1", ...]}
-                - noul:   {"type": "noul",   "instructions": "..."}
-
-        Returns:
-            Dictionary with answers, probabilities, calibrated confidence, and token usage.
-        """
-        ids = list(questions.keys())
-        items = []
+    def _encode_state(self, state: Union[str, dict, list], ids: List[str], internal: Dict[str, Dict]) -> List[Dict]:
+        """Tokenize one state against every question, returning collatable items."""
         max_len = self.cfg.get("max_len", 512)
         head_max_len = self.cfg.get("head_max_len", 192)
-
+        items = []
         for qid in ids:
-            q = self._to_internal(questions[qid])
+            q = internal[qid]
             seq, markers = build_sequence(self.tok, state, q, max_len, head_max_len)
             if len(markers) != len(render_options(q)):
                 raise ValueError("question %r options exceed head_max_len=%d" % (qid, head_max_len))
             items.append({"ids": seq, "markers": markers, "qtype": QTYPES[q["t"]]})
+        return items
 
-        b = collate_items([items], self.tok.pad_token_id)
-        use_amp = self.device.type == "cuda"
-
-        try:
+    def _forward(self, b: Dict):
+        """Run the model on a collated batch, with the GPU->CPU OOM fallback, and return numpy outputs."""
+        def run():
+            use_amp = self.device.type == "cuda"
             with torch.autocast(device_type=self.device.type, dtype=self.dtype, enabled=use_amp):
-                logits, act = self.model(
+                return self.model(
                     b["input_ids"].to(self.device),
                     b["attention_mask"].to(self.device),
                     b["marker_pos"].to(self.device),
                     b["marker_mask"].to(self.device),
                     b["qtype"].to(self.device),
                 )
+
+        try:
+            logits, act = run()
         except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
             if self.device.type != "cpu" and ("memory" in str(e).lower() or "cuda" in str(e).lower()):
                 print("Warning: GPU memory exceeded during inference. Falling back to CPU...")
                 self.device = torch.device("cpu")
                 self.dtype = torch.float32
                 self.model.to(self.device)
-                logits, act = self.model(
-                    b["input_ids"].to(self.device),
-                    b["attention_mask"].to(self.device),
-                    b["marker_pos"].to(self.device),
-                    b["marker_mask"].to(self.device),
-                    b["qtype"].to(self.device),
-                )
+                logits, act = run()
             else:
                 raise e
 
-        logits = logits.float().cpu().numpy()
-        act = torch.softmax(act.float(), -1).cpu().numpy()
+        return logits.float().cpu().numpy(), torch.softmax(act.float(), -1).cpu().numpy()
 
+    def _decode_answers(self, logits, act, items: List[Dict], ids: List[str],
+                        internal: Dict[str, Dict], offset: int) -> Dict[str, Any]:
+        """Turn one state's logit rows (starting at `offset`) into typed answers."""
         answers = {}
-        n_tokens = int(b["attention_mask"].sum())
-
-        for r, qid in enumerate(ids):
-            q = self._to_internal(questions[qid])
-            k = len(items[r]["markers"])
+        for j, qid in enumerate(ids):
+            r = offset + j
+            q = internal[qid]
+            k = len(items[j]["markers"])
             qt = QTYPES[q["t"]]
             t_scale = self.temperature_by_options.get(temp_bucket(qt, k), self.temperature[qt])
             z = logits[r, :k] / max(1e-3, float(t_scale))
@@ -335,12 +320,81 @@ class Agent:
                     "confidence": round(max(float(p[1]), 1.0 - float(p[1])), 4),
                     "action": ext,
                 }
+        return answers
 
-        return {
-            "model": "laya-rl-agent",
-            "answers": answers,
-            "usage": {"input_tokens": n_tokens, "output_tokens": 0},
-        }
+    @torch.no_grad()
+    def predict_batch(self, states: List[Union[str, dict, list]], questions: Dict[str, Dict[str, Any]],
+                      batch_size: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Evaluate the same questions over many states, packing them into shared forward passes.
+
+        This is the throughput path. `system_one`/`predict` handle one state per forward pass; on a
+        GPU that leaves most of the batch dimension idle. `predict_batch` collates several states'
+        question rows into one tensor, so a call that would take N sequential forward passes takes
+        one (or `ceil(len(states) / batch_size)`), which is several times faster per decision on GPU.
+
+        Args:
+            states: A list of states (each a text string, JSON dict, or conversation turn list).
+                    The same `questions` are evaluated against every state.
+            questions: Question definitions, exactly as accepted by `system_one`.
+            batch_size: Optional cap on states per forward pass. `None` sends them all in one pass;
+                        set it to bound peak memory when batching many or long states.
+
+        Returns:
+            A list of per-state result dicts, each identical in shape to `system_one`'s output and
+            aligned with `states` by index.
+        """
+        if isinstance(states, (str, bytes, dict)):
+            raise TypeError(
+                "predict_batch expects a list of states; pass a single state to predict()/system_one()."
+            )
+        states = list(states)
+        if not states:
+            return []
+
+        ids = list(questions.keys())
+        internal = {qid: self._to_internal(questions[qid]) for qid in ids}
+        chunk = batch_size if (batch_size and batch_size > 0) else len(states)
+
+        results: List[Dict[str, Any]] = []
+        for start in range(0, len(states), chunk):
+            part = states[start:start + chunk]
+            per_state_items = [self._encode_state(st, ids, internal) for st in part]
+
+            b = collate_items(per_state_items, self.tok.pad_token_id)
+            logits, act = self._forward(b)
+            att = b["attention_mask"]
+
+            row = 0
+            for items in per_state_items:
+                nrows = len(items)
+                n_tokens = int(att[row:row + nrows].sum())
+                answers = self._decode_answers(logits, act, items, ids, internal, row)
+                results.append({
+                    "model": "laya-rl-agent",
+                    "answers": answers,
+                    "usage": {"input_tokens": n_tokens, "output_tokens": 0},
+                })
+                row += nrows
+
+        return results
+
+    @torch.no_grad()
+    def system_one(self, state: Union[str, dict, list], questions: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+        """Evaluate typed questions across state in a single, parallel forward pass.
+
+        Args:
+            state: Text string, JSON dict, or conversation turn list.
+            questions: Dictionary mapping question_id -> question definition.
+                - choice: {"type": "choice", "instructions": "...", "criteria": {"optA": "...", ...}}
+                - score:  {"type": "score",  "instructions": "...", "criteria": ["lvl0", "lvl1", ...]}
+                - noul:   {"type": "noul",   "instructions": "..."}
+
+        Returns:
+            Dictionary with answers, probabilities, calibrated confidence, and token usage.
+
+        To score many states at once, see `predict_batch`, which shares forward passes across them.
+        """
+        return self.predict_batch([state], questions)[0]
 
     predict = system_one
 

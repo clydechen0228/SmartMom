@@ -187,6 +187,29 @@ print("Urgency    :", answers["urgency"]["score"])        # -> 1.84 / 2.0
 print("Churn Risk :", answers["churn_risk"]["noul"])       # -> 0.892 (89.2% probability)
 ```
 
+### Batch Mode: score many states in one forward pass
+
+`predict` handles one state per call, which leaves most of the GPU's batch dimension idle. When you
+have a list of items to score against the *same* questions — a backlog of tickets, a table of rows,
+a log slice — `predict_batch` packs them into shared forward passes:
+
+```python
+states = [{"body": t} for t in ticket_texts]           # a list of states
+
+results = agent.predict_batch(states, questions)       # one forward pass for the whole list
+# results[i] is exactly what agent.predict(states[i], questions) would return
+
+# Bound peak memory when the list (or the texts) are large — chunk into passes of N:
+results = agent.predict_batch(states, questions, batch_size=64)
+```
+
+Results are aligned with `states` by index and identical in shape to `predict`. Decisions match the
+one-at-a-time path exactly (numbers are bit-identical on CPU; on GPU they can differ in the 4th
+decimal because fp16 autocast reorders reductions across padding widths). Batching is a **GPU
+throughput win** — on an RTX 5060 Ti, per-decision latency drops from ~10 ms one-by-one to ~1 ms
+batched (measured ~9–10×). On CPU the model is already compute-bound, so batching does not speed it
+up; use it there only for API convenience.
+
 ---
 
 ## Automated Confidence Gating
