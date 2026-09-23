@@ -19,7 +19,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.a
 class LayaEngine:
     kind = "laya"
 
-    def __init__(self, device: Optional[str] = None):
+    def __init__(self, device: Optional[str] = None, router=None):
         os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
         os.environ.setdefault("USE_TF", "0")
         # torch 2.2 forks a compile worker per core when a checkpoint loads, although
@@ -37,7 +37,9 @@ class LayaEngine:
         self.device = device or pick_device()
         # max_loaded=3: a note in Hindi routes to the multilingual checkpoint, and that
         # must not evict the English one the next record needs.
-        self.router = Router(device=self.device, max_loaded=3)
+        # A router passed in is shared with other modules (the platform loads the
+        # checkpoints once for quality, planning and the Laya console).
+        self.router = router or Router(device=self.device, max_loaded=3)
         self.state = "cold"
         self.error: Optional[str] = None
         self.load_ms: Dict[str, float] = {}

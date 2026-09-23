@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Factory Platform</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%230e6b70'/%3E%3Cpath d='M3 12V7l3 2V7l3 2V5l4 3v4z' fill='white'/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #f4f6f5; --panel: #ffffff; --sunk: #eceff0; --ink: #1a1f24; --ink-2: #3b444c; --muted: #5f6a73;
+  --line: #d8dee0; --line-strong: #b4bec3; --accent: #0e6b70; --accent-ink: #0b5a5e; --accent-soft: #e2f0f0;
+  --good: #0a7d0a; --warn: #9a5b00; --bad: #c0392b; --hold: #4a3aa7;
+  --sans: "IBM Plex Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111517; --panel: #171b1e; --sunk: #1d2226; --ink: #e5e9eb; --ink-2: #c2cacf; --muted: #93a0a8;
+    --line: #2a3136; --line-strong: #3d474e; --accent: #4fb3b8; --accent-ink: #7cc9cd; --accent-soft: #15302f;
+    --good: #4cc34c; --warn: #e9a93a; --bad: #f07b6e; --hold: #9085e9;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111517; --panel: #171b1e; --sunk: #1d2226; --ink: #e5e9eb; --ink-2: #c2cacf; --muted: #93a0a8;
+  --line: #2a3136; --line-strong: #3d474e; --accent: #4fb3b8; --accent-ink: #7cc9cd; --accent-soft: #15302f;
+  --good: #4cc34c; --warn: #e9a93a; --bad: #f07b6e; --hold: #9085e9;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--sans); }
+a { color: var(--accent-ink); }
+.num { font-variant-numeric: tabular-nums; }
+header { background: var(--panel); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+.hin { max-width: 1240px; margin: 0 auto; padding: 12px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.brand { margin-right: auto; }
+.brand h1 { margin: 0; font-size: 19px; font-weight: 650; }
+.brand .sub { font-size: 12.5px; color: var(--muted); }
+nav { display: flex; gap: 4px; flex-wrap: wrap; }
+nav a { text-decoration: none; color: var(--ink-2); padding: 6px 10px; border-radius: 7px; font-size: 14px; }
+nav a:hover { background: var(--sunk); }
+nav a.on { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: none; padding: 6px 11px; cursor: pointer; font: inherit; font-size: 13px; color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.iconbtn { border: 1px solid var(--line-strong); background: none; border-radius: 8px; padding: 6px 10px; cursor: pointer; color: var(--ink); }
+main { max-width: 1240px; margin: 0 auto; padding: 18px 16px 60px; display: grid; gap: 16px; }
+.lede { font-size: 16.5px; color: var(--ink-2); max-width: 78ch; margin: 0; }
+.engine { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: 13.5px; color: var(--ink-2); }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--muted); margin-right: 6px; }
+.dot.ok { background: var(--good); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 12px; min-width: 0; align-content: start; }
+.card h2 { margin: 0; font-size: 17px; display: flex; align-items: center; gap: 10px; }
+.card h2 .open { margin-left: auto; font-size: 13.5px; font-weight: 600; text-decoration: none; border: 1px solid var(--accent); color: var(--accent-ink); padding: 4px 10px; border-radius: 7px; }
+.card h2 .open:hover { background: var(--accent-soft); }
+.card .what { font-size: 13.5px; color: var(--muted); margin: 0; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 520px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stat { background: var(--sunk); border-radius: 8px; padding: 8px 10px; }
+.stat .k { font-size: 12px; color: var(--muted); }
+.stat .v { font-size: 21px; font-weight: 650; }
+.flow { width: 100%; height: auto; display: block; }
+.f-box { fill: var(--panel); stroke: var(--line-strong); }
+.f-acc { fill: var(--accent-soft); stroke: var(--accent); }
+.f-t { fill: var(--ink); font: 600 13px var(--sans); }
+.f-s { fill: var(--muted); font: 11.5px var(--sans); }
+.f-a { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+.feed { display: grid; gap: 6px; font-size: 13.5px; }
+.feed div { border-left: 3px solid var(--accent); padding: 2px 0 2px 8px; }
+.feed .ignored { border-left-color: var(--line-strong); color: var(--muted); }
+.empty { color: var(--muted); font-size: 13.5px; }
+ul.docs { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--sunk); color: var(--ink-2); }
+.pill.hot { background: var(--accent-soft); color: var(--accent-ink); }
+footer { font-size: 12.5px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header><div class="hin">
+  <div class="brand"><h1 data-i18n="title">Smart Factory Platform</h1><div class="sub" data-i18n="sub">Plant 1 · edge quality inspection · planning and scheduling · Laya</div></div>
+  <nav>
+    <a href="./" class="on" data-i18n="nav_home">Overview</a>
+    <a href="quality/" data-i18n="nav_quality">Quality</a>
+    <a href="aps/" data-i18n="nav_aps">Planning</a>
+    <a href="laya/" data-i18n="nav_laya">Laya console</a>
+    <a href="docs/" data-i18n="nav_docs">Docs</a>
+  </nav>
+  <div class="seg" role="group" aria-label="Language / 语言"><button id="l-en" aria-pressed="true">EN</button><button id="l-zh" aria-pressed="false">中文</button></div>
+  <button class="iconbtn" id="theme" aria-label="Theme">◐</button>
+</div></header>
+
+<main>
+  <p class="lede" data-i18n="lede">One platform, one Laya model.</p>
+  <div class="engine" id="engine"></div>
+
+  <div class="grid">
+    <section class="card" aria-labelledby="q-h">
+      <h2 id="q-h"><span data-i18n="q_title">Quality inspection</span><a class="open" href="quality/" data-i18n="open">Open →</a></h2>
+      <p class="what" data-i18n="q_what">IoT readings from five stations; rules judge the numbers, Laya reads operator notes, a person reviews what is unsure.</p>
+      <div class="stats" id="q-stats"></div>
+    </section>
+
+    <section class="card" aria-labelledby="p-h">
+      <h2 id="p-h"><span data-i18n="p_title">Planning and scheduling</span><a class="open" href="aps/" data-i18n="open">Open →</a></h2>
+      <p class="what" data-i18n="p_what">36 SAP orders on two lines; CP-SAT schedules for on-time delivery and repairs the plan when something goes wrong.</p>
+      <div class="stats" id="p-stats"></div>
+    </section>
+
+    <section class="card" aria-labelledby="i-h">
+      <h2 id="i-h" data-i18n="i_title">Quality → planning</h2>
+      <svg class="flow" viewBox="0 0 560 110" role="img" aria-label="Line stop from quality becomes a planning suggestion">
+        <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs>
+        <rect x="4" y="20" width="150" height="62" rx="9" class="f-box"/>
+        <text x="16" y="45" class="f-t"><tspan data-i18n-svg="f1">Quality</tspan></text><text x="16" y="64" class="f-s"><tspan data-i18n-svg="f1s">stop · hold · scrap</tspan></text>
+        <rect x="204" y="20" width="150" height="62" rx="9" class="f-acc"/>
+        <text x="216" y="45" class="f-t"><tspan data-i18n-svg="f2">Suggestion</tspan></text><text x="216" y="64" class="f-s"><tspan data-i18n-svg="f2s">machine / order event</tspan></text>
+        <rect x="404" y="20" width="150" height="62" rx="9" class="f-box"/>
+        <text x="416" y="45" class="f-t"><tspan data-i18n-svg="f3">Planner</tspan></text><text x="416" y="64" class="f-s"><tspan data-i18n-svg="f3s">completes → repair</tspan></text>
+        <path d="M154 51 H200" class="f-a" marker-end="url(#ar)"/><path d="M354 51 H400" class="f-a" marker-end="url(#ar)"/>
+      </svg>
+      <div class="feed" id="feed"></div>
+    </section>
+
+    <section class="card" aria-labelledby="d-h">
+      <h2 id="d-h"><span data-i18n="d_title">Laya console and documents</span><a class="open" href="laya/" data-i18n="open">Open →</a></h2>
+      <p class="what" id="console-note"></p>
+      <ul class="docs">
+        <li><a href="docs/smart-factory-edge-platform.html" data-i18n="doc1">Smart Factory Edge Platform — architecture</a></li>
+        <li><a href="docs/plant-aps-design.html" data-i18n="doc2">Plant APS design (EN / 中文) with measured results</a></li>
+        <li><a href="docs/smart-factory-platform-architecture.md" data-i18n="doc3">Architecture design (Markdown, from Claude Docs)</a></li>
+      </ul>
+    </section>
+  </div>
+  <footer data-i18n="foot">Each module also runs on its own; this page mounts them in one process and shares one Laya model between them.</footer>
+</main>
+
+<script>
+"use strict";
+const I18N = {
+  en: {
+    title: "Smart Factory Platform", sub: "Plant 1 · edge quality inspection · planning and scheduling · Laya",
+    nav_home: "Overview", nav_quality: "Quality", nav_aps: "Planning", nav_laya: "Laya console", nav_docs: "Docs",
+    lede: "One platform, one Laya model. Quality inspection judges every unit at the line; planning keeps the week's schedule on time. Line stops, held units and scrap found by quality become suggested events in planning, on the right machine or SAP order.",
+    q_title: "Quality inspection", p_title: "Planning and scheduling", i_title: "Quality → planning", d_title: "Laya console and documents",
+    q_what: "IoT readings from five stations; rules judge the numbers, Laya reads operator notes, a person reviews what is unsure.",
+    p_what: "36 SAP orders on two lines; CP-SAT schedules for on-time delivery and repairs the plan when something goes wrong.",
+    open: "Open →", foot: "Each module also runs on its own; this page mounts them in one process and shares one Laya model between them.",
+    doc1: "Smart Factory Edge Platform — architecture", doc2: "Plant APS design (EN / 中文) with measured results", doc3: "Architecture design (Markdown, from Claude Docs)",
+    f1: "Quality", f1s: "stop · hold · scrap", f2: "Suggestion", f2s: "machine / order event", f3: "Planner", f3s: "completes → repair",
+    k_units: "Units inspected", k_fpy: "First-pass yield", k_auto: "Auto-dispositioned", k_qa: "Awaiting QA", k_alerts: "Open line alerts", k_dev: "Devices online",
+    k_otd: "On-time delivery", k_late: "Late orders", k_wt: "Weighted lateness", k_ver: "Schedule version", k_clock: "Plant clock", k_sug: "Suggestions to review",
+    solving: "solving…", proposal: "proposal open", h: "h",
+    eng_loading: "Laya: loading checkpoints…", eng_ready: "Laya ready", eng_mock: "Mock classifiers (no Laya weights)", eng_err: "Laya failed to load",
+    eng_shared: "one model shared by quality, planning and the console", loaded: "loaded",
+    console_yes: "Ask Laya your own typed questions about any text, and see how it routes between checkpoints.",
+    console_no: "The Laya console needs the model: start the platform without --mock.",
+    feed_empty: "Nothing yet. Inject “Tool wear on CNC-02” or “Dent the camera missed” in Quality to see it flow into Planning.",
+    act_stop: "line stop → suggested machine-down", act_hold: "unit held → suggested quality hold on its order",
+    act_scrap: "unit scrapped → suggested replacement order", act_release: "QA released the last held unit → hold suggestion closed",
+    ignored: "not in the planning model", order: "order",
+    days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+  },
+  zh: {
+    title: "智能工厂平台", sub: "一号工厂 · 边缘质量检验 · 计划与排程 · Laya",
+    nav_home: "总览", nav_quality: "质量", nav_aps: "计划", nav_laya: "Laya 控制台", nav_docs: "文档",
+    lede: "一个平台，一个 Laya 模型。质量检验在产线上判定每一件产品；计划模块保证本周排程准时。质量发现的停线、冻结和报废，会作为建议事件进入计划模块，并对应到具体设备或 SAP 订单。",
+    q_title: "质量检验", p_title: "计划与排程", i_title: "质量 → 计划", d_title: "Laya 控制台与文档",
+    q_what: "五个工位的 IoT 数据；规则判定数值，Laya 识别操作员留言，不确定的交由人工复核。",
+    p_what: "两条产线上的 36 个 SAP 订单；CP-SAT 以准时交付为目标排程，并在异常时修复排程。",
+    open: "打开 →", foot: "各模块也可独立运行；本页面在同一进程中挂载它们，并共享一个 Laya 模型。",
+    doc1: "智能工厂边缘平台 — 架构", doc2: "工厂 APS 设计（中英双语）及实测结果", doc3: "架构设计（Markdown，来自 Claude Docs）",
+    f1: "质量", f1s: "停线 · 冻结 · 报废", f2: "建议", f2s: "设备 / 订单事件", f3: "计划员", f3s: "补全 → 修复排程",
+    k_units: "已检产品", k_fpy: "一次合格率", k_auto: "自动处置", k_qa: "待 QA 复核", k_alerts: "未处理产线告警", k_dev: "在线设备",
+    k_otd: "准时交付率", k_late: "延误订单", k_wt: "加权延误", k_ver: "排程版本", k_clock: "工厂时钟", k_sug: "待处理建议",
+    solving: "求解中…", proposal: "有待审批方案", h: "小时",
+    eng_loading: "Laya：正在加载模型…", eng_ready: "Laya 就绪", eng_mock: "模拟分类器（未加载 Laya）", eng_err: "Laya 加载失败",
+    eng_shared: "质量、计划与控制台共享同一个模型", loaded: "已加载",
+    console_yes: "用自定义的结构化问题向 Laya 提问任意文本，并查看它在不同模型之间的路由。",
+    console_no: "Laya 控制台需要模型：请不带 --mock 启动平台。",
+    feed_empty: "暂无。在“质量”中注入“CNC-02 刀具磨损”或“相机漏检的磕碰”，即可看到它流入“计划”。",
+    act_stop: "停线 → 建议设备停机", act_hold: "产品冻结 → 建议对其订单质量冻结",
+    act_scrap: "产品报废 → 建议补做订单", act_release: "QA 放行最后一件冻结品 → 冻结建议已关闭",
+    ignored: "计划模型中无此设备", order: "订单",
+    days: ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
+  },
+};
+let LANG = "en", O = null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const t = k => I18N[LANG][k] ?? I18N.en[k] ?? k;
+const pct = v => v == null ? "—" : (v * 100).toFixed(1) + "%";
+const store = { get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+function when(min) { if (min == null) return "—"; const tot = min + 360, d = Math.floor(tot / 1440), r = tot % 1440; return `${t("days")[d % 7]} ${String(Math.floor(r / 60)).padStart(2, "0")}:${String(r % 60).padStart(2, "0")}`; }
+const stat = (k, v) => `<div class="stat"><div class="k">${k}</div><div class="v num">${v}</div></div>`;
+
+function render() {
+  if (!O) return;
+  const e = O.engine;
+  const st = e.kind === "mock" ? ["warn", t("eng_mock")] : e.state === "ready" ? ["ok", t("eng_ready")] : e.state === "error" ? ["bad", t("eng_err")] : ["warn", t("eng_loading")];
+  $("#engine").innerHTML = `<span><span class="dot ${st[0]}"></span><b>${st[1]}</b></span>` +
+    (e.kind !== "mock" ? `<span>${esc(e.version || "")} · ${esc(e.device || "")}</span><span>${t("loaded")}: ${esc((e.loaded || []).join(" + ") || "—")}</span><span class="pill hot">${t("eng_shared")}</span>` : "");
+  const q = O.quality || {};
+  $("#q-stats").innerHTML = q.error ? `<div class="empty">${esc(q.error)}</div>` : [
+    stat(t("k_units"), q.stats.units), stat(t("k_fpy"), pct(q.stats.fpy)), stat(t("k_auto"), pct(q.stats.auto_rate)),
+    stat(t("k_qa"), q.stats.pending), stat(t("k_alerts"), q.stats.open_alerts), stat(t("k_dev"), `${q.devices_online}/${q.devices}`),
+  ].join("");
+  const p = O.planning || {}, k = p.kpis;
+  $("#p-stats").innerHTML = p.error ? `<div class="empty">${esc(p.error)}</div>` : !k ? `<div class="empty">${t("solving")}</div>` : [
+    stat(t("k_otd"), pct(k.otd)), stat(t("k_late"), k.late_orders), stat(t("k_wt"), `${k.weighted_tardiness_h} ${t("h")}`),
+    stat(t("k_ver"), (p.version ? "v" + p.version : "—") + (p.job && p.job.running ? ` <span class="pill">${t("solving")}</span>` : p.proposal ? ` <span class="pill hot">${t("proposal")}</span>` : "")),
+    stat(t("k_clock"), when(p.now)), stat(t("k_sug"), p.suggestions),
+  ].join("");
+  const feed = O.bridge || [];
+  $("#feed").innerHTML = feed.length ? feed.slice().reverse().slice(0, 8).map(f => `<div class="${f.action === "ignored" ? "ignored" : ""}"><b>${esc(f.station || "")}</b>${f.order ? ` · ${t("order")} ${esc(f.order)}` : ""} · ${new Date(f.ts * 1000).toLocaleTimeString(LANG === "zh" ? "zh-CN" : [])}<br>${f.action === "ignored" ? t("ignored") : t("act_" + f.kind) + (f.suggestion ? " #" + f.suggestion : "")}${f.detail ? `<br><span class="empty">${esc(f.detail)}</span>` : ""}</div>`).join("")
+    : `<div class="empty">${t("feed_empty")}</div>`;
+  $("#console-note").textContent = O.console.available ? t("console_yes") : t("console_no");
+}
+
+function applyLang(l) {
+  LANG = l; store.set("platform-lang", l);
+  document.documentElement.lang = l === "zh" ? "zh-CN" : "en";
+  $("#l-en").setAttribute("aria-pressed", l === "en"); $("#l-zh").setAttribute("aria-pressed", l === "zh");
+  document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = t(el.dataset.i18n));
+  document.querySelectorAll("[data-i18n-svg]").forEach(el => el.textContent = t(el.dataset.i18nSvg));
+  try { localStorage.setItem("aps-lang", l); } catch {}          // the planning module follows
+  render();
+}
+$("#l-en").onclick = () => applyLang("en"); $("#l-zh").onclick = () => applyLang("zh");
+(() => { const th = store.get("aps-theme", null); if (th) document.documentElement.dataset.theme = th; })();
+$("#theme").onclick = () => {
+  const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const nx = cur === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = nx; store.set("aps-theme", nx);
+};
+
+async function refresh() {
+  try { const r = await fetch("api/overview"); if (r.ok) { O = await r.json(); render(); } } catch {}
+}
+applyLang(location.hash === "#zh" ? "zh" : store.get("platform-lang", (navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"));
+refresh(); setInterval(refresh, 3000);
+</script>
+</body>
+</html>

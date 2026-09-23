@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS alerts (
 );
 """
 
-_JSON_COLS = ("findings", "spc", "laya", "decision", "reasons", "payload")
+_JSON_COLS = ("findings", "spc", "laya", "decision", "reasons", "reasons_zh", "payload")
 
 
 def _row(r: sqlite3.Row) -> Dict[str, Any]:
@@ -77,7 +77,7 @@ class Store:
         # Databases created before alerts were folded lack these columns.
         have = {r["name"] for r in self.db.execute("PRAGMA table_info(alerts)")}
         for col, ddl in (("count", "INTEGER NOT NULL DEFAULT 1"), ("last_inspection_id", "INTEGER"),
-                         ("updated", "REAL")):
+                         ("updated", "REAL"), ("reasons_zh", "TEXT")):
             if col not in have:
                 self.db.execute("ALTER TABLE alerts ADD COLUMN %s %s" % (col, ddl))
         self.db.execute("UPDATE alerts SET last_inspection_id=inspection_id WHERE last_inspection_id IS NULL")
@@ -195,15 +195,17 @@ class Store:
                 (station, alert["level"])).fetchone()
             if row:
                 self.db.execute(
-                    "UPDATE alerts SET count=count+1, last_inspection_id=?, updated=?, reasons=?, cause=COALESCE(?, cause) "
-                    "WHERE id=?", (inspection_id, now, json.dumps(alert["reasons"]), alert.get("cause"), row["id"]))
+                    "UPDATE alerts SET count=count+1, last_inspection_id=?, updated=?, reasons=?, reasons_zh=?, "
+                    "cause=COALESCE(?, cause) WHERE id=?",
+                    (inspection_id, now, json.dumps(alert["reasons"]), json.dumps(alert.get("reasons_zh")),
+                     alert.get("cause"), row["id"]))
                 aid = row["id"]
             else:
                 aid = self.db.execute(
-                    "INSERT INTO alerts (inspection_id, station, created, level, reasons, cause, last_inspection_id, updated) "
-                    "VALUES (?,?,?,?,?,?,?,?)",
-                    (inspection_id, station, now, alert["level"], json.dumps(alert["reasons"]), alert.get("cause"),
-                     inspection_id, now)).lastrowid
+                    "INSERT INTO alerts (inspection_id, station, created, level, reasons, reasons_zh, cause, "
+                    "last_inspection_id, updated) VALUES (?,?,?,?,?,?,?,?,?)",
+                    (inspection_id, station, now, alert["level"], json.dumps(alert["reasons"]),
+                     json.dumps(alert.get("reasons_zh")), alert.get("cause"), inspection_id, now)).lastrowid
         return self.alert(aid)
 
     def alert(self, aid: int) -> Optional[Dict[str, Any]]:

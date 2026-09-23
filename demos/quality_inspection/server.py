@@ -99,6 +99,8 @@ class State:
         self.loop: Optional[asyncio.AbstractEventLoop] = None
         self.processing: Optional[dict] = None
         self.errors = 0
+        self.listeners: List = []          # in-process subscribers, e.g. the platform bridge
+        self.order_of = None               # optional serial -> production order (the MES knows)
 
 
 S = State()
@@ -115,6 +117,11 @@ def publish(kind: str, data: dict):
             if q.qsize() < 500:                     # a stalled tab must not grow without bound
                 q.put_nowait(payload)
     S.loop.call_soon_threadsafe(_put)
+    for fn in list(S.listeners):
+        try:
+            fn(kind, data)
+        except Exception as e:              # a listener must never break the pipeline
+            print("listener error: %s" % e, file=sys.stderr)
 
 
 def summary(rec: dict) -> dict:
@@ -122,7 +129,11 @@ def summary(rec: dict) -> dict:
     laya = rec.get("laya") or {}
     topic = (laya.get("answers") or {}).get("topic") or {}
     trace = d.get("trace") or [""]
+    trace_zh = d.get("trace_zh") or trace
+    held = next((i for i, t in enumerate(trace) if "HOLD" in t), len(trace) - 1)
     return {
+        "why_zh": trace_zh[held] if held < len(trace_zh) else trace[held],
+        "order": S.order_of(rec["serial"]) if S.order_of else None,
         "note": laya.get("input"), "topic": topic.get("choice"), "topic_conf": topic.get("confidence"),
         "why": next((t for t in trace if "HOLD" in t), trace[-1]),
         "id": rec["id"], "serial": rec["serial"], "station": rec["station"], "ts": rec["ts"],
@@ -219,7 +230,9 @@ async def lifespan(app: FastAPI):
     # Readings accepted before a restart but not yet inspected go back on the queue first.
     for item in S.store.unprocessed():
         S.work.put(item)
-    if ARGS.mock:
+    if getattr(ARGS, "engine", None) is not None:
+        S.engine = ARGS.engine                  # shared with other modules by the platform
+    elif ARGS.mock:
         from qi.engine import MockEngine
         S.engine = MockEngine()
     else:
@@ -227,7 +240,7 @@ async def lifespan(app: FastAPI):
         S.engine = LayaEngine(ARGS.device)
         S.engine.warm_async()
     threading.Thread(target=worker, name="inspection-worker", daemon=True).start()
-    S.gateway = EdgeGateway("http://%s:%d" % (ARGS.host, ARGS.port), "edge-gw-01",
+    S.gateway = EdgeGateway("http://%s:%d%s" % (ARGS.host, ARGS.port, getattr(ARGS, "base", "")), "edge-gw-01",
                             interval=ARGS.interval, sim=LineSimulator())
     if ARGS.simulate:
         S.gateway.start()
@@ -429,7 +442,7 @@ async def stream(request: Request):
 
 @app.get("/")
 def index():
-    return FileResponse(os.path.join(STATIC, "index.html"))
+    return FileResponse(os.path.join(STATIC, "index.html"), headers={"Cache-Control": "no-cache"})
 
 
 def main():

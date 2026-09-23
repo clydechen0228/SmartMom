@@ -124,6 +124,7 @@ button.ghost {
 </head>
 <body>
 <header>
+  <a id="platform-back" href="../" hidden style="font-size:12.5px;color:var(--accent);text-decoration:none">← Platform</a>
   <h1>Laya<span>.</span></h1>
   <div class="meta" id="meta">loading…</div>
 </header>
@@ -231,7 +232,7 @@ async function run() {
   $("run").disabled = true;
   $("status").textContent = "running… (cold load can take 15–40 s)";
   try {
-    const data = await api("/api/predict", {
+    const data = await api("api/predict", {
       state: $("state").value, questions, model: $("model").value || null,
     });
     const tags = [
@@ -259,7 +260,7 @@ async function routeOnly() {
   let questions = null;
   try { questions = readQuestions(); } catch (e) { /* routing works without questions */ }
   try {
-    const data = await api("/api/route", { state: $("state").value, questions });
+    const data = await api("api/route", { state: $("state").value, questions });
     $("out").innerHTML = "<h2>Result</h2>" + renderRouting(data.routing) +
       '<div class="timings"><span class="tag">' + data.ms + " ms</span>" +
       '<span class="tag">no weights loaded, no forward pass</span>' +
@@ -274,7 +275,7 @@ function metaLine(loaded) {
 }
 
 async function boot() {
-  META = await (await fetch("/api/meta")).json();
+  META = await (await fetch("api/meta")).json();
   $("meta").innerHTML = metaLine(META.loaded);
 
   for (const name of META.models) {
@@ -308,5 +309,6 @@ async function boot() {
 
 boot().catch((e) => showError("could not reach the server: " + e.message));
 </script>
+<script>if (location.pathname !== "/") document.getElementById("platform-back").hidden = false;</script>
 </body>
 </html>

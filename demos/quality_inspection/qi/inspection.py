@@ -108,16 +108,38 @@ def build_report(station_id: str, station: dict, product: str, msg: dict,
     return " ".join(lines)
 
 
+# Chinese names for what the trace mentions (the English names come from config).
+ZH_LABEL = {
+    "bore_d": "镗孔直径", "spindle_vib": "主轴振动", "flatness": "密封面平面度", "position": "螺栓孔位置度",
+    "torque_1": "1 号螺栓扭矩", "torque_2": "2 号螺栓扭矩", "torque_3": "3 号螺栓扭矩", "torque_4": "4 号螺栓扭矩",
+    "leak_rate": "泄漏率", "defect_score": "视觉缺陷评分",
+}
+ZH_TOPIC = {"nothing": "无异常", "part_defect": "零件缺陷", "machine_problem": "设备问题",
+            "material_problem": "物料问题", "measurement_problem": "测量问题", "handling_problem": "搬运损伤"}
+ZH_CAUSE = {"machine": "设备", "material": "物料", "measurement": "测量", "handling": "搬运"}
+ZH_REACTION = {"scrap": "报废", "rework": "返工"}
+
+
 def decide(findings: List[dict], spc: List[dict], answers: Optional[dict], msg: dict,
            characteristics: Dict[str, dict], policy: Dict[str, float] = POLICY,
            engine_ok: bool = True) -> dict:
     """Combine rule results and Laya's reading of the note into a disposition.
 
     `answers` is None when there was no note to read (or Laya failed - then pass
-    engine_ok=False). Returns {disposition, auto, defect, root_cause, alert, trace};
-    `auto` False means the unit is held for a person, and `trace` lists every step.
+    engine_ok=False). Returns {disposition, auto, defect, root_cause, alert, trace,
+    trace_zh}; `auto` False means the unit is held for a person, and `trace` lists every
+    step (trace_zh is the same steps in Chinese, for the bilingual dashboard).
     """
     trace: List[str] = []
+    trace_zh: List[str] = []
+
+    def say(en: str, zh: str):
+        trace.append(en)
+        trace_zh.append(zh)
+
+    def zh_labels(fs):
+        return "、".join(ZH_LABEL.get(f["key"], f["label"]) for f in fs)
+
     tau = policy["min_confidence"]
     failed = [f for f in findings if f["role"] == "product" and f["status"] == "out"]
     missing = [f for f in findings if f["role"] == "product" and f["status"] == "missing"]
@@ -135,50 +157,62 @@ def decide(findings: List[dict], spc: List[dict], answers: Optional[dict], msg: 
     alarm_cause = next((m["cause"] for _, m in alarms if m and m.get("cause")), None)
 
     if answers:
-        trace.append("Laya read the operator note: '%s' at %.0f%% confidence%s." % (
-            topic, t_conf * 100, "" if sure else " - below the %.0f%% gate" % (tau * 100)))
+        say("Laya read the operator note: '%s' at %.0f%% confidence%s." % (
+                topic, t_conf * 100, "" if sure else " - below the %.0f%% gate" % (tau * 100)),
+            "Laya 识别操作员留言：“%s”，置信度 %.0f%%%s。" % (
+                ZH_TOPIC.get(topic, topic), t_conf * 100, "" if sure else "，低于 %.0f%% 阈值" % (tau * 100)))
     elif has_note and not engine_ok:
-        trace.append("Laya unavailable - the operator note could not be read.")
+        say("Laya unavailable - the operator note could not be read.",
+            "Laya 不可用，无法识别操作员留言。")
     else:
-        trace.append("No operator note - Laya not called; the record is numbers and codes only.")
+        say("No operator note - Laya not called; the record is numbers and codes only.",
+            "无操作员留言，未调用 Laya；该记录只有数值与代码。")
 
     # --- disposition -------------------------------------------------------------
     if missing:
         disposition, auto = "hold", False
-        trace.append("Rules: no reading for %s. A unit without its measurement is never released."
-                     % ", ".join(f["label"] for f in missing))
+        say("Rules: no reading for %s. A unit without its measurement is never released."
+            % ", ".join(f["label"] for f in missing),
+            "规则：%s 无读数。缺少测量值的产品绝不放行。" % zh_labels(missing))
     elif failed:
         reaction = "scrap" if any(characteristics[f["key"]].get("reaction") == "scrap" for f in failed) else "rework"
         disposition, auto = reaction, True
-        trace.append("Rules: %s out of tolerance -> reaction plan: %s."
-                     % (", ".join(f["label"] for f in failed), reaction.upper()))
+        say("Rules: %s out of tolerance -> reaction plan: %s."
+            % (", ".join(f["label"] for f in failed), reaction.upper()),
+            "规则：%s 超差 → 反应计划：%s。" % (zh_labels(failed), ZH_REACTION[reaction]))
         if note_cause == "measurement":
             disposition, auto = "hold", False
-            trace.append("The operator reports a measurement problem, so the failing reading itself is "
-                         "suspect. HOLD for gauge verification instead of %s." % reaction.upper())
+            say("The operator reports a measurement problem, so the failing reading itself is "
+                "suspect. HOLD for gauge verification instead of %s." % reaction.upper(),
+                "操作员报告测量问题，超差读数本身可疑。冻结待量具核查，而不是%s。" % ZH_REACTION[reaction])
     else:
-        trace.append("Rules: every product characteristic within tolerance.")
+        say("Rules: every product characteristic within tolerance.", "规则：所有产品特性均在公差内。")
         if not has_note:
             disposition, auto = "pass", True
         elif answers is None:
             disposition, auto = "hold", False
-            trace.append("A written note nobody has read cannot be ignored. HOLD.")
+            say("A written note nobody has read cannot be ignored. HOLD.", "无人阅读的书面留言不能忽略。冻结。")
         elif not sure:
             disposition, auto = "hold", False
-            trace.append("Laya is unsure what the note says. HOLD for a person to read it.")
+            say("Laya is unsure what the note says. HOLD for a person to read it.",
+                "Laya 无法确定留言内容。冻结，由人工阅读。")
         elif topic == "nothing":
             disposition, auto = "pass", True
-            trace.append("The note reports nothing wrong -> PASS.")
+            say("The note reports nothing wrong -> PASS.", "留言未报告异常 → 放行。")
         elif topic in ("part_defect", "handling_problem"):
             disposition, auto = "hold", False
-            trace.append("The operator reports damage that no sensor measured. HOLD to confirm.")
+            say("The operator reports damage that no sensor measured. HOLD to confirm.",
+                "操作员报告了传感器未测到的损伤。冻结待确认。")
         elif topic in ("material_problem", "measurement_problem"):
             disposition, auto = "hold", False
-            trace.append("The note puts the %s in doubt, so passing readings do not clear the part. HOLD."
-                         % ("material lot" if topic == "material_problem" else "measurement"))
+            say("The note puts the %s in doubt, so passing readings do not clear the part. HOLD."
+                % ("material lot" if topic == "material_problem" else "measurement"),
+                "留言使%s存疑，合格读数不足以放行该零件。冻结。"
+                % ("物料批次" if topic == "material_problem" else "测量结果"))
         else:                                        # machine_problem on a good part
             disposition, auto = "pass", True
-            trace.append("A machine problem on a part that measures good: PASS the part, alert the line.")
+            say("A machine problem on a part that measures good: PASS the part, alert the line.",
+                "零件测量合格但设备有问题：放行零件，向产线告警。")
 
     # --- defect and cause for the record -------------------------------------------
     if failed:
@@ -193,18 +227,23 @@ def decide(findings: List[dict], spc: List[dict], answers: Optional[dict], msg: 
 
     # --- line alert (independent of this unit's disposition) ---------------------
     reasons = ["SPC %s on %s" % (s["rule"], s["label"].lower()) for s in spc]
+    reasons_zh = ["%s 触发 SPC %s" % (ZH_LABEL.get(s["key"], s["label"]), s["rule"]) for s in spc]
     reasons += ["%s above process limit" % f["label"].lower() for f in process_out]
+    reasons_zh += ["%s 超出过程限值" % ZH_LABEL.get(f["key"], f["label"]) for f in process_out]
     reasons += ["alarm %s" % a for a, _ in alarms]
+    reasons_zh += ["报警 %s" % a for a, _ in alarms]
     if note_cause:
         reasons.append("operator reports a %s problem" % note_cause)
+        reasons_zh.append("操作员报告%s问题" % ZH_CAUSE.get(note_cause, note_cause))
     alert = None
     if reasons:
         # Stop the line only when the numbers show drift AND a person on the line
         # independently reports an equipment problem. Either alone is a watch.
         drift = bool(spc) or bool(process_out)
         stop = drift and note_cause == "machine"
-        alert = {"level": "stop" if stop else "watch", "reasons": reasons, "cause": cause}
-        trace.append("Line alert %s: %s." % (alert["level"].upper(), "; ".join(reasons)))
+        alert = {"level": "stop" if stop else "watch", "reasons": reasons, "reasons_zh": reasons_zh, "cause": cause}
+        say("Line alert %s: %s." % (alert["level"].upper(), "; ".join(reasons)),
+            "产线告警（%s）：%s。" % ("停线" if stop else "关注", "；".join(reasons_zh)))
 
     return {"disposition": disposition, "auto": auto, "defect": defect, "root_cause": cause,
-            "alert": alert, "trace": trace}
+            "alert": alert, "trace": trace, "trace_zh": trace_zh}
