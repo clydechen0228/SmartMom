@@ -1,0 +1,277 @@
+{
+ "when": "2026-09-23 07:25",
+ "machine": "x86_64",
+ "processor": "i386",
+ "cpus": 12,
+ "limits_s": {
+  "full": 60.0,
+  "repair": 30.0
+ },
+ "full_plan": {
+  "cp_sat": {
+   "otd": 0.9722,
+   "on_time": 35,
+   "late_orders": 1,
+   "weighted_tardiness_h": 3.3,
+   "setup_h": 7.2
+  },
+  "edd": {
+   "otd": 0.7778,
+   "on_time": 28,
+   "late_orders": 8,
+   "weighted_tardiness_h": 62.4,
+   "setup_h": 28.9
+  },
+  "seconds": 60.2,
+  "status": [
+   "OPTIMAL",
+   "FEASIBLE"
+  ],
+  "orders": 36,
+  "operations": 150
+ },
+ "repairs": [
+  {
+   "event": "machine_down",
+   "detail": {
+    "machine": "LKT-04",
+    "hours": 6
+   },
+   "seconds": 30.1,
+   "status": [
+    "OPTIMAL",
+    "FEASIBLE"
+   ],
+   "before": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 7.2
+   },
+   "after": {
+    "otd": 0.9167,
+    "on_time": 33,
+    "late_orders": 3,
+    "weighted_tardiness_h": 6.2,
+    "setup_h": 8.2
+   },
+   "moved": 59,
+   "affected": 46,
+   "violations": 0
+  },
+  {
+   "event": "rush_order",
+   "detail": {
+    "material": "HSG-7731",
+    "quantity": 80,
+    "due_hours": 30
+   },
+   "seconds": 13.3,
+   "status": [
+    "OPTIMAL",
+    "OPTIMAL"
+   ],
+   "before": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 7.2
+   },
+   "after": {
+    "otd": 0.9189,
+    "on_time": 34,
+    "late_orders": 3,
+    "weighted_tardiness_h": 6.2,
+    "setup_h": 9.7
+   },
+   "moved": 62,
+   "affected": 26,
+   "violations": 0
+  },
+  {
+   "event": "quality_hold",
+   "detail": {
+    "order": "10004405",
+    "hours": 8
+   },
+   "seconds": 24.8,
+   "status": [
+    "OPTIMAL",
+    "OPTIMAL"
+   ],
+   "before": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 7.2
+   },
+   "after": {
+    "otd": 0.9444,
+    "on_time": 34,
+    "late_orders": 2,
+    "weighted_tardiness_h": 3.7,
+    "setup_h": 14.8
+   },
+   "moved": 83,
+   "affected": 25,
+   "violations": 0
+  },
+  {
+   "event": "machine_degrading",
+   "detail": {
+    "machine": "CNC-02",
+    "percent": 30
+   },
+   "seconds": 30.1,
+   "status": [
+    "OPTIMAL",
+    "FEASIBLE"
+   ],
+   "before": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 7.2
+   },
+   "after": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 15.2
+   },
+   "moved": 88,
+   "affected": 37,
+   "violations": 0
+  },
+  {
+   "event": "material_late",
+   "detail": {
+    "order": "10004430",
+    "hours": 24
+   },
+   "seconds": 1.0,
+   "status": [
+    "OPTIMAL",
+    "OPTIMAL"
+   ],
+   "before": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 7.2
+   },
+   "after": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 7.2
+   },
+   "moved": 0,
+   "affected": 4,
+   "violations": 0
+  }
+ ],
+ "inbox": {
+  "engine": "laya",
+  "rows": [
+   {
+    "id": "m1",
+    "lang": "en",
+    "expect": "machine_down",
+    "got": "machine_down",
+    "confidence": 0.848,
+    "model": "english",
+    "ms": 1824.8,
+    "planner": false,
+    "correct": true
+   },
+   {
+    "id": "m2",
+    "lang": "zh",
+    "expect": "machine_degrading",
+    "got": "machine_degrading",
+    "confidence": 0.628,
+    "model": "multilingual",
+    "ms": 298.1,
+    "planner": false,
+    "correct": true
+   },
+   {
+    "id": "m3",
+    "lang": "de",
+    "expect": "material_late",
+    "got": "quality_hold",
+    "confidence": 0.097,
+    "model": "english",
+    "ms": 775.3,
+    "planner": true,
+    "correct": false
+   },
+   {
+    "id": "m4",
+    "lang": "en",
+    "expect": "rush_order",
+    "got": "rush_order",
+    "confidence": 1.0,
+    "model": "english",
+    "ms": 714.5,
+    "planner": false,
+    "correct": true
+   },
+   {
+    "id": "m5",
+    "lang": "zh",
+    "expect": "quality_hold",
+    "got": "material_late",
+    "confidence": 0.487,
+    "model": "multilingual",
+    "ms": 268.7,
+    "planner": true,
+    "correct": false
+   },
+   {
+    "id": "m6",
+    "lang": "de",
+    "expect": "no_action",
+    "got": "no_action",
+    "confidence": 0.502,
+    "model": "multilingual",
+    "ms": 206.6,
+    "planner": false,
+    "correct": true
+   },
+   {
+    "id": "m7",
+    "lang": "en",
+    "expect": "no_action",
+    "got": "no_action",
+    "confidence": 0.311,
+    "model": "english",
+    "ms": 730.4,
+    "planner": true,
+    "correct": true
+   },
+   {
+    "id": "m8",
+    "lang": "zh",
+    "expect": "no_action",
+    "got": "no_action",
+    "confidence": 0.29,
+    "model": "multilingual",
+    "ms": 247.4,
+    "planner": true,
+    "correct": true
+   }
+  ],
+  "correct": 6,
+  "total": 8,
+  "confident_errors": 0
+ }
+}

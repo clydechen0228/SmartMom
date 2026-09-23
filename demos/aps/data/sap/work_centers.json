@@ -1,0 +1,71 @@
+{
+ "value": [
+  {
+   "WorkCenter": "WC-CNC",
+   "Line": "L1",
+   "Description": "CNC machining",
+   "Capacities": [
+    {
+     "Resource": "CNC-01",
+     "SpeedFactor": 1.0
+    },
+    {
+     "Resource": "CNC-02",
+     "SpeedFactor": 1.0
+    },
+    {
+     "Resource": "CNC-03",
+     "SpeedFactor": 0.8
+    }
+   ]
+  },
+  {
+   "WorkCenter": "WC-CMM",
+   "Line": "L1",
+   "Description": "Coordinate measurement",
+   "Capacities": [
+    {
+     "Resource": "CMM-01",
+     "SpeedFactor": 1.0
+    }
+   ]
+  },
+  {
+   "WorkCenter": "WC-ASM",
+   "Line": "L3",
+   "Description": "Assembly",
+   "Capacities": [
+    {
+     "Resource": "ASM-03",
+     "SpeedFactor": 1.0
+    },
+    {
+     "Resource": "ASM-05",
+     "SpeedFactor": 1.1
+    }
+   ]
+  },
+  {
+   "WorkCenter": "WC-LKT",
+   "Line": "L3",
+   "Description": "Leak test",
+   "Capacities": [
+    {
+     "Resource": "LKT-04",
+     "SpeedFactor": 1.0
+    }
+   ]
+  },
+  {
+   "WorkCenter": "WC-AOI",
+   "Line": "L3",
+   "Description": "Final vision inspection",
+   "Capacities": [
+    {
+     "Resource": "AOI-01",
+     "SpeedFactor": 1.0
+    }
+   ]
+  }
+ ]
+}

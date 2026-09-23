@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Plant APS Workbench</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%230e6b70'/%3E%3Crect x='3' y='4' width='6' height='2' fill='white'/%3E%3Crect x='6' y='7' width='7' height='2' fill='white'/%3E%3Crect x='4' y='10' width='5' height='2' fill='white'/%3E%3C/svg%3E" />
+<style>
+:root {
+  --bg: #f4f6f5; --panel: #ffffff; --sunk: #eceff0; --ink: #1a1f24; --ink-2: #3b444c; --muted: #5f6a73;
+  --line: #d8dee0; --line-strong: #b4bec3; --accent: #0e6b70; --accent-ink: #0b5a5e; --accent-soft: #e2f0f0;
+  --ok: #2a78d6; --ok-soft: #dde9f8; --risk: #c78100; --risk-soft: #fbf0dc; --late: #c0392b; --late-soft: #fbe6e3;
+  --good: #0a7d0a; --good-soft: #e3f3e3; --hold: #4a3aa7; --hold-soft: #ebe8f8;
+  --night: rgba(60, 70, 80, .08); --frozen: rgba(14, 107, 112, .10); --code: #eef1f1;
+  --shadow: 0 8px 28px rgba(20, 30, 35, .14);
+  --sans: "IBM Plex Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111517; --panel: #171b1e; --sunk: #1d2226; --ink: #e5e9eb; --ink-2: #c2cacf; --muted: #93a0a8;
+    --line: #2a3136; --line-strong: #3d474e; --accent: #4fb3b8; --accent-ink: #7cc9cd; --accent-soft: #15302f;
+    --ok: #3987e5; --ok-soft: #1c2f47; --risk: #e9a93a; --risk-soft: #33280f; --late: #f07b6e; --late-soft: #3a1c19;
+    --good: #4cc34c; --good-soft: #16301a; --hold: #9085e9; --hold-soft: #262147;
+    --night: rgba(255, 255, 255, .04); --frozen: rgba(79, 179, 184, .12); --code: #1f2529;
+    --shadow: 0 8px 28px rgba(0, 0, 0, .45);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111517; --panel: #171b1e; --sunk: #1d2226; --ink: #e5e9eb; --ink-2: #c2cacf; --muted: #93a0a8;
+  --line: #2a3136; --line-strong: #3d474e; --accent: #4fb3b8; --accent-ink: #7cc9cd; --accent-soft: #15302f;
+  --ok: #3987e5; --ok-soft: #1c2f47; --risk: #e9a93a; --risk-soft: #33280f; --late: #f07b6e; --late-soft: #3a1c19;
+  --good: #4cc34c; --good-soft: #16301a; --hold: #9085e9; --hold-soft: #262147;
+  --night: rgba(255, 255, 255, .04); --frozen: rgba(79, 179, 184, .12); --code: #1f2529;
+  --shadow: 0 8px 28px rgba(0, 0, 0, .45);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 var(--sans); }
+:root[lang="zh-CN"] body { line-height: 1.6; }
+button, input, select, textarea { font: inherit; color: inherit; }
+.num { font-variant-numeric: tabular-nums; }
+.mono { font-family: var(--mono); font-size: 12.5px; }
+
+header {
+  position: sticky; top: 0; z-index: 10; background: var(--panel); border-bottom: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 16px;
+}
+.brand { margin-right: auto; min-width: 0; }
+.brand h1 { margin: 0; font-size: 17px; font-weight: 650; }
+.back { font-size: 12.5px; color: var(--accent-ink); text-decoration: none; }
+.sug { border: 1px solid var(--accent); background: var(--accent-soft); border-radius: 8px; padding: 8px 10px; display: grid; gap: 4px; margin-bottom: 6px; }
+.sug .meta { font-size: 11.5px; color: var(--accent-ink); display: flex; gap: 8px; align-items: center; }
+.brand .sub { font-size: 12.5px; color: var(--muted); }
+.clock { font: 600 20px var(--mono); padding: 2px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--sunk); }
+.btn { border: 1px solid var(--line-strong); background: var(--panel); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+.btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-ink); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover:not(:disabled) { color: #fff; filter: brightness(1.08); }
+.btn.danger:hover:not(:disabled) { border-color: var(--late); color: var(--late); }
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: none; padding: 6px 11px; cursor: pointer; font-size: 13px; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.pill-state { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.dot.ok { background: var(--good); } .dot.warn { background: var(--risk); } .dot.bad { background: var(--late); }
+.dot.pulse { animation: pulse 1.1s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .dot.pulse { animation: none; } }
+
+.jobbar { display: none; background: var(--accent-soft); color: var(--accent-ink); padding: 8px 16px; font-size: 13.5px; border-bottom: 1px solid var(--line); }
+.jobbar.err { background: var(--late-soft); color: var(--late); }
+main { padding: 14px 16px 60px; max-width: 1600px; margin: 0 auto; display: grid; gap: 14px; }
+
+.kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+.kpi .k { font-size: 12px; color: var(--muted); }
+.kpi .v { font-size: 24px; font-weight: 650; letter-spacing: -.01em; }
+.kpi .d { font-size: 12px; color: var(--muted); }
+.kpi .v .delta { font-size: 13px; font-weight: 600; margin-left: 6px; }
+.up { color: var(--good); } .down { color: var(--late); }
+
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) 390px; gap: 14px; align-items: start; }
+@media (max-width: 1150px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+.stack { display: grid; gap: 14px; min-width: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.panel h2 { margin: 0 0 8px; font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 650; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.panel h2 .grow { margin-left: auto; display: flex; gap: 6px; align-items: center; text-transform: none; letter-spacing: 0; }
+.panel.prop { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+
+/* gantt */
+.gwrap { overflow-x: auto; overflow-y: hidden; border: 1px solid var(--line); border-radius: 8px; position: relative; }
+.gantt { position: relative; }
+.gantt svg { display: block; }
+.g-label { fill: var(--ink); font: 600 12px var(--sans); }
+.g-line { fill: var(--muted); font: 600 10.5px var(--sans); letter-spacing: .08em; }
+.g-axis { fill: var(--muted); font: 11px var(--mono); }
+.g-day { fill: var(--ink-2); font: 600 11.5px var(--sans); }
+.g-grid { stroke: var(--line); stroke-width: 1; }
+.g-row { fill: var(--panel); }
+.g-row.alt { fill: var(--sunk); fill-opacity: .45; }
+.g-night { fill: var(--night); }
+.g-down { fill: url(#g-hatch); stroke: var(--late); stroke-width: 1; }
+.g-frozen { fill: var(--frozen); }
+.g-now { stroke: var(--ink); stroke-width: 1.5; }
+.g-bar { cursor: pointer; }
+.g-bar.ok { fill: var(--ok); } .g-bar.risk { fill: var(--risk); } .g-bar.late { fill: var(--late); }
+.g-bar.done { fill-opacity: .35; }
+.g-bar.dim { fill-opacity: .18; }
+.g-bar.sel { stroke: var(--ink); stroke-width: 2; }
+.g-bar.moved { stroke: var(--hold); stroke-width: 2; stroke-dasharray: 4 2; }
+.g-setup { fill: var(--line-strong); }
+.g-text { fill: #fff; font: 600 10px var(--mono); pointer-events: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+.legend i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.tip { position: fixed; z-index: 50; pointer-events: none; background: var(--panel); border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 10px; font-size: 12.5px; box-shadow: var(--shadow); max-width: 300px; }
+
+/* tables */
+.tblwrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: var(--sunk); text-align: left; font-size: 11.5px; font-weight: 650; color: var(--muted); padding: 7px 9px; white-space: nowrap; border-bottom: 1px solid var(--line); z-index: 1; }
+td { padding: 6px 9px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: var(--sunk); }
+tbody tr.sel { background: var(--accent-soft); }
+.r { text-align: right; font-variant-numeric: tabular-nums; }
+.st { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; font-size: 12px; padding: 2px 8px; border-radius: 999px; }
+.st.ok { color: var(--ok); background: var(--ok-soft); }
+.st.risk { color: var(--risk); background: var(--risk-soft); }
+.st.late { color: var(--late); background: var(--late-soft); }
+.fbtn { border: 1px solid var(--line); background: none; border-radius: 999px; padding: 2px 10px; font-size: 12px; cursor: pointer; color: var(--muted); }
+.fbtn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-soft); }
+
+/* side panels */
+.cmp { display: grid; grid-template-columns: 1fr auto auto auto; gap: 4px 12px; font-size: 13px; align-items: baseline; margin: 6px 0 10px; }
+.cmp .h { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+.cmp .arrow { color: var(--muted); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.field { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+.field input, .field select, textarea, input.who {
+  background: var(--sunk); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; font-size: 13px; color: var(--ink); min-width: 0;
+}
+.field.missing input, .field.missing select { border-color: var(--late); background: var(--late-soft); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+textarea { width: 100%; resize: vertical; min-height: 64px; }
+.msg { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 4px; cursor: pointer; background: var(--panel); text-align: left; width: 100%; }
+.msg:hover { border-color: var(--accent); }
+.msg .meta { font-size: 11.5px; color: var(--muted); display: flex; gap: 8px; }
+.lang { font: 600 10.5px var(--mono); border: 1px solid var(--line-strong); border-radius: 4px; padding: 0 4px; text-transform: uppercase; }
+.msglist { display: grid; gap: 6px; }
+.reading { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: var(--sunk); display: grid; gap: 8px; margin-top: 10px; }
+.bar { height: 8px; background: var(--line); border-radius: 4px; position: relative; overflow: hidden; }
+.bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 4px; }
+.bar b { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); left: 50%; }
+.note { font-size: 12.5px; color: var(--muted); }
+.warnbox { font-size: 12.5px; color: var(--risk); background: var(--risk-soft); border-radius: 6px; padding: 6px 8px; }
+.errbox { font-size: 12.5px; color: var(--late); background: var(--late-soft); border-radius: 6px; padding: 6px 8px; }
+.hist { display: grid; gap: 6px; font-size: 12.5px; }
+.hist div { border-left: 3px solid var(--line-strong); padding-left: 8px; }
+.hist .approved { border-left-color: var(--good); } .hist .rejected { border-left-color: var(--late); } .hist .proposed { border-left-color: var(--hold); }
+pre.json { background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 8px; font: 11.5px/1.5 var(--mono); overflow-x: auto; margin: 6px 0 0; }
+details summary { cursor: pointer; font-size: 13px; }
+.empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <a class="back" id="back" href="../" hidden data-i18n="back">← Platform</a>
+    <h1 data-i18n="title">Plant 1 · APS workbench</h1>
+    <div class="sub" data-i18n="subtitle">Lines L1 and L3 · orders from SAP · dispatch to MES · on-time delivery first</div>
+  </div>
+  <span class="pill-state" id="engine"><span class="dot"></span></span>
+  <span class="clock num" id="clock" title="Plant clock">—</span>
+  <button class="btn" id="advance" data-i18n="advance">+2 h</button>
+  <button class="btn" id="replan" data-i18n="replan">Full re-plan</button>
+  <div class="seg" role="group" aria-label="Language / 语言">
+    <button id="l-en" aria-pressed="true">EN</button><button id="l-zh" aria-pressed="false">中文</button>
+  </div>
+  <button class="btn" id="theme" aria-label="Theme">◐</button>
+</header>
+<div class="jobbar" id="jobbar"></div>
+
+<main>
+  <section class="kpis" id="kpis" aria-label="KPIs"></section>
+
+  <div class="cols">
+    <div class="stack">
+      <section class="panel">
+        <h2><span data-i18n="gantt">Schedule by machine</span>
+          <span class="grow">
+            <span class="seg" id="viewseg" style="display:none"><button id="v-cur" aria-pressed="true" data-i18n="current">Current</button><button id="v-prop" aria-pressed="false" data-i18n="proposal">Proposal</button></span>
+            <button class="btn" id="zoom-out" aria-label="Zoom out">−</button><button class="btn" id="zoom-in" aria-label="Zoom in">+</button>
+          </span>
+        </h2>
+        <div class="gwrap" id="gwrap"><div class="gantt" id="gantt"></div></div>
+        <div class="legend">
+          <span><i style="background:var(--ok)"></i><span data-i18n="st_ok">on time</span></span>
+          <span><i style="background:var(--risk)"></i><span data-i18n="st_risk">at risk (&lt; 4 h slack)</span></span>
+          <span><i style="background:var(--late)"></i><span data-i18n="st_late">late</span></span>
+          <span><i style="background:var(--line-strong)"></i><span data-i18n="setup">setup</span></span>
+          <span><i style="background:var(--night);border:1px solid var(--line)"></i><span data-i18n="night">night (unmanned)</span></span>
+          <span><i style="background:var(--late-soft);border:1px solid var(--late)"></i><span data-i18n="down">downtime</span></span>
+          <span><i style="background:var(--frozen);border:1px solid var(--accent)"></i><span data-i18n="frozen">frozen window</span></span>
+          <span><i style="background:none;border:2px dashed var(--hold)"></i><span data-i18n="moved">moved in proposal</span></span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2><span data-i18n="orders">Production orders</span>
+          <span class="grow" id="ofilter">
+            <button class="fbtn" data-f="" aria-pressed="true" data-i18n="all">All</button>
+            <button class="fbtn" data-f="late" aria-pressed="false" data-i18n="st_late">late</button>
+            <button class="fbtn" data-f="risk" aria-pressed="false" data-i18n="risk_short">at risk</button>
+          </span>
+        </h2>
+        <div class="tblwrap">
+          <table>
+            <thead><tr>
+              <th data-i18n="c_order">SAP order</th><th data-i18n="c_mat">Material</th><th class="r" data-i18n="c_qty">Qty</th>
+              <th data-i18n="c_cust">Customer</th><th class="r" data-i18n="c_prio">Priority</th><th data-i18n="c_due">Due</th>
+              <th data-i18n="c_finish">Planned finish</th><th class="r" data-i18n="c_slack">Slack (h)</th><th data-i18n="c_status">Status</th>
+            </tr></thead>
+            <tbody id="otable"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div class="stack">
+      <section class="panel prop" id="proppanel" style="display:none"></section>
+
+      <section class="panel">
+        <h2 data-i18n="inbox">Disruption inbox</h2>
+        <div id="suggest"></div>
+        <div class="msglist" id="msglist"></div>
+        <div style="margin-top:8px">
+          <textarea id="custom" data-i18n-ph="custom_ph" placeholder="Paste an email, maintenance request or shift note in any language…"></textarea>
+          <div class="row" style="margin-top:6px"><button class="btn" id="readbtn" data-i18n="read">Read with Laya</button><span class="note" id="readnote"></span></div>
+        </div>
+        <div id="reading"></div>
+      </section>
+
+      <section class="panel">
+        <h2 data-i18n="manual">Enter an event</h2>
+        <div id="manual"></div>
+      </section>
+
+      <section class="panel">
+        <h2><span data-i18n="publish">Publish</span><span class="grow"><button class="btn" id="pubbtn" data-i18n="preview">Preview</button></span></h2>
+        <div class="note" data-i18n="publish_note">What the MES and SAP receive for the approved version. The demo shows the payloads; nothing is sent.</div>
+        <div id="pub"></div>
+      </section>
+
+      <section class="panel">
+        <h2 data-i18n="history">Versions and events</h2>
+        <div class="hist" id="hist"></div>
+      </section>
+    </div>
+  </div>
+</main>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+"use strict";
+const I18N = {
+  en: {
+    title: "Plant 1 · APS workbench", subtitle: "Lines L1 and L3 · orders from SAP · dispatch to MES · on-time delivery first",
+    advance: "+2 h", replan: "Full re-plan", gantt: "Schedule by machine", current: "Current", proposal: "Proposal",
+    st_ok: "on time", st_risk: "at risk (< 4 h slack)", st_late: "late", risk_short: "at risk", setup: "setup", night: "night (unmanned)",
+    down: "downtime", frozen: "frozen window", moved: "moved in proposal", orders: "Production orders", all: "All",
+    c_order: "SAP order", c_mat: "Material", c_qty: "Qty", c_cust: "Customer", c_prio: "Priority", c_due: "Due",
+    c_finish: "Planned finish", c_slack: "Slack (h)", c_status: "Status",
+    inbox: "Disruption inbox", custom_ph: "Paste an email, maintenance request or shift note in any language…",
+    read: "Read with Laya", manual: "Enter an event", publish: "Publish", preview: "Preview",
+    publish_note: "What the MES and SAP receive for the approved version. The demo shows the payloads; nothing is sent.",
+    history: "Versions and events",
+    k_otd: "On-time delivery", k_late: "Late orders", k_wt: "Weighted lateness", k_setup: "Setup time", k_bottle: "Bottleneck", k_ver: "Schedule version",
+    of: "of", orders_n: "orders", hours: "h", vs_edd: "due-date rule", util: "utilisation",
+    solving_full: "Solving the full plan (up to 60 s)…", solving_repair: "Repairing the schedule for the event (up to 30 s)…",
+    loading_model: "loading Laya…", model_ready: "Laya ready", model_mock: "mock classifier", model_err: "Laya failed to load",
+    ev_machine_down: "Machine down", ev_machine_degrading: "Machine degrading", ev_material_late: "Material late",
+    ev_rush_order: "Rush order", ev_quality_hold: "Quality hold", ev_no_action: "No action",
+    f_kind: "Event", f_machine: "Machine", f_order: "Order", f_material: "Material", f_hours: "Hours", f_percent: "Slower by %",
+    f_quantity: "Quantity", f_due_hours: "Due in (h)", create: "Create proposal", dismiss: "Dismiss",
+    laya_read: "Laya reads", conf: "confidence", gate: "gate", routed: "routed to", below_gate: "Below the gate: the planner confirms the event type before re-planning.",
+    missing: "Missing — please fill in:", no_event: "No schedule change needed.",
+    prop_title: "Proposal", before: "Before", after: "After", approve: "Approve & version", reject: "Reject",
+    who: "Your name", moved_ops: "Operations moved > 30 min", solve: "Solve", violations: "Feasibility check",
+    ok_check: "passed — no violations", affected: "re-optimised operations",
+    confirmed: "MES confirmed", ops: "operations", pub_version: "Version", dispatch: "MES dispatch lists (next 4 per machine)",
+    sap: "SAP scheduled dates", approved: "approved", rejected: "rejected", proposed: "proposed", by: "by",
+    tip_op: "Operation", tip_due: "Due", tip_slack: "Slack", tip_setup: "setup", name_needed: "Enter your name to approve.",
+    wait: "Please wait for the running solve.", sample_from: "from",
+    sug_title: "Suggested by other modules", src_quality: "Quality", review: "Review",
+    from_module: "Suggested by the quality platform from live inspection data, not read by Laya.", back: "← Platform",
+    days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+  },
+  zh: {
+    title: "一号工厂 · APS 工作台", subtitle: "L1 与 L3 产线 · 订单来自 SAP · 派工至 MES · 准时交付优先",
+    advance: "+2 小时", replan: "全量重排", gantt: "按设备排程", current: "当前", proposal: "方案",
+    st_ok: "准时", st_risk: "有风险（余量 < 4 小时）", st_late: "延误", risk_short: "有风险", setup: "换型", night: "夜间（无人）",
+    down: "停机", frozen: "冻结窗口", moved: "方案中被调整", orders: "生产订单", all: "全部",
+    c_order: "SAP 订单", c_mat: "物料", c_qty: "数量", c_cust: "客户", c_prio: "优先级", c_due: "交期",
+    c_finish: "计划完工", c_slack: "余量（小时）", c_status: "状态",
+    inbox: "异常收件箱", custom_ph: "粘贴任意语言的邮件、维修单或交接班记录…",
+    read: "用 Laya 识别", manual: "手动录入事件", publish: "发布", preview: "预览",
+    publish_note: "已批准版本将发送给 MES 和 SAP 的内容。演示仅展示报文，不实际发送。",
+    history: "版本与事件",
+    k_otd: "准时交付率", k_late: "延误订单", k_wt: "加权延误", k_setup: "换型时间", k_bottle: "瓶颈", k_ver: "排程版本",
+    of: "/", orders_n: "个订单", hours: "小时", vs_edd: "按交期规则", util: "利用率",
+    solving_full: "正在求解全量排程（最多 60 秒）…", solving_repair: "正在根据事件修复排程（最多 30 秒）…",
+    loading_model: "Laya 加载中…", model_ready: "Laya 就绪", model_mock: "模拟分类器", model_err: "Laya 加载失败",
+    ev_machine_down: "设备停机", ev_machine_degrading: "设备劣化", ev_material_late: "物料延迟",
+    ev_rush_order: "插单", ev_quality_hold: "质量冻结", ev_no_action: "无需处理",
+    f_kind: "事件", f_machine: "设备", f_order: "订单", f_material: "物料", f_hours: "小时数", f_percent: "降速 %",
+    f_quantity: "数量", f_due_hours: "交期（小时后）", create: "生成方案", dismiss: "忽略",
+    laya_read: "Laya 识别", conf: "置信度", gate: "阈值", routed: "路由至", below_gate: "低于阈值：计划员确认事件类型后再重排。",
+    missing: "信息不全，请补充：", no_event: "无需调整排程。",
+    prop_title: "方案", before: "变更前", after: "变更后", approve: "批准并生成版本", reject: "驳回",
+    who: "您的姓名", moved_ops: "移动超过 30 分钟的工序", solve: "求解", violations: "可行性校验",
+    ok_check: "通过 — 无违规", affected: "个工序参与重新优化",
+    confirmed: "MES 已报工", ops: "道工序", pub_version: "版本", dispatch: "MES 派工单（每台设备前 4 项）",
+    sap: "SAP 排程日期", approved: "已批准", rejected: "已驳回", proposed: "待审批", by: "审批人",
+    tip_op: "工序", tip_due: "交期", tip_slack: "余量", tip_setup: "换型", name_needed: "请输入姓名后再批准。",
+    wait: "请等待当前求解完成。", sample_from: "来自",
+    sug_title: "来自其他模块的建议", src_quality: "质量", review: "查看",
+    from_module: "由质量平台根据实时检验数据建议，未经 Laya 识别。", back: "← 平台",
+    days: ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
+  },
+};
+let LANG = "en", S = null, VIEW = "cur", SEL = null, FILTER = "", ZOOM = 0.2, READING = null;
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const t = (k) => (I18N[LANG][k] ?? I18N.en[k] ?? k);
+const store = { get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+function when(min) {
+  if (min == null) return "—";
+  const tot = min + 6 * 60, d = Math.floor(tot / 1440), r = tot % 1440;
+  return `${t("days")[d % 7]} ${String(Math.floor(r / 60)).padStart(2, "0")}:${String(r % 60).padStart(2, "0")}`;
+}
+const pct = (v) => v == null ? "—" : (v * 100).toFixed(1) + "%";
+const evName = (k) => t("ev_" + k);
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(body.detail || r.statusText);
+  return body;
+}
+const post = (path, data) => api(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data || {}) });
+
+// ---------- language & theme ----------
+function applyLang(l) {
+  LANG = l; store.set("aps-lang", l);
+  document.documentElement.lang = l === "zh" ? "zh-CN" : "en";
+  $("#l-en").setAttribute("aria-pressed", l === "en"); $("#l-zh").setAttribute("aria-pressed", l === "zh");
+  document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = t(el.dataset.i18n));
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => el.placeholder = t(el.dataset.i18nPh));
+  render();
+}
+$("#l-en").onclick = () => applyLang("en"); $("#l-zh").onclick = () => applyLang("zh");
+(() => { const th = store.get("aps-theme", null); if (th) document.documentElement.dataset.theme = th; })();
+$("#theme").onclick = () => {
+  const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const nx = cur === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = nx; store.set("aps-theme", nx);
+};
+
+// ---------- KPIs ----------
+function kpiTiles() {
+  const cur = S.current_kpis, p = S.proposal && VIEW === "prop" ? S.proposal.kpis : null, k = p || cur;
+  if (!k) { $("#kpis").innerHTML = ""; return; }
+  const v = S.versions[S.versions.length - 1];
+  const edd = S.versions.length ? (S.versions.find(x => x.kpis.edd_baseline) || {}).kpis : null;
+  const delta = (a, b, better, fmt) => {
+    if (!p || a == null || b == null || a === b) return "";
+    const good = better === "up" ? a > b : a < b;
+    return `<span class="delta ${good ? "up" : "down"}">${fmt(a - b)}</span>`;
+  };
+  const bn = k.bottleneck;
+  const tiles = [
+    [t("k_otd"), pct(k.otd) + delta(k.otd, cur.otd, "up", d => (d > 0 ? "+" : "") + (d * 100).toFixed(1)),
+      `${k.on_time} ${t("of")} ${k.orders} ${t("orders_n")}` + (edd && edd.edd_baseline && !p ? ` · ${t("vs_edd")} ${pct(edd.edd_baseline.otd)}` : "")],
+    [t("k_late"), k.late_orders + delta(k.late_orders, cur.late_orders, "down", d => (d > 0 ? "+" : "") + d), ""],
+    [t("k_wt"), k.weighted_tardiness_h + " " + t("hours") + delta(k.weighted_tardiness_h, cur.weighted_tardiness_h, "down", d => (d > 0 ? "+" : "") + d.toFixed(1)),
+      edd && edd.edd_baseline && !p ? `${t("vs_edd")} ${edd.edd_baseline.weighted_tardiness_h} ${t("hours")}` : ""],
+    [t("k_setup"), k.setup_h + " " + t("hours"), ""],
+    [t("k_bottle"), bn || "—", bn ? `${t("util")} ${pct(k.utilization[bn])}` : ""],
+    [t("k_ver"), v ? "v" + v.id : "—", v ? `${esc(v.approver)} · ${esc(v.reason)}` : ""],
+  ];
+  $("#kpis").innerHTML = tiles.map(([a, b, c]) => `<div class="kpi"><div class="k">${a}</div><div class="v num">${b}</div><div class="d">${c}</div></div>`).join("");
+}
+
+// ---------- Gantt ----------
+function gantt() {
+  const src = S.proposal && VIEW === "prop" ? S.proposal : S;
+  const ops = src.ops, blocked = src.blocked;
+  const machines = S.machines, now = S.now;
+  const maxEnd = Math.max(S.horizon_days * 1440, ...ops.map(o => o.end));
+  const span = Math.ceil(maxEnd / 1440) * 1440;
+  const L = 96, top = 34, RH = 30, W = L + span * ZOOM + 10;
+  const lines = [...new Set(machines.map(m => m.line))];
+  let y = top, rows = [], labels = [];
+  lines.forEach(line => {
+    labels.push(`<text x="8" y="${y + 12}" class="g-line">${esc(line)}</text>`);
+    y += 16;
+    machines.filter(m => m.line === line).forEach((m, i) => { rows.push({ m, y, alt: i % 2 }); y += RH; });
+    y += 6;
+  });
+  const H = y + 4, X = (min) => L + min * ZOOM;
+  const moved = new Set(S.proposal && VIEW === "prop" ? S.proposal.moved : []);
+  const selOrder = SEL;
+  let g = `<svg width="${W}" height="${H}" role="img" aria-label="${esc(t("gantt"))}">
+    <defs><pattern id="g-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="var(--late-soft)"/><line x1="0" y1="0" x2="0" y2="6" stroke="var(--late)" stroke-width="1.2"/></pattern></defs>`;
+  for (let d = 0; d < span / 1440; d++) {
+    const x0 = X(d * 1440);
+    g += `<line x1="${x0}" x2="${x0}" y1="18" y2="${H}" class="g-grid"/><text x="${x0 + 4}" y="14" class="g-day">${t("days")[d % 7]}</text>`;
+    for (let h = 0; h < 24; h += 4) if (h) g += `<text x="${X(d * 1440 + h * 60) + 2}" y="28" class="g-axis">${String((h + 6) % 24).padStart(2, "0")}</text>`;
+  }
+  rows.forEach(({ m, y, alt }) => {
+    g += `<rect x="${L}" y="${y}" width="${span * ZOOM}" height="${RH - 2}" class="g-row ${alt ? "alt" : ""}"/>`;
+    g += `<text x="12" y="${y + 18}" class="g-label">${esc(m.id)}</text>`;
+    (blocked[m.id] || []).forEach(([b0, b1]) => {
+      const night = (b1 - b0) === 480 && (b0 % 1440) === 960;
+      g += `<rect x="${X(b0)}" y="${y}" width="${Math.max(1, (Math.min(b1, span) - b0) * ZOOM)}" height="${RH - 2}" class="${night ? "g-night" : "g-down"}"/>`;
+    });
+  });
+  g += `<rect x="${X(now)}" y="${top}" width="${S.freeze_min * ZOOM}" height="${H - top}" class="g-frozen"/>`;
+  const rowY = Object.fromEntries(rows.map(r => [r.m.id, r.y]));
+  ops.forEach(o => {
+    const yy = rowY[o.machine]; if (yy == null) return;
+    const x = X(o.start), w = Math.max(2, (o.end - o.start) * ZOOM);
+    if (o.setup) g += `<rect x="${X(o.start - o.setup)}" y="${yy + 9}" width="${Math.max(1, o.setup * ZOOM)}" height="10" class="g-setup"/>`;
+    const cls = ["g-bar", o.order_status || "ok", o.state === "done" ? "done" : "", selOrder && o.order !== selOrder ? "dim" : "", selOrder && o.order === selOrder ? "sel" : "", moved.has(o.id) ? "moved" : ""].join(" ");
+    g += `<rect x="${x}" y="${yy + 4}" width="${w}" height="${RH - 10}" rx="3" class="${cls}" data-op="${esc(o.id)}"/>`;
+    if (w > 46) g += `<text x="${x + 4}" y="${yy + 19}" class="g-text">${esc(o.order.slice(-4))}</text>`;
+  });
+  g += `<line x1="${X(now)}" x2="${X(now)}" y1="18" y2="${H}" class="g-now"/></svg>`;
+  $("#gantt").innerHTML = g;
+  const byId = Object.fromEntries(ops.map(o => [o.id, o]));
+  const ords = Object.fromEntries((S.proposal && VIEW === "prop" ? S.proposal.orders : S.orders).map(o => [o.order, o]));
+  $("#gantt").querySelectorAll("[data-op]").forEach(el => {
+    const o = byId[el.dataset.op], od = ords[o.order];
+    el.addEventListener("mousemove", ev => {
+      const tip = $("#tip");
+      tip.innerHTML = `<b class="mono">${esc(o.order)}</b> · ${esc(o.material)}<br>${t("tip_op")} ${esc(o.op)} · ${esc(o.machine)}<br>${when(o.start)} → ${when(o.end)}${o.setup ? ` (+${o.setup} min ${t("tip_setup")})` : ""}<br>${t("tip_due")} ${when(od?.due)} · ${t("tip_slack")} ${od && od.slack != null ? (od.slack / 60).toFixed(1) + " " + t("hours") : "—"}`;
+      tip.hidden = false;
+      const x = Math.min(ev.clientX + 14, window.innerWidth - tip.offsetWidth - 8);
+      tip.style.left = x + "px"; tip.style.top = (ev.clientY + 14) + "px";
+    });
+    el.addEventListener("mouseleave", () => $("#tip").hidden = true);
+    el.addEventListener("click", () => { SEL = SEL === o.order ? null : o.order; render(); });
+  });
+}
+$("#zoom-in").onclick = () => { ZOOM = Math.min(1.2, ZOOM * 1.5); gantt(); };
+$("#zoom-out").onclick = () => { ZOOM = Math.max(0.08, ZOOM / 1.5); gantt(); };
+
+// ---------- orders ----------
+function ordersTable() {
+  const rows = (S.proposal && VIEW === "prop" ? S.proposal.orders : S.orders).filter(o => !FILTER || o.status === FILTER);
+  $("#otable").innerHTML = rows.map(o => `<tr class="${SEL === o.order ? "sel" : ""}" data-o="${esc(o.order)}">
+    <td class="mono">${esc(o.order)}</td><td>${esc(o.material)}</td><td class="r">${o.quantity}</td><td>${esc(o.customer)}</td>
+    <td class="r">${o.weight}</td><td class="num">${when(o.due)}</td><td class="num">${when(o.finish)}</td>
+    <td class="r">${o.slack == null ? "—" : (o.slack / 60).toFixed(1)}</td>
+    <td><span class="st ${o.status}">${o.status === "ok" ? "✓" : o.status === "risk" ? "▲" : "✕"} ${t(o.status === "risk" ? "risk_short" : "st_" + o.status)}</span></td></tr>`).join("");
+  $("#otable").querySelectorAll("tr").forEach(tr => tr.onclick = () => { SEL = SEL === tr.dataset.o ? null : tr.dataset.o; render(); });
+}
+$("#ofilter").querySelectorAll("button").forEach(b => b.onclick = () => {
+  FILTER = b.dataset.f; $("#ofilter").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); ordersTable();
+});
+
+// ---------- proposal ----------
+function proposalPanel() {
+  const p = S.proposal, box = $("#proppanel");
+  $("#viewseg").style.display = p ? "" : "none";
+  if (!p) { box.style.display = "none"; VIEW = "cur"; return; }
+  box.style.display = "";
+  const ev = p.event, b = p.before, a = p.kpis;
+  const evText = [ev.machine, ev.order, ev.material, ev.hours && ev.hours + " " + t("hours"), ev.percent && ev.percent + "%", ev.quantity && "× " + ev.quantity, ev.due_hours && "≤ " + ev.due_hours + " " + t("hours")].filter(Boolean).join(" · ");
+  const line = (k, x, y, fmt) => `<span>${k}</span><span class="num">${fmt(x)}</span><span class="arrow">→</span><span class="num"><b>${fmt(y)}</b></span>`;
+  const aff = (S.events.find(e => e.proposal === p.id) || {}).affected;
+  box.innerHTML = `<h2>${t("prop_title")} #${p.id} · ${esc(evName(ev.kind))}</h2>
+    <div class="note">${esc(evText)}</div>
+    <div class="cmp"><span class="h"></span><span class="h">${t("before")}</span><span></span><span class="h">${t("after")}</span>
+      ${line(t("k_otd"), b.otd, a.otd, pct)}
+      ${line(t("k_late"), b.late_orders, a.late_orders, x => x)}
+      ${line(t("k_wt"), b.weighted_tardiness_h, a.weighted_tardiness_h, x => x + " " + t("hours"))}
+      ${line(t("k_setup"), b.setup_h, a.setup_h, x => x + " " + t("hours"))}
+    </div>
+    <div class="note">${t("moved_ops")}: <b>${p.moved.length}</b>${aff ? ` · ${aff} ${t("affected")}` : ""}</div>
+    <div class="note">${t("solve")}: ${p.seconds} s · ${esc(p.status.join(" / "))}</div>
+    <div class="${p.violations.length ? "errbox" : "note"}">${t("violations")}: ${p.violations.length ? esc(p.violations.slice(0, 3).join("; ")) : t("ok_check")}</div>
+    <div class="row" style="margin-top:10px">
+      <input class="who" id="who" placeholder="${t("who")}" value="${esc(store.get("aps-who", ""))}" style="flex:1;min-width:120px">
+      <button class="btn primary" id="approve" ${p.violations.length ? "disabled" : ""}>${t("approve")}</button>
+      <button class="btn danger" id="reject">${t("reject")}</button>
+    </div><div id="propmsg"></div>`;
+  $("#who").oninput = e => store.set("aps-who", e.target.value.trim());
+  const decide = async (approve) => {
+    const who = $("#who").value.trim();
+    if (!who) { $("#propmsg").innerHTML = `<div class="warnbox">${t("name_needed")}</div>`; return; }
+    try { await post(`api/proposal/${p.id}/decide`, { approve, who }); VIEW = "cur"; await refresh(); }
+    catch (e) { $("#propmsg").innerHTML = `<div class="errbox">${esc(e.message)}</div>`; }
+  };
+  $("#approve").onclick = () => decide(true); $("#reject").onclick = () => decide(false);
+}
+$("#v-cur").onclick = () => { VIEW = "cur"; $("#v-cur").setAttribute("aria-pressed", true); $("#v-prop").setAttribute("aria-pressed", false); render(); };
+$("#v-prop").onclick = () => { VIEW = "prop"; $("#v-prop").setAttribute("aria-pressed", true); $("#v-cur").setAttribute("aria-pressed", false); render(); };
+
+// ---------- event form (used by the inbox reading and manual entry) ----------
+const NEEDS = { machine_down: ["machine", "hours"], machine_degrading: ["machine", "percent"], material_late: ["order", "hours"],
+  rush_order: ["material", "quantity", "due_hours"], quality_hold: ["order", "hours"] };
+function eventForm(prefix, ev, missing) {
+  const kinds = S ? S.event_kinds : Object.keys(NEEDS);
+  const opts = (arr, v) => arr.map(x => `<option value="${esc(x)}" ${x === v ? "selected" : ""}>${esc(x)}</option>`).join("");
+  const fieldHtml = (f) => {
+    const miss = missing && missing.includes(f) ? "missing" : "";
+    let input;
+    if (f === "machine") input = `<select id="${prefix}-machine"><option value=""></option>${opts(S.machines.map(m => m.id), ev.machine)}</select>`;
+    else if (f === "order") input = `<select id="${prefix}-order"><option value=""></option>${opts(S.orders.map(o => o.order), ev.order)}</select>`;
+    else if (f === "material") input = `<select id="${prefix}-material"><option value=""></option>${opts(S.materials, ev.material)}</select>`;
+    else input = `<input id="${prefix}-${f}" type="number" min="0" step="any" value="${ev[f] ?? ""}">`;
+    return `<label class="field ${miss}">${t("f_" + f)}${input}</label>`;
+  };
+  return `<label class="field">${t("f_kind")}<select id="${prefix}-kind">${kinds.map(k => `<option value="${k}" ${k === ev.kind ? "selected" : ""}>${esc(evName(k))}</option>`).join("")}</select></label>
+    <div class="grid2" style="margin-top:6px">${(NEEDS[ev.kind] || []).map(fieldHtml).join("")}</div>`;
+}
+function readForm(prefix) {
+  const kind = $(`#${prefix}-kind`).value, ev = { kind };
+  (NEEDS[kind] || []).forEach(f => { const el = $(`#${prefix}-${f}`); if (el && el.value !== "") ev[f] = ["machine", "order", "material"].includes(f) ? el.value : Number(el.value); });
+  return ev;
+}
+async function submitEvent(ev, msgEl) {
+  try {
+    await post("api/events", ev);
+    if (READING && READING.suggestion) await post(`api/suggestions/${READING.suggestion}/close`, { used: true }).catch(() => {});
+    READING = null; await refresh(); VIEW = "prop";
+  }
+  catch (e) { msgEl.innerHTML = `<div class="errbox">${esc(e.message)}</div>`; }
+}
+
+let MANUAL = { kind: "machine_down" };
+function manualPanel() {
+  const box = $("#manual");
+  box.innerHTML = eventForm("mf", MANUAL, null) + `<div class="row" style="margin-top:8px"><button class="btn primary" id="mf-go">${t("create")}</button></div><div id="mf-msg"></div>`;
+  $("#mf-kind").onchange = e => { MANUAL = { kind: e.target.value }; manualPanel(); };
+  box.querySelectorAll("input,select").forEach(el => { if (el.id !== "mf-kind") el.onchange = () => { MANUAL = readForm("mf"); }; });
+  $("#mf-go").disabled = !!(S.job && S.job.running) || !!S.proposal;
+  $("#mf-go").onclick = () => submitEvent(readForm("mf"), $("#mf-msg"));
+}
+
+// ---------- inbox ----------
+let SAMPLES = [];
+function inboxList() {
+  $("#msglist").innerHTML = SAMPLES.map(s => `<button class="msg" data-id="${s.id}"><span class="meta"><span class="lang">${esc(s.lang)}</span><span>${t("sample_from")} ${esc(s.from)}</span></span><span>${esc(s.text)}</span></button>`).join("");
+  $("#msglist").querySelectorAll(".msg").forEach(b => b.onclick = () => readText(SAMPLES.find(s => s.id === b.dataset.id).text));
+}
+function suggestList() {
+  const sug = S.suggestions || [];
+  $("#suggest").innerHTML = sug.length ? `<div class="note" style="margin-bottom:4px">${t("sug_title")}</div>` + sug.map(x => `<div class="sug">
+      <span class="meta"><span class="lang">${esc(t("src_" + x.source) || x.source)}</span><span>${new Date(x.ts * 1000).toLocaleTimeString()}</span></span>
+      <b>${esc(LANG === "zh" ? (x.title_zh || x.title) : x.title)}</b><span class="note">${esc(LANG === "zh" ? (x.detail_zh || x.detail) : x.detail)}</span>
+      <span class="row"><button class="btn" data-sug="${x.id}">${t("review")}</button><button class="btn" data-sugx="${x.id}">${t("dismiss")}</button></span></div>`).join("") : "";
+  $("#suggest").querySelectorAll("[data-sug]").forEach(b => b.onclick = () => {
+    const x = sug.find(y => y.id === +b.dataset.sug);
+    const tt = LANG === "zh" ? (x.title_zh || x.title) : x.title, dd = LANG === "zh" ? (x.detail_zh || x.detail) : x.detail;
+    READING = { text: tt + (dd ? " — " + dd : ""), classification: null, event_type: x.event.kind, confidence: 1,
+                gate: 0.5, event: { ...x.event }, missing: x.missing, suggestion: x.id };
+    readingPanel(); $("#reading").scrollIntoView({ block: "nearest" });
+  });
+  $("#suggest").querySelectorAll("[data-sugx]").forEach(b => b.onclick = async () => { await post(`api/suggestions/${b.dataset.sugx}/close`, { used: false }); refresh(); });
+}
+async function readText(text) {
+  $("#readnote").textContent = "…";
+  try { READING = await post("api/inbox/read", { text }); $("#readnote").textContent = ""; readingPanel(); }
+  catch (e) { $("#readnote").textContent = e.message; }
+}
+$("#readbtn").onclick = () => { const v = $("#custom").value.trim(); if (v) readText(v); };
+function readingPanel() {
+  const r = READING, box = $("#reading");
+  if (!r) { box.innerHTML = ""; return; }
+  const c = r.classification, conf = r.confidence;
+  let html = `<div class="reading"><div class="note">“${esc(r.text)}”</div>`;
+  if (c) {
+    html += `<div><b>${t("laya_read")}: ${esc(evName(r.event_type))}</b> · ${t("conf")} ${(conf * 100).toFixed(0)}% · ${t("gate")} ${(r.gate * 100).toFixed(0)}%</div>
+    <div class="bar" title="${t("conf")}"><i style="width:${(conf * 100).toFixed(0)}%"></i><b style="left:${r.gate * 100}%"></b></div>
+    <div class="note">${t("routed")} <b>${esc(c.routing.model || "")}</b> · ${c.ms} ms</div>`;
+    if (conf < r.gate) html += `<div class="warnbox">${t("below_gate")}</div>`;
+  } else html += `<div class="note">${t("from_module")}</div>`;
+  if (!r.event) html += `<div class="note">${t("no_event")}</div><div class="row"><button class="btn" id="rd-dismiss">${t("dismiss")}</button></div>`;
+  else {
+    if (r.missing && r.missing.length) html += `<div class="warnbox">${t("missing")} ${r.missing.map(f => t("f_" + f)).join(", ")}</div>`;
+    html += eventForm("rd", r.event, r.missing) + `<div class="row"><button class="btn primary" id="rd-go">${t("create")}</button><button class="btn" id="rd-dismiss">${t("dismiss")}</button></div><div id="rd-msg"></div>`;
+  }
+  box.innerHTML = html + "</div>";
+  const d = $("#rd-dismiss"); if (d) d.onclick = async () => {
+    if (READING && READING.suggestion) await post(`api/suggestions/${READING.suggestion}/close`, { used: false }).catch(() => {});
+    READING = null; readingPanel(); refresh();
+  };
+  const k = $("#rd-kind"); if (k) k.onchange = e => { READING.event = { ...READING.event, kind: e.target.value }; readingPanel(); };
+  const go = $("#rd-go");
+  if (go) { go.disabled = !!(S.job && S.job.running) || !!S.proposal; go.onclick = () => submitEvent(readForm("rd"), $("#rd-msg")); }
+}
+
+// ---------- publish & history ----------
+$("#pubbtn").onclick = async () => {
+  const p = await api("api/publish");
+  const disp = Object.entries(p.dispatch).map(([m, l]) => `<b>${esc(m)}</b>\n` + l.slice(0, 4).map(x => `  ${x.planned_start}  ${x.order}/${x.operation}  ${x.material} ×${x.quantity}${x.setup_min ? "  setup " + x.setup_min : ""}`).join("\n")).join("\n");
+  $("#pub").innerHTML = `<div class="note" style="margin-top:6px">${t("pub_version")} v${p.version}</div>
+    <details open><summary>${t("dispatch")}</summary><pre class="json">${disp}</pre></details>
+    <details><summary>${t("sap")} (${p.sap.length})</summary><pre class="json">${esc(JSON.stringify(p.sap.slice(0, 12), null, 1))}</pre></details>`;
+};
+function history() {
+  const items = [];
+  S.versions.slice().reverse().forEach(v => items.push(`<div class="approved"><b>v${v.id}</b> · ${esc(v.reason)} · ${t("by")} ${esc(v.approver)} · ${t("k_otd")} ${pct(v.kpis.otd)}</div>`));
+  S.events.slice().reverse().forEach(e => items.push(`<div class="${e.outcome}">${when(e.at)} · ${esc(evName(e.event.kind))} ${esc(e.event.machine || e.event.order || e.event.material || "")} · ${t(e.outcome)}${e.by ? " · " + esc(e.by) : ""}</div>`));
+  $("#hist").innerHTML = items.slice(0, 12).join("") || `<div class="empty">—</div>`;
+}
+
+// ---------- status ----------
+function statusBar() {
+  const j = S.job, bar = $("#jobbar");
+  if (j && j.running) { bar.className = "jobbar"; bar.style.display = "block"; bar.textContent = (j.kind === "repair" ? t("solving_repair") : t("solving_full")) + ` ${Math.round(Date.now() / 1000 - j.started)} s`; }
+  else if (j && j.error) { bar.className = "jobbar err"; bar.style.display = "block"; bar.textContent = j.error; }
+  else bar.style.display = "none";
+  const e = S.engine;
+  const st = !e ? ["", ""] : e.kind === "mock" ? ["warn", t("model_mock")] : e.state === "ready" ? ["ok", t("model_ready")] : e.state === "error" ? ["bad", t("model_err")] : ["warn pulse", t("loading_model")];
+  $("#engine").innerHTML = `<span class="dot ${st[0]}"></span>${st[1]}`;
+  $("#clock").textContent = when(S.now);
+  const busy = !!(j && j.running);
+  $("#advance").disabled = busy || !!S.proposal; $("#replan").disabled = busy || !!S.proposal;
+  $("#readbtn").disabled = !(e && e.state === "ready");
+}
+
+function render() {
+  if (!S) return;
+  statusBar(); kpiTiles(); proposalPanel(); gantt(); ordersTable(); manualPanel(); readingPanel(); history(); inboxList(); suggestList();
+  $("#v-cur").setAttribute("aria-pressed", VIEW === "cur"); $("#v-prop").setAttribute("aria-pressed", VIEW === "prop");
+}
+
+let lastSig = "";
+async function refresh() {
+  try {
+    S = await api("api/state");
+    const sig = JSON.stringify([S.now, S.versions.length, S.proposal && S.proposal.id, S.job && [S.job.running, S.job.error], S.engine && S.engine.state, S.events.length, (S.suggestions || []).map(x => x.id)]);
+    if (sig !== lastSig) { lastSig = sig; render(); } else statusBar();
+  } catch (e) { $("#jobbar").style.display = "block"; $("#jobbar").textContent = e.message; }
+}
+$("#advance").onclick = async () => {
+  try { await post("api/clock", { minutes: 120 }); await refresh(); }
+  catch (e) { const bar = $("#jobbar"); bar.className = "jobbar err"; bar.style.display = "block"; bar.textContent = e.message; }
+};
+$("#replan").onclick = async () => { try { await post("api/plan"); await refresh(); } catch (e) { $("#jobbar").textContent = e.message; } };
+
+if (location.pathname !== "/") $("#back").hidden = false;     // mounted inside the platform
+(async function init() {
+  const saved = store.get("aps-lang", null);
+  LANG = location.hash === "#zh" ? "zh" : (saved || ((navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"));
+  SAMPLES = await api("api/inbox/samples").catch(() => []);
+  await refresh();
+  applyLang(LANG);
+  setInterval(refresh, 2000);
+})();
+</script>
+</body>
+</html>
