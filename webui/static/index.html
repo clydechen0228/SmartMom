@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Laya</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%237a5cff'/%3E%3Ctext x='8' y='12' font-size='11' font-family='sans-serif' font-weight='700' fill='white' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E" />
+<style>
+:root {
+  --bg: #f7f7f5; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6b66;
+  --line: #e2e2dd; --accent: #7a5cff; --accent-soft: #efeaff;
+  --ok: #1f8a5b; --warn: #b4690e; --bad: #c0392b; --code-bg: #f2f2ef;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17171a; --panel: #1f1f23; --ink: #ececea; --muted: #9a9a94;
+    --line: #32323a; --accent: #a78bfa; --accent-soft: #2b2545;
+    --ok: #4ade80; --warn: #fbbf24; --bad: #f87171; --code-bg: #26262c;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17171a; --panel: #1f1f23; --ink: #ececea; --muted: #9a9a94;
+  --line: #32323a; --accent: #a78bfa; --accent-soft: #2b2545;
+  --ok: #4ade80; --warn: #fbbf24; --bad: #f87171; --code-bg: #26262c;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.5 ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+}
+code, pre, textarea.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+header {
+  display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  padding: 18px 16px 14px; border-bottom: 1px solid var(--line);
+}
+h1 { margin: 0; font-size: 20px; letter-spacing: -0.01em; }
+h1 span { color: var(--accent); }
+.meta { color: var(--muted); font-size: 13px; }
+.meta b { color: var(--ink); font-weight: 600; }
+main {
+  max-width: 1180px; margin: 0 auto; padding: 18px 16px 60px;
+  display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+@media (max-width: 880px) { main { grid-template-columns: minmax(0, 1fr); } }
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px;
+}
+.panel h2 {
+  margin: 0 0 10px; font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--muted); font-weight: 600;
+}
+textarea, select {
+  width: 100%; background: var(--code-bg); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px;
+  font-size: 13px; resize: vertical;
+}
+textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+select { font-family: inherit; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+.row label { font-size: 12px; color: var(--muted); min-width: 52px; }
+.row select { flex: 1; min-width: 140px; width: auto; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 0; }
+.chip {
+  background: transparent; border: 1px solid var(--line); color: var(--muted);
+  border-radius: 999px; padding: 3px 10px; font-size: 12px; cursor: pointer;
+}
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.actions { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+button.go {
+  background: var(--accent); color: #fff; border: 0; border-radius: 8px;
+  padding: 9px 18px; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+button.go:disabled { opacity: 0.55; cursor: progress; }
+button.ghost {
+  background: transparent; border: 1px solid var(--line); color: var(--ink);
+  border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer;
+}
+.full { grid-column: 1 / -1; }
+.routing {
+  display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap;
+  background: var(--accent-soft); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 12px; margin-bottom: 12px;
+}
+.routing .model { font-weight: 700; color: var(--accent); }
+.routing .why { color: var(--muted); font-size: 13px; }
+.timings { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.tag {
+  font-size: 12px; color: var(--muted); border: 1px solid var(--line);
+  border-radius: 6px; padding: 2px 8px;
+}
+.cards { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 11px 12px; }
+.card .qid { font-weight: 600; font-size: 14px; }
+.card .type {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--muted); border: 1px solid var(--line); border-radius: 4px;
+  padding: 1px 5px; margin-left: 6px;
+}
+.headline {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 7px;
+  font-size: 22px; font-weight: 700; margin: 6px 0 2px; letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.headline small { font-size: 13px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+.bars { margin-top: 8px; display: grid; gap: 4px; }
+.bar { display: grid; grid-template-columns: minmax(64px, 34%) 1fr auto; gap: 7px; align-items: center; font-size: 12px; }
+.bar .name { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Spans are inline, so width/height would be ignored without an explicit display. */
+.bar .track { display: block; background: var(--code-bg); border-radius: 3px; height: 7px; overflow: hidden; }
+.bar .fill { display: block; background: var(--accent); height: 100%; border-radius: 3px; min-width: 2px; }
+.bar:not(.top) .fill { background: var(--muted); opacity: 0.55; }
+.bar.top .name { color: var(--ink); font-weight: 600; }
+.bar .val { color: var(--muted); font-variant-numeric: tabular-nums; }
+.err {
+  border: 1px solid var(--bad); color: var(--bad); border-radius: 8px;
+  padding: 10px 12px; font-size: 13px; white-space: pre-wrap;
+}
+.hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
+.hint code { background: var(--code-bg); padding: 1px 4px; border-radius: 4px; }
+.placeholder { color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Laya<span>.</span></h1>
+  <div class="meta" id="meta">loading…</div>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>State</h2>
+    <textarea id="state" class="mono" rows="12" spellcheck="false"></textarea>
+    <div class="chips" id="samples"></div>
+    <div class="hint">Plain text, or JSON — an object, or a list of conversation turns.</div>
+  </section>
+
+  <section class="panel">
+    <h2>Questions</h2>
+    <div class="row">
+      <label for="preset">Preset</label>
+      <select id="preset"></select>
+    </div>
+    <div class="row">
+      <label for="model">Model</label>
+      <select id="model">
+        <option value="">auto (route by language)</option>
+      </select>
+    </div>
+    <textarea id="questions" class="mono" rows="14" spellcheck="false"></textarea>
+    <div class="actions">
+      <button class="go" id="run">Predict</button>
+      <button class="ghost" id="routeonly">Route only</button>
+      <span class="hint" id="status"></span>
+    </div>
+  </section>
+
+  <section class="panel full" id="out">
+    <h2>Result</h2>
+    <div class="placeholder">Nothing yet — hit <b>Predict</b>. The first call on a checkpoint pays a
+      15–40 s cold load; after that it stays resident.</div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let META = null;
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+async function api(path, body) {
+  const res = await fetch(path, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({ detail: res.statusText }));
+  if (!res.ok) throw new Error(data.detail || ("HTTP " + res.status));
+  return data;
+}
+
+function barRow(name, value, isTop) {
+  return '<div class="bar' + (isTop ? " top" : "") + '">' +
+    '<span class="name" title="' + esc(name) + '">' + esc(name) + "</span>" +
+    '<span class="track"><span class="fill" style="width:' + (value * 100).toFixed(1) + '%"></span></span>' +
+    '<span class="val">' + value.toFixed(2) + "</span></div>";
+}
+
+function card(qid, a) {
+  let head = "", bars = "";
+  if (a.type === "choice") {
+    head = esc(a.choice) + '<small>confidence ' + a.confidence.toFixed(2) + "</small>";
+    const entries = Object.entries(a.probabilities).sort((x, y) => y[1] - x[1]);
+    bars = entries.map(([k, v]) => barRow(k, v, k === a.choice)).join("");
+  } else if (a.type === "score") {
+    const max = Object.keys(a.legend).length - 1;
+    head = a.score.toFixed(2) + "<small>of " + max + "</small>";
+    bars = Object.entries(a.probabilities)
+      .map(([k, v]) => barRow(a.legend[k] || k, v, false)).join("");
+  } else {
+    const p = a.noul;
+    head = (p >= 0.5 ? "yes" : "no") + '<small>P(yes) = ' + p.toFixed(3) + "</small>";
+    bars = barRow("yes", p, p >= 0.5) + barRow("no", 1 - p, p < 0.5);
+  }
+  return '<div class="card"><div><span class="qid">' + esc(qid) + '</span>' +
+    '<span class="type">' + esc(a.type) + "</span></div>" +
+    '<div class="headline">' + head + "</div>" +
+    '<div class="bars">' + bars + "</div></div>";
+}
+
+function renderRouting(routing) {
+  if (!routing) return "";
+  return '<div class="routing"><span class="model">' + esc(routing.model) + "</span>" +
+    '<span class="why">' + esc(routing.reason) + "</span></div>";
+}
+
+function showError(msg) {
+  $("out").innerHTML = "<h2>Result</h2><div class=\"err\">" + esc(msg) + "</div>";
+}
+
+function readQuestions() {
+  const raw = $("questions").value.trim();
+  if (!raw) throw new Error("questions are empty");
+  try { return JSON.parse(raw); } catch (e) { throw new Error("questions are not valid JSON: " + e.message); }
+}
+
+async function run() {
+  let questions;
+  try { questions = readQuestions(); } catch (e) { showError(e.message); return; }
+  $("run").disabled = true;
+  $("status").textContent = "running… (cold load can take 15–40 s)";
+  try {
+    const data = await api("/api/predict", {
+      state: $("state").value, questions, model: $("model").value || null,
+    });
+    const tags = [
+      data.ms + " ms total", data.ms_per_question + " ms/question",
+      "loaded: " + data.loaded.join(", "),
+    ];
+    if (data.cold_load) {
+      tags.push("cold-loaded " + data.cold_load.model + " in " + (data.cold_load.ms / 1000).toFixed(1) + " s");
+    }
+    if (data.usage) tags.push(data.usage.input_tokens + " input tokens");
+    $("out").innerHTML = "<h2>Result</h2>" + renderRouting(data.routing) +
+      '<div class="timings">' + tags.map((t) => '<span class="tag">' + esc(t) + "</span>").join("") + "</div>" +
+      '<div class="cards">' +
+      Object.entries(data.answers).map(([qid, a]) => card(qid, a)).join("") + "</div>";
+    $("meta").innerHTML = metaLine(data.loaded);
+  } catch (e) {
+    showError(e.message);
+  } finally {
+    $("run").disabled = false;
+    $("status").textContent = "";
+  }
+}
+
+async function routeOnly() {
+  let questions = null;
+  try { questions = readQuestions(); } catch (e) { /* routing works without questions */ }
+  try {
+    const data = await api("/api/route", { state: $("state").value, questions });
+    $("out").innerHTML = "<h2>Result</h2>" + renderRouting(data.routing) +
+      '<div class="timings"><span class="tag">' + data.ms + " ms</span>" +
+      '<span class="tag">no weights loaded, no forward pass</span>' +
+      (data.routing.workflow ? '<span class="tag">workflow: ' + esc(data.routing.workflow) + "</span>" : "") +
+      "</div>";
+  } catch (e) { showError(e.message); }
+}
+
+function metaLine(loaded) {
+  return "laya <b>" + esc(META.version) + "</b> · device <b>" + esc(META.device) + "</b> · resident: <b>" +
+    esc(loaded && loaded.length ? loaded.join(", ") : "none") + "</b>";
+}
+
+async function boot() {
+  META = await (await fetch("/api/meta")).json();
+  $("meta").innerHTML = metaLine(META.loaded);
+
+  for (const name of META.models) {
+    const o = document.createElement("option");
+    o.value = name; o.textContent = name;
+    $("model").appendChild(o);
+  }
+  for (const [key, p] of Object.entries(META.presets)) {
+    const o = document.createElement("option");
+    o.value = key; o.textContent = p.label;
+    $("preset").appendChild(o);
+  }
+  $("preset").onchange = () => {
+    $("questions").value = JSON.stringify(META.presets[$("preset").value].questions, null, 2);
+  };
+  $("preset").value = "support_triage";
+  $("preset").onchange();
+
+  const names = Object.keys(META.samples);
+  for (const name of names) {
+    const b = document.createElement("button");
+    b.className = "chip"; b.textContent = name;
+    b.onclick = () => { $("state").value = META.samples[name]; };
+    $("samples").appendChild(b);
+  }
+  $("state").value = META.samples[names[0]];
+
+  $("run").onclick = run;
+  $("routeonly").onclick = routeOnly;
+}
+
+boot().catch((e) => showError("could not reach the server: " + e.message));
+</script>
+</body>
+</html>

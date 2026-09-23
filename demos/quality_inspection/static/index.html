@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Line Quality Inspection</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%237a5cff'/%3E%3Cpath d='M4 8.5l2.5 2.5L12 5' stroke='white' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E" />
+<style>
+:root {
+  --bg: #f7f7f5; --panel: #ffffff; --ink: #1d1d1b; --ink-2: #45453f; --muted: #6b6b66;
+  --line: #e2e2dd; --grid: #efefeb; --accent: #7a5cff; --accent-soft: #efeaff;
+  --ok: #1f8a5b; --ok-soft: #e3f4ec; --warn: #a45f0a; --warn-soft: #fbf0df;
+  --bad: #c0392b; --bad-soft: #fbe6e3; --hold: #6a4de0; --hold-soft: #eee9ff;
+  --band: rgba(31, 138, 91, 0.08); --code-bg: #f2f2ef; --shadow: 0 8px 30px rgba(0,0,0,.12);
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17171a; --panel: #1f1f23; --ink: #ececea; --ink-2: #c9c9c4; --muted: #9a9a94;
+    --line: #32323a; --grid: #2a2a31; --accent: #a78bfa; --accent-soft: #2b2545;
+    --ok: #4ade80; --ok-soft: #173325; --warn: #fbbf24; --warn-soft: #3a2e12;
+    --bad: #f87171; --bad-soft: #3d1e1e; --hold: #b69cff; --hold-soft: #2d2550;
+    --band: rgba(74, 222, 128, 0.07); --code-bg: #26262c; --shadow: 0 8px 30px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17171a; --panel: #1f1f23; --ink: #ececea; --ink-2: #c9c9c4; --muted: #9a9a94;
+  --line: #32323a; --grid: #2a2a31; --accent: #a78bfa; --accent-soft: #2b2545;
+  --ok: #4ade80; --ok-soft: #173325; --warn: #fbbf24; --warn-soft: #3a2e12;
+  --bad: #f87171; --bad-soft: #3d1e1e; --hold: #b69cff; --hold-soft: #2d2550;
+  --band: rgba(74, 222, 128, 0.07); --code-bg: #26262c; --shadow: 0 8px 30px rgba(0,0,0,.5);
+}
+* { box-sizing: border-box; }
+html, body { overflow-x: hidden; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.5 ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+}
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.num { font-variant-numeric: tabular-nums; }
+button { font: inherit; color: inherit; }
+
+header {
+  display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap;
+  padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--panel);
+  position: sticky; top: 0; z-index: 5;
+}
+.brand { display: flex; flex-direction: column; margin-right: auto; min-width: 0; }
+h1 { margin: 0; font-size: 18px; letter-spacing: -0.01em; }
+h1 span { color: var(--accent); }
+.sub { color: var(--muted); font-size: 12.5px; }
+.pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.pill {
+  display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line);
+  border-radius: 999px; padding: 3px 10px; font-size: 12px; color: var(--ink-2); white-space: nowrap;
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+.dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
+.dot.pulse { animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+@media (max-width: 720px) { header { position: static; } #line-hint { display: none; } }
+.iconbtn { background: none; border: 1px solid var(--line); border-radius: 8px; padding: 4px 9px; cursor: pointer; }
+
+main { max-width: 1320px; margin: 0 auto; padding: 16px 16px 60px; display: grid; gap: 16px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; min-width: 0; }
+.panel > h2, .h2 {
+  margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 8px;
+}
+.h2 .grow { margin-left: auto; }
+.mockbar {
+  display: none; background: var(--warn-soft); color: var(--warn); border: 1px solid var(--warn);
+  border-radius: var(--radius); padding: 8px 12px; font-size: 13px;
+}
+
+/* KPI tiles */
+.kpis { display: grid; gap: 10px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+@media (max-width: 1080px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
+.kpi .k { font-size: 12px; color: var(--muted); }
+.kpi .v { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; margin-top: 2px; }
+.kpi .d { font-size: 12px; color: var(--muted); }
+
+/* line map */
+.line { display: grid; gap: 10px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 1080px) { .line { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); } }
+.station {
+  border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; cursor: pointer;
+  background: var(--panel); text-align: left; width: 100%; position: relative; min-width: 0;
+}
+.station:hover { border-color: var(--accent); }
+.station.sel { outline: 2px solid var(--accent); outline-offset: -1px; }
+.station.alarm { border-color: var(--bad); }
+.station .top { display: flex; align-items: center; gap: 6px; }
+.station .id { font-weight: 650; white-space: nowrap; flex: none; }
+.station .nm { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.station .val { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.station .val b { color: var(--ink); font-size: 16px; font-weight: 600; }
+.spark { width: 100%; height: 52px; display: block; margin-top: 4px; }
+.station .foot { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.arrow { position: absolute; right: -10px; top: 50%; color: var(--muted); font-size: 12px; transform: translateY(-50%); }
+@media (max-width: 1080px) { .arrow { display: none; } }
+
+/* chips */
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 1px 8px;
+  font-size: 12px; font-weight: 600; white-space: nowrap; border: 1px solid transparent;
+}
+.chip.pass { color: var(--ok); background: var(--ok-soft); }
+.chip.rework { color: var(--warn); background: var(--warn-soft); }
+.chip.scrap { color: var(--bad); background: var(--bad-soft); }
+.chip.hold { color: var(--hold); background: var(--hold-soft); }
+.chip.stop { color: var(--bad); background: var(--bad-soft); }
+.chip.watch { color: var(--warn); background: var(--warn-soft); }
+.chip.ghost { color: var(--muted); border-color: var(--line); font-weight: 500; }
+.lang { font-size: 11px; font-weight: 600; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; text-transform: uppercase; }
+
+/* two-column body */
+.cols { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) 360px; align-items: start; }
+@media (max-width: 1080px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+.side { display: grid; gap: 16px; min-width: 0; }
+
+.tablewrap { overflow: auto; margin: 0 -14px -14px; max-height: 620px; }
+.tablewrap thead th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
+.nw { white-space: nowrap; }
+#alerts { max-height: 420px; overflow-y: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-weight: 600; font-size: 11.5px; color: var(--muted); padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 7px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: var(--code-bg); }
+tr.flash { animation: flash 1.4s ease-out; }
+@keyframes flash { from { background: var(--accent-soft); } to { background: transparent; } }
+.note { color: var(--ink-2); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.muted { color: var(--muted); }
+.failed { color: var(--bad); }
+.empty { color: var(--muted); padding: 16px 0; text-align: center; font-size: 13px; }
+.filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.fbtn { border: 1px solid var(--line); background: none; border-radius: 999px; padding: 2px 10px; font-size: 12px; cursor: pointer; color: var(--muted); }
+.fbtn.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+/* alerts */
+.alert { border-left: 3px solid var(--warn); padding: 6px 10px; margin-bottom: 8px; background: var(--code-bg); border-radius: 0 8px 8px 0; font-size: 13px; }
+.alert.stop { border-left-color: var(--bad); }
+.alert.acked { opacity: .55; }
+.alert .row1 { display: flex; align-items: center; gap: 6px; }
+.alert .row1 .grow { margin-left: auto; }
+.alert ul { margin: 4px 0 0; padding-left: 18px; color: var(--ink-2); }
+.small { font-size: 12px; }
+.btn {
+  border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 5px 11px;
+  font-size: 12.5px; cursor: pointer;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn.pass:hover { border-color: var(--ok); color: var(--ok); }
+.btn.rework:hover { border-color: var(--warn); color: var(--warn); }
+.btn.scrap:hover { border-color: var(--bad); color: var(--bad); }
+
+/* scenarios */
+.scen { display: grid; gap: 6px; }
+.scen button {
+  text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 8px;
+  padding: 7px 10px; cursor: pointer; display: grid; gap: 1px;
+}
+.scen button:hover { border-color: var(--accent); }
+.scen button b { font-size: 13px; }
+.scen button span { font-size: 12px; color: var(--muted); }
+.scen button.active { border-color: var(--accent); background: var(--accent-soft); }
+.scen .st { font-size: 11px; color: var(--accent); font-weight: 600; }
+
+/* review queue */
+.queue { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.card { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 6px; min-width: 0; }
+.card .why { font-size: 12.5px; color: var(--ink-2); }
+.card .q { font-size: 12.5px; background: var(--code-bg); border-radius: 6px; padding: 5px 8px; overflow-wrap: anywhere; }
+.card .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+input[type=text] {
+  background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; color: var(--ink);
+  padding: 5px 9px; font: inherit; font-size: 13px; min-width: 0;
+}
+
+/* drawer */
+.scrim { position: fixed; inset: 0; background: rgba(0,0,0,.28); z-index: 20; display: none; }
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(640px, 100vw); background: var(--panel);
+  z-index: 21; box-shadow: var(--shadow); transform: translateX(100%); transition: transform .2s ease;
+  display: flex; flex-direction: column;
+}
+.drawer.open { transform: none; }
+.drawer .dh { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.drawer .dh .t { font-weight: 650; font-size: 16px; }
+.drawer .dh .x { margin-left: auto; }
+.drawer .db { overflow-y: auto; padding: 14px 16px 40px; display: grid; gap: 18px; }
+.sec h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+ol.trace { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+ol.trace li { padding-left: 2px; }
+.quote { background: var(--code-bg); border-radius: 8px; padding: 8px 10px; overflow-wrap: anywhere; }
+.bars { display: grid; gap: 4px; margin-top: 8px; }
+.bar { display: grid; grid-template-columns: 150px minmax(0, 1fr) 44px; gap: 8px; align-items: center; font-size: 12.5px; }
+.bar .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); }
+.bar .trk { height: 10px; background: var(--grid); border-radius: 4px; position: relative; overflow: hidden; }
+.bar .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--muted); border-radius: 4px; opacity: .55; }
+.bar.win .fill { background: var(--accent); opacity: 1; }
+.bar.win .lbl { color: var(--ink); font-weight: 600; }
+.bar .pct { text-align: right; color: var(--muted); }
+.gatecap { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.meas td, .meas th { padding: 5px 8px; }
+.meas tr { cursor: default; }
+.meas tr:hover { background: none; }
+.chartbox { position: relative; }
+.chartbox svg { width: 100%; height: auto; display: block; }
+.tip {
+  position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 8px; font-size: 12px; box-shadow: var(--shadow); display: none; white-space: nowrap; z-index: 2;
+}
+.legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.legend i { display: inline-block; width: 14px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 4px; }
+.review { display: grid; gap: 8px; }
+.review .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* how it works */
+.flow { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 1080px) { .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .flow { grid-template-columns: minmax(0, 1fr); } }
+.step { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; font-size: 12.5px; color: var(--ink-2); position: relative; }
+.step b { display: block; color: var(--ink); font-size: 13.5px; margin-bottom: 2px; }
+.step .n { font-size: 11px; color: var(--muted); font-weight: 600; }
+.step.laya { border-color: var(--accent); background: var(--accent-soft); }
+.step ul { margin: 4px 0 0; padding-left: 16px; }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; font-size: 13px; }
+@media (max-width: 720px) { .split { grid-template-columns: 1fr; } }
+.split > div { border: 1px dashed var(--line); border-radius: var(--radius); padding: 10px 12px; }
+.split h4 { margin: 0 0 4px; font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1><span>Laya</span> · Line quality inspection</h1>
+    <div class="sub" id="sub">loading…</div>
+  </div>
+  <div class="pills">
+    <span class="pill" id="p-engine"><span class="dot"></span>engine</span>
+    <span class="pill" id="p-gw"><span class="dot"></span>gateway</span>
+    <span class="pill" id="p-queue"><span class="dot"></span>queue</span>
+    <span class="pill" id="p-live"><span class="dot"></span>live</span>
+  </div>
+  <button class="iconbtn" id="theme" title="Toggle light / dark" aria-label="Toggle theme">◐</button>
+</header>
+
+<main>
+  <div class="mockbar" id="mockbar">Mock engine: decisions on operator notes come from keyword heuristics, not Laya. Start the server without <code>--mock</code> to see the model.</div>
+
+  <section class="kpis" id="kpis" aria-label="Key figures"></section>
+
+  <section class="panel" aria-label="Line">
+    <div class="h2">Line 3 · stations in flow order <span class="grow small muted" id="line-hint">click a station to filter the feed</span></div>
+    <div class="line" id="line"></div>
+  </section>
+
+  <div class="cols">
+    <section class="panel" aria-label="Inspection feed">
+      <div class="h2">Inspection feed
+        <span class="grow filters" id="filters"></span>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Time</th><th>Unit</th><th>Station</th><th>Measurements</th><th>Operator note → Laya</th><th>Disposition</th></tr></thead>
+          <tbody id="feed"></tbody>
+        </table>
+        <div class="empty" id="feed-empty">Waiting for the first reading from the gateway…</div>
+      </div>
+    </section>
+
+    <div class="side">
+      <section class="panel" aria-label="Line alerts">
+        <h2>Line alerts</h2>
+        <div id="alerts"><div class="empty">No alerts.</div></div>
+      </section>
+      <section class="panel" aria-label="Fault injection">
+        <div class="h2">Inject a fault <span class="grow"><button class="btn" id="gw-toggle">Pause line</button></span></div>
+        <div class="small muted" style="margin-bottom:8px">Drives the in-process IoT gateway. Each fault lasts a few units at its station.</div>
+        <div class="scen" id="scen"></div>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel" aria-label="QA review queue">
+    <div class="h2">QA review queue <span class="chip ghost" id="q-count">0</span>
+      <span class="grow small muted">Reviewer <input type="text" id="reviewer" size="10" placeholder="your name" /></span>
+    </div>
+    <div class="queue" id="queue"><div class="empty">Nothing waiting. Units Laya and the rules can settle never land here.</div></div>
+  </section>
+
+  <section class="panel" aria-label="How it works">
+    <h2>How it works</h2>
+    <div class="flow">
+      <div class="step"><span class="n">1 · COLLECT</span><b>Sensors &amp; PLCs</b>Bore gauge, CMM, nutrunner, leak tester, camera. Operators type notes at the station HMI.</div>
+      <div class="step"><span class="n">2 · FORWARD</span><b>IoT edge gateway</b>Batches readings with a per-device sequence number; store-and-forward with backoff when the link drops.</div>
+      <div class="step"><span class="n">3 · INGEST</span><b>Telemetry API</b>Bearer auth per gateway, schema validation, duplicate drop on (device, seq), 429 backpressure. Raw payload stored first.</div>
+      <div class="step"><span class="n">4 · RULES</span><b>Limits &amp; SPC</b>Tolerances, reaction plans, Western Electric rules, alarm-code table. Deterministic; the final word on numbers.</div>
+      <div class="step laya"><span class="n">5 · LAYA</span><b>Reads the operator note</b>One forward pass, typed questions, any language. Routed to the English or multilingual checkpoint. Records without a note skip it.</div>
+      <div class="step"><span class="n">6 · DECIDE</span><b>Policy gate</b>Auto-release only when rules pass and Laya is ≥ <span id="gate">50</span>% sure the note is harmless. Everything else goes to QA, with the reasons.</div>
+    </div>
+    <div class="split">
+      <div><h4>Rules decide</h4>Whether a measurement is in tolerance · the reaction plan (rework / scrap) · SPC drift · what an alarm code means. A note can never overrule a failed measurement.</div>
+      <div><h4>Laya decides</h4>What a person on the line wrote, in their language: a defect the sensors missed, a suspect gauge (hold instead of scrap), a bad material lot, a machine problem. Combined with SPC drift, a machine problem stops the line.</div>
+    </div>
+  </section>
+</main>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Inspection detail" aria-hidden="true">
+  <div class="dh"><span class="t" id="d-title">—</span><span id="d-chip"></span><button class="iconbtn x" id="d-close" aria-label="Close">✕</button></div>
+  <div class="db" id="d-body"></div>
+</aside>
+
+<script>
+"use strict";
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = (v, d = 3) => v == null ? "—" : Number(v).toFixed(d);
+const pct = (v) => v == null ? "—" : (v * 100).toFixed(v >= 0.995 || v < 0.1 ? 1 : 0) + "%";
+const shortSerial = (s) => String(s ?? "").split("-").slice(-1)[0];   // unit number within the lot
+const timeOf = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", second: "2-digit"}); };
+const store = { get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
+                set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+const ICON = { pass: "✓", rework: "↻", scrap: "✕", hold: "⏸", stop: "■", watch: "▲" };
+const chip = (d, extra = "") => `<span class="chip ${esc(d)}">${ICON[d] || ""} ${esc(d)}${extra}</span>`;
+const TOPIC = { nothing: "nothing wrong", part_defect: "part defect", machine_problem: "machine problem",
+  material_problem: "material problem", measurement_problem: "measurement problem", handling_problem: "handling damage" };
+
+let META = null, FEED = [], FILTER = { station: null, status: null }, SELECTED = null;
+
+// ---------- theme ----------
+(() => {
+  const t = store.get("qi-theme", null);
+  if (t) document.documentElement.dataset.theme = t;
+  $("#theme").onclick = () => {
+    const cur = document.documentElement.dataset.theme ||
+      (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const nxt = cur === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = nxt; store.set("qi-theme", nxt);
+  };
+})();
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
+  return r.json();
+}
+
+// ---------- header + KPIs ----------
+function renderStatus(s) {
+  const e = s.engine;
+  const eDot = e.state === "ready" ? "ok" : e.state === "error" ? "bad" : "warn pulse";
+  const eTxt = e.kind === "mock" ? "mock engine" :
+    e.state === "ready" ? `Laya ${esc(e.version)} · ${esc(e.device)} · ${esc((e.loaded || []).join(" + "))}` :
+    e.state === "error" ? "Laya failed to load" : "loading Laya checkpoints…";
+  $("#p-engine").innerHTML = `<span class="dot ${eDot}"></span>${eTxt}`;
+  $("#p-engine").title = e.error || "";
+  $("#mockbar").style.display = e.kind === "mock" ? "block" : "none";
+
+  const g = s.gateway, online = s.devices.filter(d => d.online).length;
+  const gDot = !g || !g.running ? "" : g.last_error ? "bad" : online ? "ok" : "warn";
+  $("#p-gw").innerHTML = `<span class="dot ${gDot}"></span>${esc(g ? g.gateway : "gateway")} · ${online}/${s.devices.length} devices` +
+    (g && g.buffered > 1 ? ` · ${g.buffered} buffered` : "") + (g && !g.running ? " · paused" : "");
+  $("#p-gw").title = (g && g.last_error) || "";
+  $("#gw-toggle").textContent = g && g.running ? "Pause line" : "Resume line";
+  const busy = s.processing ? `reading ${s.processing.station}` : "idle";
+  $("#p-queue").innerHTML = `<span class="dot ${s.queue > 20 ? "warn" : s.processing ? "ok pulse" : "ok"}"></span>queue ${s.queue} · ${busy}`;
+  renderScenarioState(g);
+
+  const st = s.stats;
+  const tiles = [
+    ["Units inspected", st.units, `${st.n} station records`],
+    ["First-pass yield", pct(st.fpy), "units passed at every station"],
+    ["Auto-dispositioned", pct(st.auto_rate), "no human needed"],
+    ["Awaiting QA", st.pending, `${st.reviewed} reviewed`],
+    ["Scrap · rework", `${st.scrap} · ${st.rework}`, `final dispositions`],
+    ["Laya per note", st.latency_p50 == null ? "—" : Math.round(st.latency_p50) + " ms",
+      st.latency_p95 == null ? "median, no notes read yet" : `median · p95 ${Math.round(st.latency_p95)} ms`],
+  ];
+  $("#kpis").innerHTML = tiles.map(([k, v, d]) =>
+    `<div class="kpi"><div class="k">${k}</div><div class="v num">${esc(v)}</div><div class="d">${esc(d)}</div></div>`).join("");
+}
+
+// ---------- line map ----------
+// The SVG is stretched horizontally (preserveAspectRatio="none"; viewBox height = CSS
+// height, so only x scales). Limit lines are 1-unit rects, not dashed strokes: a dashed
+// non-scaling stroke under that stretch stalls Chromium's rasterizer.
+function sparkline(p, w = 220, h = 52) {
+  const pts = p.points; if (!pts.length) return `<svg class="spark" viewBox="0 0 ${w} ${h}"></svg>`;
+  const L = p.limits;
+  const lo = Math.min(L.lsl ?? L.lcl, ...pts.map(x => x.value));
+  const hi = Math.max(L.usl ?? L.ucl, ...pts.map(x => x.value));
+  const pad = (hi - lo) * 0.12 || 1;
+  const y = v => h - 4 - ((v - (lo - pad)) / (hi - lo + 2 * pad)) * (h - 8);
+  const x = i => 4 + i * ((w - 8) / Math.max(1, 29));
+  const bandTop = y(L.usl ?? hi + pad), bandBot = y(L.lsl ?? Math.max(0, lo - pad));
+  const d = pts.map((q, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(q.value).toFixed(1)}`).join("");
+  const outs = pts.map((q, i) => q.status === "out"
+    ? `<circle cx="${x(i)}" cy="${y(q.value)}" r="3.5" fill="var(--bad)" stroke="var(--panel)" stroke-width="1.5"/>` : "").join("");
+  const last = pts.length - 1;
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="${esc(p.label)} trend">
+    <rect x="0" y="${bandTop}" width="${w}" height="${Math.max(0, bandBot - bandTop)}" fill="var(--band)"/>
+    ${L.usl != null ? `<rect x="0" y="${(y(L.usl) - 0.5).toFixed(1)}" width="${w}" height="1" fill="var(--bad)" opacity=".6"/>` : ""}
+    ${L.lsl != null ? `<rect x="0" y="${(y(L.lsl) - 0.5).toFixed(1)}" width="${w}" height="1" fill="var(--bad)" opacity=".6"/>` : ""}
+    <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+    ${outs}
+    ${pts[last].status !== "out" ? `<circle cx="${x(last)}" cy="${y(pts[last].value)}" r="3" fill="var(--accent)"/>` : ""}
+  </svg>`;
+}
+
+let DEVICES = {};
+async function renderLine() {
+  const line = await api("/api/line");
+  $("#line").innerHTML = line.map((s, i) => {
+    const last = s.last, lp = s.points[s.points.length - 1];
+    const dev = DEVICES[s.device];
+    const alarm = last && last.alert === "stop";
+    return `<button class="station ${FILTER.station === s.id ? "sel" : ""} ${alarm ? "alarm" : ""}" data-st="${esc(s.id)}">
+      <div class="top"><span class="dot ${dev && dev.online ? "ok" : ""}" title="${dev && dev.online ? "device online" : "no recent data"}"></span>
+        <span class="id">${esc(s.id)}</span><span class="nm">${esc(s.name)}</span></div>
+      <div class="val"><span>${esc(s.label)}</span><span><b class="num">${lp ? fmt(lp.value, s.decimals) : "—"}</b> ${esc(s.unit)}</span></div>
+      ${sparkline(s)}
+      <div class="foot"><span class="num">${s.limits.lsl != null ? fmt(s.limits.lsl, s.decimals) + " – " : "≤ "}${fmt(s.limits.usl, s.decimals)}</span>
+        ${last ? chip(last.disposition) : '<span class="muted">no data</span>'}</div>
+      ${i < line.length - 1 ? '<span class="arrow" aria-hidden="true">›</span>' : ""}
+    </button>`;
+  }).join("");
+  $("#line").querySelectorAll(".station").forEach(b => b.onclick = () => {
+    FILTER.station = FILTER.station === b.dataset.st ? null : b.dataset.st;
+    renderLine(); renderFeed(); renderFilters();
+  });
+}
+let lineTimer = null;
+const refreshLine = () => { clearTimeout(lineTimer); lineTimer = setTimeout(renderLine, 400); };
+
+// ---------- feed ----------
+function renderFilters() {
+  const opts = [[null, "All"], ["pending", "Awaiting QA"], ["auto", "Auto"], ["reviewed", "Reviewed"]];
+  $("#filters").innerHTML = opts.map(([v, l]) => `<button class="fbtn ${FILTER.status === v ? "on" : ""}" data-v="${v ?? ""}">${l}</button>`).join("") +
+    (FILTER.station ? `<button class="fbtn on" data-clear="1">${esc(FILTER.station)} ✕</button>` : "");
+  $("#filters").querySelectorAll(".fbtn").forEach(b => b.onclick = () => {
+    if (b.dataset.clear) { FILTER.station = null; renderLine(); }
+    else FILTER.status = b.dataset.v || null;
+    renderFeed(); renderFilters();
+  });
+}
+
+function rowHtml(r) {
+  const meas = r.failed.length ? `<span class="failed">✕ ${esc(r.failed.join(", "))}</span>` : '<span class="muted">✓ in tolerance</span>';
+  let note = '<span class="muted">—</span>';
+  if (r.model) {
+    const t = TOPIC[r.topic] || r.topic || "";
+    note = `<div class="note">${r.lang ? `<span class="lang">${esc(r.lang)}</span> ` : ""}${esc(r.note || "")}</div>
+      <div class="small muted">→ ${esc(t)}${r.topic_conf != null ? " · " + pct(r.topic_conf) : ""} · ${esc(r.model)}</div>`;
+  }
+  const disp = r.status === "reviewed" ? `${chip(r.final)} <span class="small muted">reviewed</span>` :
+    chip(r.disposition) + (r.status === "pending" ? ' <span class="small muted">QA</span>' : "");
+  return `<tr data-id="${r.id}">
+    <td class="num muted nw">${timeOf(r.ts)}</td><td class="mono nw" title="${esc(r.serial)}">…${esc(shortSerial(r.serial))}</td><td class="nw">${esc(r.station)}</td>
+    <td>${meas}${r.alert ? " " + chip(r.alert) : ""}</td><td>${note}</td><td>${disp}</td></tr>`;
+}
+
+function renderFeed(flashId) {
+  const rows = FEED.filter(r => (!FILTER.station || r.station === FILTER.station) && (!FILTER.status || r.status === FILTER.status)).slice(0, 60);
+  $("#feed").innerHTML = rows.map(rowHtml).join("");
+  $("#feed-empty").style.display = rows.length ? "none" : "block";
+  $("#feed-empty").textContent = FEED.length ? "No inspections match this filter." : "Waiting for the first reading from the gateway…";
+  if (flashId) { const tr = $(`#feed tr[data-id="${flashId}"]`); if (tr) tr.classList.add("flash"); }
+  $("#feed").querySelectorAll("tr").forEach(tr => tr.onclick = () => openDetail(+tr.dataset.id));
+}
+
+function upsert(r) {
+  const i = FEED.findIndex(x => x.id === r.id);
+  if (i >= 0) FEED[i] = { ...FEED[i], ...r }; else FEED.unshift(r);
+  FEED.sort((a, b) => b.id - a.id); FEED.length = Math.min(FEED.length, 300);
+}
+
+// ---------- alerts ----------
+function alertHtml(a) {
+  const reasons = Array.isArray(a.reasons) ? a.reasons : [];
+  return `<div class="alert ${esc(a.level)} ${a.acked ? "acked" : ""}" data-id="${a.id}">
+    <div class="row1">${chip(a.level)} <b>${esc(a.station)}</b> <span class="small muted">${a.count > 1 ? `${a.count} units · ` : ""}last ${esc(shortSerial(a.serial))}</span>
+      <span class="grow">${a.acked ? '<span class="small muted">acknowledged</span>' : `<button class="btn" data-ack="${a.id}">Acknowledge</button>`}</span></div>
+    ${a.cause ? `<div class="small">likely cause: <b>${esc(a.cause)}</b></div>` : ""}
+    <ul class="small">${reasons.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>`;
+}
+let ALERTS = [];
+function renderAlerts() {
+  $("#alerts").innerHTML = ALERTS.length ? ALERTS.slice(0, 12).map(alertHtml).join("") : '<div class="empty">No alerts.</div>';
+  $("#alerts").querySelectorAll("[data-ack]").forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    try { await api(`/api/alerts/${b.dataset.ack}/ack`, { method: "POST" }); } catch (e) { b.disabled = false; }
+  });
+}
+
+// ---------- scenarios ----------
+function renderScenarios() {
+  $("#scen").innerHTML = Object.entries(META.scenarios).map(([k, s]) =>
+    `<button data-s="${esc(k)}" title="${esc(s.about)}"><b>${esc(s.label)}</b><span>${esc(s.station)} · ${esc(s.about)}</span><span class="st" data-st="${esc(k)}"></span></button>`).join("");
+  $("#scen").querySelectorAll("button").forEach(b => b.onclick = async () => {
+    try { renderScenarioState(await api("/api/sim/scenario", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ name: b.dataset.s }) })); }
+    catch (e) { alert(e.message); }
+  });
+}
+function renderScenarioState(g) {
+  if (!META || !g) return;
+  for (const k of Object.keys(META.scenarios)) {
+    const b = $(`#scen button[data-s="${k}"]`); if (!b) continue;
+    const on = g.scenarios && k in g.scenarios;
+    b.classList.toggle("active", on);
+    $(`.st[data-st="${k}"]`, b).textContent = on ? `active · unit ${g.scenarios[k] + 1} of ${META.scenarios[k].units}` : "";
+  }
+}
+$("#gw-toggle").onclick = async () => {
+  const running = $("#gw-toggle").textContent.startsWith("Pause");
+  await api(`/api/sim/${running ? "stop" : "start"}`, { method: "POST" }); pollStatus();
+};
+
+// ---------- review queue ----------
+$("#reviewer").value = store.get("qi-reviewer", "");
+$("#reviewer").oninput = e => store.set("qi-reviewer", e.target.value.trim());
+
+async function review(id, disposition, note = "") {
+  const reviewer = $("#reviewer").value.trim();
+  if (!reviewer) { $("#reviewer").focus(); $("#reviewer").placeholder = "name required"; return false; }
+  const r = await api(`/api/inspections/${id}/review`, { method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ disposition, reviewer, note }) });
+  upsert(r); renderFeed(); renderQueue(); return true;
+}
+
+let PENDING = [];
+async function loadPending() { PENDING = await api("/api/inspections?status=pending&limit=40"); renderQueue(); }
+function renderQueue() {
+  PENDING = PENDING.filter(p => { const f = FEED.find(x => x.id === p.id); return !f || f.status === "pending"; });
+  $("#q-count").textContent = PENDING.length;
+  $("#queue").innerHTML = PENDING.length ? PENDING.map(p => `
+    <div class="card" data-id="${p.id}">
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${chip("hold")} <b>${esc(p.station)}</b> <span class="mono small muted">${esc(p.serial)}</span>
+        <button class="btn" style="margin-left:auto" data-open="${p.id}">Details</button></div>
+      <div class="why">${esc(p.why || "")}</div>
+      ${p.note ? `<div class="q">${p.lang ? `<span class="lang">${esc(p.lang)}</span> ` : ""}${esc(p.note)}</div>` : ""}
+      <div class="acts"><button class="btn pass" data-r="pass">✓ Release</button><button class="btn rework" data-r="rework">↻ Rework</button><button class="btn scrap" data-r="scrap">✕ Scrap</button></div>
+    </div>`).join("") : '<div class="empty">Nothing waiting. Units Laya and the rules can settle never land here.</div>';
+  $("#queue").querySelectorAll(".card").forEach(c => {
+    const id = +c.dataset.id;
+    c.querySelector("[data-open]").onclick = () => openDetail(id);
+    c.querySelectorAll("[data-r]").forEach(b => b.onclick = async () => {
+      b.disabled = true;
+      try { if (!(await review(id, b.dataset.r))) b.disabled = false; } catch (e) { alert(e.message); b.disabled = false; }
+    });
+  });
+}
+
+// ---------- detail drawer ----------
+function controlChart(key, c, currentId) {
+  const W = 600, H = 220, m = { l: 58, r: 16, t: 16, b: 26 };
+  const pts = c.points; if (pts.length < 2) return '<div class="small muted">Not enough points yet.</div>';
+  const L = c.limits;
+  const vals = pts.map(p => p.value).concat([L.ucl, L.lcl, L.usl, L.lsl].filter(v => v != null));
+  let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
+  const x = i => m.l + i * ((W - m.l - m.r) / (pts.length - 1));
+  const y = v => m.t + (1 - (v - lo) / (hi - lo)) * (H - m.t - m.b);
+  const hl = (v, stroke, dash, label) => v == null ? "" :
+    `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${stroke}" stroke-width="1" ${dash ? `stroke-dasharray="${dash}"` : ""}/>
+     <text x="${m.l - 6}" y="${y(v) + 4}" text-anchor="end" font-size="10.5" fill="var(--muted)">${label}</text>`;
+  const path = pts.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join("");
+  const marks = pts.map((p, i) => {
+    const cur = p.id === currentId, out = p.status === "out";
+    const r = cur ? 5.5 : out ? 4.5 : 3;
+    return `<circle cx="${x(i)}" cy="${y(p.value)}" r="${r}" fill="${out ? "var(--bad)" : "var(--accent)"}" stroke="var(--panel)" stroke-width="2"/>` +
+      (cur ? `<circle cx="${x(i)}" cy="${y(p.value)}" r="9" fill="none" stroke="var(--ink)" stroke-width="1.5"/>` : "");
+  }).join("");
+  const id = "cc-" + key;
+  setTimeout(() => {
+    const box = document.getElementById(id); if (!box) return;
+    const svg = box.querySelector("svg"), tip = box.querySelector(".tip"), cross = svg.querySelector(".cross");
+    svg.addEventListener("pointermove", ev => {
+      const r = svg.getBoundingClientRect(), sx = (ev.clientX - r.left) * W / r.width;
+      const i = Math.max(0, Math.min(pts.length - 1, Math.round((sx - m.l) / ((W - m.l - m.r) / (pts.length - 1)))));
+      const p = pts[i];
+      cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.style.display = "";
+      tip.innerHTML = `<b class="num">${fmt(p.value, c.decimals)} ${esc(c.unit)}</b><br><span class="mono">${esc(p.serial)}</span><br>${timeOf(p.ts)} · ${esc(p.disposition)}`;
+      tip.style.display = "block";
+      const px = x(i) * r.width / W, left = px > r.width / 2 ? px - tip.offsetWidth - 12 : px + 12;
+      tip.style.left = left + "px"; tip.style.top = "8px";
+    });
+    svg.addEventListener("pointerleave", () => { tip.style.display = "none"; cross.style.display = "none"; });
+  });
+  return `<div class="chartbox" id="${id}">
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Control chart of ${esc(c.label)}">
+      ${hl(L.usl, "var(--bad)", "", "USL")}${hl(L.lsl, "var(--bad)", "", "LSL")}
+      ${hl(L.ucl, "var(--muted)", "4 3", "UCL")}${hl(L.lcl, "var(--muted)", "4 3", "LCL")}
+      ${hl(L.center, "var(--grid)", "", fmt(L.center, c.decimals))}
+      <line class="cross" x1="0" x2="0" y1="${m.t}" y2="${H - m.b}" stroke="var(--muted)" stroke-width="1" style="display:none"/>
+      <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+      ${marks}
+      <text x="${m.l}" y="${H - 6}" font-size="10.5" fill="var(--muted)">${esc(pts[0].serial.split("-").pop())}</text>
+      <text x="${W - m.r}" y="${H - 6}" font-size="10.5" fill="var(--muted)" text-anchor="end">${esc(pts[pts.length - 1].serial.split("-").pop())}</text>
+    </svg><div class="tip"></div></div>
+    <div class="legend"><span><i style="border-color:var(--accent)"></i>${esc(c.label)} (${esc(c.unit)})</span>
+      <span><i style="border-color:var(--muted);border-top-style:dashed"></i>control limits ±3σ</span>
+      <span><i style="border-color:var(--bad)"></i>specification limits</span></div>`;
+}
+
+function barsHtml(q, ans, gate) {
+  const probs = Object.entries(ans.probabilities || {}).sort((a, b) => b[1] - a[1]);
+  return `<div class="bars">${probs.map(([k, v]) => `<div class="bar ${k === ans.choice ? "win" : ""}">
+    <span class="lbl" title="${esc((q.criteria || {})[k] || "")}">${esc(TOPIC[k] || k)}</span>
+    <span class="trk"><span class="fill" style="width:${(v * 100).toFixed(1)}%"></span></span>
+    <span class="pct num">${(v * 100).toFixed(0)}%</span></div>`).join("")}</div>
+    <div class="gatecap">confidence <b class="num">${pct(ans.confidence)}</b> — ${ans.confidence >= gate ? "at or above" : "<b>below</b>"} the ${Math.round(gate * 100)}% gate</div>`;
+}
+
+async function openDetail(id) {
+  SELECTED = id;
+  const r = await api(`/api/inspections/${id}`);
+  if (SELECTED !== id) return;
+  const d = r.decision, gate = META.policy.min_confidence;
+  $("#d-title").textContent = `${r.serial} · ${r.station}`;
+  $("#d-chip").innerHTML = r.status === "reviewed" ? chip(r.final) : chip(r.disposition) + (r.status === "pending" ? ' <span class="small muted">awaiting QA</span>' : "");
+  const meas = r.findings.map(f => `<tr><td>${esc(f.label)}${f.role === "process" ? ' <span class="small muted">process</span>' : ""}</td>
+    <td class="num">${f.value == null ? '<span class="failed">no reading</span>' : fmt(f.value, f.decimals) + " " + esc(f.unit)}</td>
+    <td class="num muted">${f.lsl != null ? fmt(f.lsl, f.decimals) + " – " : "≤ "}${fmt(f.usl, f.decimals)}</td>
+    <td>${f.status === "ok" ? '<span style="color:var(--ok)">✓ ok</span>' : `<span class="failed">✕ ${f.status === "out" ? "out" : "missing"}</span>`}</td></tr>`).join("");
+  const L = r.laya;
+  let laya = '<div class="small muted">No operator note on this record, so Laya was not called. The disposition rests on the measurements and codes.</div>';
+  if (L && L.error) laya = `<div class="quote">${esc(L.input)}</div><div class="failed small" style="margin-top:6px">Laya error: ${esc(L.error)}</div>`;
+  else if (L && L.answers) {
+    const q = META.questions;
+    laya = `<div class="quote">${esc(L.input)}</div>
+      <div class="small muted" style="margin-top:6px">Routed to <b>${esc(L.routing.model)}</b> — ${esc(L.routing.reason || "")}. Forward pass ${fmt(L.ms, 0)} ms${L.cold_load_ms ? `, after a ${fmt(L.cold_load_ms / 1000, 1)} s cold load` : ""}.</div>
+      <div style="margin-top:10px"><b class="small">${esc(q.topic.instructions)}</b>${barsHtml(q.topic, L.answers.topic, gate)}</div>
+      <div style="margin-top:12px"><b class="small">${esc(q.defect_kind.instructions)}</b>${barsHtml(q.defect_kind, L.answers.defect_kind, gate)}</div>`;
+  }
+  const charts = Object.entries(r.charts || {}).map(([k, c]) => `<div class="sec"><h3>Control chart · ${esc(c.label)}</h3>${controlChart(k, c, r.id)}</div>`).join("");
+  const rv = r.status === "pending" ? `<div class="sec review"><h3>QA decision</h3>
+      <input type="text" id="rv-note" placeholder="Note for the record (optional)" />
+      <div class="acts"><button class="btn pass" data-r="pass">✓ Release</button><button class="btn rework" data-r="rework">↻ Rework</button><button class="btn scrap" data-r="scrap">✕ Scrap</button></div></div>`
+    : r.status === "reviewed" ? `<div class="sec"><h3>QA decision</h3>${chip(r.final)} by <b>${esc(r.reviewer)}</b>${r.review_note ? ` — ${esc(r.review_note)}` : ""}</div>` : "";
+  $("#d-body").innerHTML = `
+    ${rv}
+    <div class="sec"><h3>Why this disposition</h3><ol class="trace">${d.trace.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
+      <div class="small muted" style="margin-top:6px">defect: <b>${esc(d.defect || "none")}</b> · root cause: <b>${esc(d.root_cause || "—")}</b></div></div>
+    <div class="sec"><h3>Measurements</h3><table class="meas"><thead><tr><th>Characteristic</th><th>Value</th><th>Spec</th><th></th></tr></thead><tbody>${meas}</tbody></table>
+      ${r.spc.length ? `<div class="small" style="margin-top:6px">SPC: ${r.spc.map(s => `<b>${esc(s.rule)}</b> ${esc(s.text)}`).join("; ")}</div>` : ""}</div>
+    <div class="sec"><h3>What Laya read</h3>${laya}</div>
+    ${charts}
+    <div class="sec"><h3>Full record</h3><div class="quote small">${esc(r.report)}</div></div>`;
+  $("#d-body").querySelectorAll("[data-r]").forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    try { if (await review(id, b.dataset.r, ($("#rv-note") || {}).value || "")) openDetail(id); else b.disabled = false; }
+    catch (e) { alert(e.message); b.disabled = false; }
+  });
+  $("#drawer").classList.add("open"); $("#drawer").setAttribute("aria-hidden", "false"); $("#scrim").style.display = "block";
+}
+function closeDetail() { SELECTED = null; $("#drawer").classList.remove("open"); $("#drawer").setAttribute("aria-hidden", "true"); $("#scrim").style.display = "none"; }
+$("#d-close").onclick = closeDetail; $("#scrim").onclick = closeDetail;
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeDetail(); });
+
+// ---------- live ----------
+async function pollStatus() {
+  try {
+    const s = await api("/api/status");
+    DEVICES = Object.fromEntries(s.devices.map(d => [d.device, d]));
+    renderStatus(s);
+  } catch {}
+}
+
+function connect() {
+  const es = new EventSource("/api/stream");
+  const live = on => $("#p-live").innerHTML = `<span class="dot ${on ? "ok" : "bad pulse"}"></span>${on ? "live" : "reconnecting…"}`;
+  es.onopen = () => { live(true); resync(); };
+  es.onerror = () => live(false);
+  es.addEventListener("inspection", ev => {
+    const r = JSON.parse(ev.data); upsert(r); renderFeed(r.id); refreshLine();
+    if (r.status === "pending") { PENDING.unshift(r); renderQueue(); }
+  });
+  es.addEventListener("review", ev => { const r = JSON.parse(ev.data); upsert(r); renderFeed(); renderQueue(); });
+  es.addEventListener("alert", ev => {
+    const a = JSON.parse(ev.data); ALERTS = [a, ...ALERTS.filter(x => x.id !== a.id)]; renderAlerts();
+  });
+  es.addEventListener("ack", ev => { const a = ALERTS.find(x => x.id === JSON.parse(ev.data).id); if (a) a.acked = Date.now(); renderAlerts(); });
+  es.addEventListener("sim", ev => renderScenarioState(JSON.parse(ev.data)));
+}
+
+async function resync() {
+  const [rows, alerts] = await Promise.all([api("/api/inspections?limit=120"), api("/api/alerts")]);
+  FEED = rows; ALERTS = alerts;
+  renderFeed(); renderAlerts(); renderLine(); loadPending();
+}
+
+(async function init() {
+  META = await api("/api/meta");
+  $("#sub").textContent = `${META.line.product} · ${META.stations.length} stations · rules for numbers, Laya for words`;
+  $("#gate").textContent = Math.round(META.policy.min_confidence * 100);
+  renderFilters(); renderScenarios();
+  await pollStatus(); await resync();
+  setInterval(pollStatus, 2000);
+  connect();
+})();
+</script>
+</body>
+</html>
