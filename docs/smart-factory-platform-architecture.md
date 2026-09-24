@@ -301,7 +301,7 @@ Laya reads what people write, in their language. On Line 3 it classifies each op
 
 Measured in the demo on a laptop CPU with the real checkpoints:
 
-- 456 ms per note at the median, 575 ms at p95. The Laya README gives about 33 ms per call on a GPU; not yet measured here.
+- 456 ms per note at the median, 575 ms at p95. LAYA.md (the Laya documentation) gives about 33 ms per call on a GPU; not yet measured here.
 - Notes arrive on roughly 1 in 10 records, so CPU is enough for the language model alone.
 - 2 of 6 benign shift notes were held. A Spanish note was routed to the English checkpoint, and a Hindi one scored 48%, just under the gate.
 
@@ -341,7 +341,7 @@ Laya decides; LLMs explain. Laya sits in the real-time loop for every unit, beca
 |  | Laya | LLM |
 | --- | --- | --- |
 | Output | One option from a fixed set, with a calibrated probability | Free text or tool calls |
-| Speed and hardware | 0.46 s per note on the edge CPU (measured); about 33 ms on a GPU per the Laya README | Seconds per answer on a GPU server or a hosted API (not measured here) |
+| Speed and hardware | 0.46 s per note on the edge CPU (measured); about 33 ms on a GPU per LAYA.md (the Laya documentation) | Seconds per answer on a GPU server or a hosted API (not measured here) |
 | Works offline at the edge | Yes | Not on edge hardware; needs the plant hub or the cloud |
 | How it fails | Picks the wrong option, but its confidence says how likely that is | Writes fluent text that can be wrong, with no reliable score |
 | Can be gated automatically | Yes, on confidence | No |

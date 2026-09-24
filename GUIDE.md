@@ -169,7 +169,7 @@ disclaimers first.
 | `05_typed_decisions.py` | the four workflow signatures | typed-decisions |
 
 **Performance here:** 12–16 s to build a checkpoint, then 50–190 ms per question on
-CPU. The README's 33 ms / 7.2 ms batched are T4 GPU figures.
+CPU. The 33 ms / 7.2 ms batched in LAYA.md are T4 GPU figures.
 
 ---
 

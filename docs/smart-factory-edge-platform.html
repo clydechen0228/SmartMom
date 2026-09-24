@@ -714,7 +714,7 @@ footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
       <figure>
         <div class="fig chart" data-chart>
           <svg viewBox="0 0 720 210" role="img" aria-labelledby="lat-t">
-            <title id="lat-t">Laya latency per call: whole record on CPU, note only on CPU, and GPU per the Laya README</title>
+            <title id="lat-t">Laya latency per call: whole record on CPU, note only on CPU, and GPU per LAYA.md (the Laya documentation)</title>
             <g class="c-grid">
               <line x1="220" x2="220" y1="18" y2="168"/><line x1="340" x2="340" y1="18" y2="168"/><line x1="460" x2="460" y1="18" y2="168"/><line x1="580" x2="580" y1="18" y2="168"/><line x1="700" x2="700" y1="18" y2="168"/>
             </g>
@@ -736,10 +736,10 @@ footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
             <text x="232" y="151" class="c-val">≈ 33</text>
             <rect x="220" y="30" width="480" height="32" class="c-hit" data-tip="&lt;b&gt;Whole record, CPU&lt;/b&gt;&lt;br&gt;median 2,469 ms · p95 3,844 ms&lt;br&gt;36 records, measured"/>
             <rect x="220" y="80" width="480" height="32" class="c-hit" data-tip="&lt;b&gt;Note only, CPU&lt;/b&gt;&lt;br&gt;median 456 ms · p95 575 ms&lt;br&gt;18 notes, measured"/>
-            <rect x="220" y="130" width="480" height="32" class="c-hit" data-tip="&lt;b&gt;Note only, GPU&lt;/b&gt;&lt;br&gt;about 33 ms per call&lt;br&gt;from the Laya README (T4); not measured here"/>
+            <rect x="220" y="130" width="480" height="32" class="c-hit" data-tip="&lt;b&gt;Note only, GPU&lt;/b&gt;&lt;br&gt;about 33 ms per call&lt;br&gt;from LAYA.md (the Laya documentation) (T4); not measured here"/>
           </svg>
         </div>
-        <figcaption><b>Figure 5. Latency per Laya call.</b> Bar = median, whisker = p95. Reading the note alone is about 5× faster than reading the whole record on a 2019 laptop CPU (torch 2.2.2). *GPU figure from the Laya README, not measured in this project.</figcaption>
+        <figcaption><b>Figure 5. Latency per Laya call.</b> Bar = median, whisker = p95. Reading the note alone is about 5× faster than reading the whole record on a 2019 laptop CPU (torch 2.2.2). *GPU figure from LAYA.md (the Laya documentation), not measured in this project.</figcaption>
       </figure>
 
       <div class="two">
@@ -1209,7 +1209,7 @@ footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
         </table>
       </div>
       <footer>
-        Sources: the Line 3 demo (<code>demos/quality_inspection</code>, <a href="https://github.com/clydechen0228/SmartMom/pull/1">PR #1</a>), its <code>evaluate.py</code> runs on 2026-09-23, and the Laya README for GPU latency. Numbers not marked as measured are proposals for the team to confirm.
+        Sources: the Line 3 demo (<code>demos/quality_inspection</code>, <a href="https://github.com/clydechen0228/SmartMom/pull/1">PR #1</a>), its <code>evaluate.py</code> runs on 2026-09-23, and LAYA.md (the Laya documentation) for GPU latency. Numbers not marked as measured are proposals for the team to confirm.
       </footer>
     </section>
   </main>
