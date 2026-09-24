@@ -21,14 +21,22 @@ FREEZE_MIN = 120                  # operations starting within this window do no
 FULL_LIMIT_S = float(os.environ.get("APS_FULL_S", 60))       # full plan time limit
 REPAIR_LIMIT_S = float(os.environ.get("APS_REPAIR_S", 30))   # repair time limit
 
-EVENT_KINDS = ("machine_down", "machine_degrading", "material_late", "rush_order", "quality_hold")
+EVENT_KINDS = ("machine_down", "machine_degrading", "maintenance", "material_late", "rush_order",
+               "order_cancel", "due_change", "quantity_change", "quality_hold", "priority_change")
 REQUIRED = {
     "machine_down": ("machine", "hours"),
     "machine_degrading": ("machine", "percent"),
+    "maintenance": ("machine", "start_hours", "hours"),     # starts start_hours from now
     "material_late": ("order", "hours"),
     "rush_order": ("material", "quantity", "due_hours"),
+    "order_cancel": ("order",),
+    "due_change": ("order", "shift_hours"),                 # negative = earlier
+    "quantity_change": ("order", "quantity"),
     "quality_hold": ("order", "hours"),
+    "priority_change": ("order", "priority"),               # 1 low .. 3 high; weight in the objective
 }
+ORDER_EVENTS = ("material_late", "order_cancel", "due_change", "quantity_change", "quality_hold", "priority_change")
+MAX_SCENARIOS = 6
 
 
 class EventError(ValueError):
@@ -49,6 +57,9 @@ class Proposal:
     objective: dict
     seconds: float
     violations: List[str]
+    base_version: int = 0              # plan version the repair started from
+    affected: int = 0                  # operations the repair was allowed to move
+    label: str = ""                    # scenarios: what the planner asked
 
 
 @dataclass
@@ -71,6 +82,8 @@ class Planning:
         self.schedule: Dict[str, dict] = {}
         self.baseline: Dict[str, dict] = {}
         self.proposal: Optional[Proposal] = None
+        self.scenarios: List[Proposal] = []
+        self.last_rejected: Optional[dict] = None
         self.versions: List[Version] = []
         self.events: List[dict] = []
         self.job: Optional[dict] = None
@@ -149,6 +162,24 @@ class Planning:
                 ev[k] = float(ev[k])
                 if ev[k] <= 0:
                     raise EventError("%s must be positive" % k)
+        if ev.get("start_hours") not in (None, ""):
+            ev["start_hours"] = float(ev["start_hours"])
+            if ev["start_hours"] < 0:
+                raise EventError("start_hours cannot be in the past")
+        if ev.get("shift_hours") not in (None, ""):
+            ev["shift_hours"] = float(ev["shift_hours"])
+            if ev["shift_hours"] == 0:
+                raise EventError("shift_hours must not be zero")
+        if ev.get("priority") not in (None, ""):
+            ev["priority"] = int(ev["priority"])
+            if ev["priority"] not in (1, 2, 3):
+                raise EventError("priority must be 1, 2 or 3")
+        bad = [o for o in ev.get("protect") or () if o not in self.plant.orders]
+        if bad:
+            raise EventError("unknown order %s" % ", ".join(bad))
+        if kind in ORDER_EVENTS:
+            if all(op.id in self.done for op in self.plant.orders[ev["order"]].ops):
+                raise EventError("order %s is already finished" % ev["order"])
         if kind == "machine_degrading" and ev["percent"] >= 90:
             raise EventError("percent must be below 90")
         return ev
@@ -179,7 +210,8 @@ class Planning:
         elif kind == "rush_order":
             oid = str(self._next_order)
             rec = {"ManufacturingOrder": oid, "Material": ev["material"], "TotalQuantity": int(ev["quantity"]),
-                   "Priority": 3, "SoldToParty": ev.get("customer", "RUSH"), "DueDay": 0, "DueTime": "06:00"}
+                   "Priority": int(ev.get("priority") or 3), "SoldToParty": ev.get("customer", "RUSH"),
+                   "DueDay": 0, "DueTime": "06:00"}
             o = order_from_sap(rec, routings())
             o.due, o.release = now + int(ev["due_hours"] * 60), now
             plant.orders[oid] = o
@@ -188,8 +220,38 @@ class Planning:
             o = plant.orders[ev["order"]]
             holds[o.id] = now + int(ev["hours"] * 60)
             release_order(o.id)
+        elif kind == "maintenance":
+            mc = ev["machine"]
+            start = now + int(ev["start_hours"] * 60)
+            end = start + int(ev["hours"] * 60)
+            plant.blocked[mc] = sorted(plant.blocked[mc] + [(start, end)])
+            for k in [k for k, a in fixed.items() if a["machine"] == mc and a["start"] < end and a["end"] > start]:
+                fixed.pop(k)                         # frozen work that collides must move
+        elif kind == "order_cancel":
+            o = plant.orders.pop(ev["order"])
+            for op in o.ops:
+                fixed.pop(op.id, None)
+            holds.pop(o.id, None)
+        elif kind == "due_change":
+            o = plant.orders[ev["order"]]
+            o.due = max(now, o.due + int(ev["shift_hours"] * 60))
+        elif kind == "priority_change":
+            pass                                     # the weight is set below
+        elif kind == "quantity_change":
+            o = plant.orders[ev["order"]]
+            per_unit = {step["Operation"]: float(step["StdMinPerUnit"]) for step in routings()[o.material]["operations"]}
+            o.quantity = int(ev["quantity"])
+            for op in o.ops:
+                if op.id not in self.done and op.id not in fixed:
+                    op.minutes = int(round(per_unit["%04d" % op.seq] * o.quantity))
+        for oid in ev.get("protect") or ():           # a re-run after "a customer promise breaks"
+            if oid in plant.orders:
+                plant.orders[oid].weight = 3
+        if ev.get("priority") and kind != "rush_order" and ev.get("order") in plant.orders:
+            plant.orders[ev["order"]].weight = ev["priority"]     # e.g. the customer's line would stop
 
-    def propose(self, ev: dict, time_limit: Optional[float] = None) -> Proposal:
+    def _repair(self, ev: dict, time_limit: Optional[float] = None) -> Proposal:
+        """Apply one event to a copy of the plant and repair the schedule for it."""
         with self.lock:
             ev = self.validate(dict(ev))
             plant, holds, fixed = copy.deepcopy(self.plant), dict(self.holds), self.frozen()
@@ -199,6 +261,7 @@ class Planning:
             p.affected = self.affected(ev, plant, p)
             if ev["kind"] == "rush_order":
                 self._next_order += 1
+            base_version = len(self.versions)
         r = solve(p, time_limit=time_limit or REPAIR_LIMIT_S, repair=True)
         viol = check(plant, r.schedule, p.now, p.done, fixed, holds, plant.blocked)
         with self.lock:
@@ -206,10 +269,44 @@ class Planning:
                             kpis(plant, r.schedule, self.done, self.schedule),
                             kpis(self.plant, self.schedule, self.done),
                             r.status, r.objective, round(r.seconds, 1), viol)
-            self.proposal = prop
-            self.events.append({"ts": time.time(), "at": self.now, "event": ev, "proposal": prop.id,
-                                "outcome": "proposed", "affected": len(p.affected)})
+            prop.base_version, prop.affected = base_version, len(p.affected)
             return prop
+
+    def propose(self, ev: dict, time_limit: Optional[float] = None) -> Proposal:
+        prop = self._repair(ev, time_limit)
+        with self.lock:
+            self.proposal = prop
+            self.events.append({"ts": time.time(), "at": self.now, "event": prop.event, "proposal": prop.id,
+                                "outcome": "proposed", "affected": prop.affected})
+            return prop
+
+    # --- what-if scenarios -----------------------------------------------------------
+    def what_if(self, ev: dict, label: str = "", time_limit: Optional[float] = None) -> Proposal:
+        """The same repair as a proposal, kept aside: nothing changes until one is promoted."""
+        sc = self._repair(ev, time_limit)
+        sc.label = label
+        with self.lock:
+            self.scenarios = (self.scenarios + [sc])[-MAX_SCENARIOS:]
+            return sc
+
+    def promote(self, scenario_id: int) -> Proposal:
+        with self.lock:
+            sc = next((x for x in self.scenarios if x.id == scenario_id), None)
+            if sc is None:
+                raise EventError("no such scenario")
+            if self.proposal:
+                raise EventError("approve or reject the open proposal first")
+            if sc.base_version != len(self.versions):
+                raise EventError("the plan changed since this scenario ran; run it again")
+            self.scenarios = [x for x in self.scenarios if x.id != scenario_id]
+            self.proposal = sc
+            self.events.append({"ts": time.time(), "at": self.now, "event": sc.event, "proposal": sc.id,
+                                "outcome": "proposed", "affected": sc.affected, "from_scenario": True})
+            return sc
+
+    def discard(self, scenario_id: int):
+        with self.lock:
+            self.scenarios = [x for x in self.scenarios if x.id != scenario_id]
 
     def _unfreeze_successors(self, plant: Plant, fixed: Dict[str, dict]):
         """A frozen op cannot stay put once an earlier op of its order is free to move."""
@@ -232,6 +329,15 @@ class Planning:
             wcs.add(plant.machines[ev["machine"]].work_center)
         if ev.get("order"):
             orders.add(ev["order"])
+        if ev.get("narrow"):
+            # a re-run after "too many changes": only the disrupted machine and order move
+            mcs = {ev["machine"]} if ev.get("machine") else set()
+            for o in plant.orders.values():
+                for op in o.ops:
+                    if o.id in orders or op.id not in self.schedule or \
+                            (op.id in self.schedule and self.schedule[op.id]["machine"] in mcs):
+                        aff.add(op.id)
+            return aff
         for o in plant.orders.values():
             for op in o.ops:
                 if op.work_center in wcs or o.id in orders or op.id not in self.schedule:
@@ -245,19 +351,27 @@ class Planning:
                 aff.update(op.id for op in o.ops)
         return aff
 
-    def decide(self, proposal_id: int, approve: bool, who: str) -> Optional[Version]:
+    def decide(self, proposal_id: int, approve: bool, who: str, comment: str = "") -> Optional[Version]:
         with self.lock:
             if not self.proposal or self.proposal.id != proposal_id:
                 raise EventError("no such open proposal")
-            prop, self.proposal = self.proposal, None
+            prop = self.proposal
+            if approve and prop.violations:
+                raise EventError("proposal has violations and cannot be approved")
+            self.proposal = None
             for e in self.events:
                 if e.get("proposal") == prop.id:
                     e["outcome"] = "approved" if approve else "rejected"
                     e["by"] = who
+                    if comment:
+                        e["comment"] = comment
             if not approve:
+                before = {o["order"]: o["status"] for o in self.orders_view()}
+                self.last_rejected = {
+                    "proposal": prop.id, "event": dict(prop.event), "comment": comment,
+                    "newly_late": [o["order"] for o in self.orders_view(prop.plant, prop.schedule)
+                                   if o["status"] == "late" and before.get(o["order"]) != "late"]}
                 return None
-            if prop.violations:
-                raise EventError("proposal has violations and cannot be approved")
             self.plant, self.holds, self.schedule = prop.plant, prop.holds, prop.schedule
             return self._version("%s approved" % prop.event["kind"], who)
 
@@ -268,6 +382,8 @@ class Planning:
             if self.proposal:
                 raise EventError("approve or reject the open proposal first")
             self.now += int(minutes)
+            self.scenarios = []                      # they were computed for an earlier clock
+            self.last_rejected = None
             confirmed = 0
             for k, a in self.schedule.items():
                 if k not in self.done and a["end"] <= self.now:

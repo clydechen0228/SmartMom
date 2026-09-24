@@ -14,7 +14,7 @@ import sys
 import threading
 import time
 import traceback
-from typing import Optional
+from typing import List, Optional
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -24,6 +24,7 @@ from fastapi.responses import FileResponse  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
 from aps import inbox  # noqa: E402
+from aps.explain import explain, load_by_day  # noqa: E402
 from aps.kpis import kpis  # noqa: E402
 from aps.plant import DAY, HORIZON_DAYS, SHIFT_END, load_plant  # noqa: E402
 from aps.solver import SPILL_DAYS  # noqa: E402
@@ -41,7 +42,14 @@ class EventBody(BaseModel):
     percent: Optional[float] = None
     quantity: Optional[float] = None
     due_hours: Optional[float] = None
+    start_hours: Optional[float] = None
+    shift_hours: Optional[float] = None
+    priority: Optional[int] = Field(default=None, ge=1, le=3)
     source: Optional[str] = Field(default=None, max_length=2000)
+
+
+class ScenarioBody(EventBody):
+    label: str = Field(default="", max_length=300)
 
 
 class TextBody(BaseModel):
@@ -51,6 +59,12 @@ class TextBody(BaseModel):
 class DecideBody(BaseModel):
     approve: bool
     who: str = Field(min_length=1, max_length=64)
+    comment: str = Field(default="", max_length=1000)
+
+
+class RerunBody(BaseModel):
+    mode: str = Field(pattern="^(narrow|protect)$")
+    orders: List[str] = []
 
 
 class ClockBody(BaseModel):
@@ -65,6 +79,8 @@ class App:
         self.lock = threading.Lock()
         self.suggestions: list = []            # events proposed by other modules (quality)
         self._sid = 0
+        self.rejections: list = []             # Laya's reading of each rejection comment
+        self.notes: list = []                  # shift notes read by Laya, newest last
 
     def suggest(self, source: str, title: str, event: dict, detail: str = "", key: Optional[str] = None,
                 title_zh: str = "", detail_zh: str = "") -> dict:
@@ -125,6 +141,8 @@ def ops_view(pl: Planning, plant, schedule, frozen_ids=()):
     status = {s["order"]: s["status"] for s in pl.orders_view(plant, schedule)}
     rows = []
     for k, a in {**pl.done, **schedule}.items():
+        if k not in meta:
+            continue                                  # a cancelled order's finished work
         o, op = meta[k]
         state = "done" if k in pl.done else ("running" if a["start"] < pl.now else
                                                ("frozen" if k in frozen_ids else "planned"))
@@ -132,6 +150,39 @@ def ops_view(pl: Planning, plant, schedule, frozen_ids=()):
                      "wc": op.work_center, "machine": a["machine"], "start": a["start"], "end": a["end"],
                      "setup": a.get("setup", 0), "state": state, "order_status": status.get(o.id)})
     return rows
+
+
+def with_why(pl, plant, allops, rows, holds):
+    """Late and at-risk orders carry their main cause, from the schedule itself."""
+    for r in rows:
+        if r["status"] != "ok":
+            e = explain(plant, allops, r["order"], holds, pl.now)
+            r["why_en"], r["why_zh"] = e.get("summary_en"), e.get("summary_zh")
+    return rows
+
+
+def scenario_summary(pl, x):
+    return {"id": x.id, "event": x.event, "label": x.label, "kpis": x.kpis, "before": x.before,
+            "status": x.status, "seconds": x.seconds, "violations": x.violations,
+            "stale": x.base_version != len(pl.versions), "affected": x.affected}
+
+
+def rejection_tally():
+    """How often each reason came up, counting only readings above the gate."""
+    tally = {k: 0 for k in inbox.REJECT_Q["criteria"]}
+    for r in A.rejections:
+        if r["confidence"] >= inbox.GATE:
+            tally[r["reason"]] += 1
+    return {"counts": tally, "total": len(A.rejections), "recent": A.rejections[-5:]}
+
+
+def machine_flags():
+    """The latest note per machine; flagged ones mark the machine on the Gantt."""
+    out = {}
+    for n in A.notes:
+        if n.get("machine"):
+            out[n["machine"]] = {"flagged": n["flagged"], "p_problem": n["p_problem"], "text": n["text"], "at": n["at"]}
+    return out
 
 
 def blocked_view(plant):
@@ -152,7 +203,9 @@ def state():
             "day": DAY,
             "machines": [{"id": m.id, "wc": m.work_center, "line": m.line, "speed": m.speed}
                          for m in pl.plant.machines.values()],
-            "orders": pl.orders_view(),
+            "orders": with_why(pl, pl.plant, pl.all_ops(), pl.orders_view(), pl.holds),
+            "load": load_by_day(pl.plant, pl.all_ops()),
+            "scenarios": [scenario_summary(pl, x) for x in pl.scenarios],
             "ops": ops_view(pl, pl.plant, pl.schedule, frozen),
             "blocked": blocked_view(pl.plant),
             "kpis": pl.versions[-1].kpis if pl.versions else None,
@@ -166,6 +219,10 @@ def state():
             "event_kinds": EVENT_KINDS,
             "materials": sorted({o.material for o in pl.plant.orders.values()}),
             "suggestions": [x for x in A.suggestions if x["status"] == "open"],
+            "last_rejected": pl.last_rejected,
+            "rejections": rejection_tally(),
+            "notes": A.notes[-8:],
+            "machine_flags": machine_flags(),
         }
         out["current_kpis"] = kpis(pl.plant, pl.schedule, pl.done)
         if prop:
@@ -176,7 +233,9 @@ def state():
                 "status": prop.status, "seconds": prop.seconds, "violations": prop.violations,
                 "objective": prop.objective,
                 "ops": ops_view(pl, prop.plant, prop.schedule, set(prop.fixed)),
-                "orders": pl.orders_view(prop.plant, prop.schedule),
+                "orders": with_why(pl, prop.plant, pl.all_ops(prop.schedule),
+                                   pl.orders_view(prop.plant, prop.schedule), prop.holds),
+                "load": load_by_day(prop.plant, pl.all_ops(prop.schedule)),
                 "blocked": blocked_view(prop.plant),
                 "moved": sorted(moved),
             }
@@ -205,13 +264,119 @@ def event(body: EventBody):
     return A.run_job("repair", lambda: A.pl.propose(ev))
 
 
+@app.post("/api/scenarios", status_code=202)
+def scenario(body: ScenarioBody):
+    ev = {k: v for k, v in body.model_dump().items() if v not in (None, "") and k != "label"}
+    try:
+        A.pl.validate(dict(ev))
+    except EventError as e:
+        raise HTTPException(400, str(e))
+    return A.run_job("scenario", lambda: A.pl.what_if(ev, body.label))
+
+
+@app.get("/api/scenarios/{sid}")
+def scenario_detail(sid: int):
+    pl = A.pl
+    with pl.lock:
+        x = next((s for s in pl.scenarios if s.id == sid), None)
+        if x is None:
+            raise HTTPException(404, "no such scenario")
+        return {**scenario_summary(pl, x), "ops": ops_view(pl, x.plant, x.schedule, set(x.fixed)),
+                "orders": with_why(pl, x.plant, pl.all_ops(x.schedule), pl.orders_view(x.plant, x.schedule), x.holds),
+                "blocked": blocked_view(x.plant), "load": load_by_day(x.plant, pl.all_ops(x.schedule))}
+
+
+@app.post("/api/scenarios/{sid}/promote")
+def promote(sid: int):
+    if A.job and A.job["running"]:
+        raise HTTPException(409, "wait for the running solve")
+    try:
+        return {"proposal": A.pl.promote(sid).id}
+    except EventError as e:
+        raise HTTPException(409, str(e))
+
+
+@app.delete("/api/scenarios/{sid}")
+def discard(sid: int):
+    A.pl.discard(sid)
+    return {"ok": True}
+
+
+@app.get("/api/explain/{order}")
+def explain_order(order: str, view: str = "current"):
+    pl = A.pl
+    with pl.lock:
+        plant, sched, holds = pl.plant, pl.schedule, pl.holds
+        if view == "proposal" and pl.proposal:
+            plant, sched, holds = pl.proposal.plant, pl.proposal.schedule, pl.proposal.holds
+        elif view.startswith("scenario:"):
+            x = next((s for s in pl.scenarios if str(s.id) == view.split(":", 1)[1]), None)
+            if x:
+                plant, sched, holds = x.plant, x.schedule, x.holds
+        e = explain(plant, pl.all_ops(sched), order, holds, pl.now)
+    if not e.get("found"):
+        raise HTTPException(404, "no such order in this plan")
+    return e
+
+
 @app.post("/api/proposal/{pid}/decide")
 def decide(pid: int, body: DecideBody):
     try:
-        v = A.pl.decide(pid, body.approve, body.who.strip())
+        v = A.pl.decide(pid, body.approve, body.who.strip(), body.comment.strip())
     except EventError as e:
         raise HTTPException(409, str(e))
-    return {"version": v.id if v else None}
+    out = {"version": v.id if v else None, "rejection": None}
+    comment = body.comment.strip()
+    if not body.approve and comment and A.clf is not None and A.clf.state == "ready":
+        r = inbox.read_rejection(A.clf, comment, A.pl.last_rejected, A.pl.plant)
+        with A.lock:
+            A.rejections = (A.rejections + [{"ts": time.time(), "proposal": pid, "reason": r["reason"],
+                                            "confidence": r["confidence"], "comment": comment}])[-50:]
+        if A.pl.last_rejected is not None:
+            A.pl.last_rejected["reading"] = r
+        out["rejection"] = r
+    return out
+
+
+@app.post("/api/rerun", status_code=202)
+def rerun(body: RerunBody):
+    """Run the last rejected event again, with fewer moves or with orders protected."""
+    last = A.pl.last_rejected
+    if not last:
+        raise HTTPException(404, "nothing was rejected since the last clock step")
+    if A.pl.proposal:
+        raise HTTPException(409, "approve or reject the open proposal first")
+    ev = {k: v for k, v in last["event"].items() if k not in ("narrow", "protect")}
+    if last["event"]["kind"] == "rush_order":
+        ev.pop("order", None)                     # the solver numbers a new rush order again
+    if body.mode == "narrow":
+        ev["narrow"] = True
+    else:
+        if not body.orders:
+            raise HTTPException(400, "name the orders to protect")
+        ev["protect"] = body.orders
+    try:
+        A.pl.validate(dict(ev))
+    except EventError as e:
+        raise HTTPException(400, str(e))
+    return A.run_job("repair", lambda: A.pl.propose(ev))
+
+
+@app.get("/api/notes/samples")
+def note_samples():
+    return inbox.note_samples()
+
+
+@app.post("/api/notes/read")
+def read_note(body: TextBody):
+    """An operator's shift note: Laya reads the machine's condition, rules find the machine."""
+    if A.clf is None or A.clf.state != "ready":
+        raise HTTPException(503, "the language model is still loading")
+    r = inbox.read_note(A.clf, body.text, A.pl.plant)
+    r["ts"], r["at"] = time.time(), A.pl.now
+    with A.lock:
+        A.notes = (A.notes + [r])[-20:]
+    return r
 
 
 @app.post("/api/clock")
@@ -233,7 +398,68 @@ def samples():
 def read(body: TextBody):
     if A.clf is None or A.clf.state != "ready":
         raise HTTPException(503, "the language model is still loading")
-    return inbox.read_message(A.clf, body.text, A.pl.plant.machines, A.pl.plant.orders)
+    return prepare(inbox.read_message(A.clf, body.text, A.pl.plant, A.pl.now))
+
+
+def prepare(r: dict) -> dict:
+    """Hook for server-side adjustments; priority and urgency come from inbox.read_message."""
+    return r
+
+
+URGENCY_RANK = {"today": 0, "this_week": 1, "info": 2}
+
+
+@app.post("/api/inbox/triage")
+def triage():
+    """Read every sample message and sort: quarantined first, then by urgency."""
+    if A.clf is None or A.clf.state != "ready":
+        raise HTTPException(503, "the language model is still loading")
+    rows = []
+    for s in inbox.samples():
+        r = prepare(inbox.read_message(A.clf, s["text"], A.pl.plant, A.pl.now))
+        rows.append({**s, "reading": r})
+    rows.sort(key=lambda x: (not x["reading"]["guard"]["flagged"], x["reading"]["event"] is None,
+                             URGENCY_RANK.get(x["reading"]["urgency"], 3), -x["reading"]["confidence"]))
+    return rows
+
+
+@app.get("/api/command/samples")
+def command_samples():
+    return inbox.command_samples()
+
+
+@app.post("/api/command")
+def command(body: TextBody):
+    """The planner's command bar: Laya reads the intent, rules and the solver do the rest."""
+    if A.clf is None or A.clf.state != "ready":
+        raise HTTPException(503, "the language model is still loading")
+    r = prepare(inbox.read_message(A.clf, body.text, A.pl.plant, A.pl.now, command=True))
+    intent, conf = r["intent"], r["intent_confidence"]
+    out = {"reading": r, "intent": intent, "intent_confidence": conf}
+    if r["guard"]["flagged"]:
+        out["action"] = "quarantined"               # the planner picks the intent, if any
+    elif conf < inbox.GATE:
+        out["action"] = "choose_intent"
+    elif intent == "why":
+        order = r["fields"].get("order")
+        if not order:
+            out["action"] = "need_order"
+        else:
+            try:
+                out["action"], out["explanation"] = "explain", explain_order(order)
+            except HTTPException as e:
+                out["action"], out["error"] = "need_order", e.detail
+    elif intent == "what_if" and r.get("event") and not r.get("missing"):
+        ev = dict(r["event"])
+        try:
+            A.pl.validate(dict(ev))
+            A.run_job("scenario", lambda: A.pl.what_if(ev, body.text))
+            out["action"] = "scenario_started"
+        except (EventError, HTTPException) as e:
+            out["action"], out["error"] = "complete", getattr(e, "detail", str(e))
+    else:
+        out["action"] = "complete"                   # the planner completes the event form
+    return out
 
 
 class SuggestionBody(BaseModel):

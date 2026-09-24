@@ -165,6 +165,42 @@ textarea { width: 100%; resize: vertical; min-height: 64px; }
 pre.json { background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 8px; font: 11.5px/1.5 var(--mono); overflow-x: auto; margin: 6px 0 0; }
 details summary { cursor: pointer; font-size: 13px; }
 .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+
+/* command bar */
+.cmd { display: grid; gap: 8px; }
+.cmd .inrow { display: flex; gap: 8px; }
+.cmd input { flex: 1; min-width: 0; background: var(--sunk); border: 1px solid var(--line-strong); border-radius: 8px; padding: 8px 10px; font-size: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 3px 10px; font-size: 12px; cursor: pointer; color: var(--ink-2); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip:hover { border-color: var(--accent); color: var(--accent-ink); }
+.cmdout { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: var(--sunk); display: grid; gap: 6px; font-size: 13px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; }
+.tag { border-radius: 999px; padding: 1px 8px; background: var(--panel); border: 1px solid var(--line); color: var(--ink-2); }
+.tag.good { color: var(--good); background: var(--good-soft); border-color: transparent; }
+.tag.warn { color: var(--risk); background: var(--risk-soft); border-color: transparent; }
+.tag.bad { color: var(--late); background: var(--late-soft); border-color: transparent; }
+.causes { display: grid; grid-template-columns: minmax(0, 1fr) 120px auto; gap: 4px 10px; align-items: center; font-size: 12.5px; }
+.causes .cb { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.causes .cb i { display: block; height: 100%; background: var(--late); border-radius: 4px; }
+
+/* scenarios */
+.sc { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 4px; margin-bottom: 6px; }
+.sc.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.sc .lbl { font-size: 12.5px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc .fig { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12.5px; }
+
+/* load heatmap: one hue, light to dark */
+.heat { display: grid; gap: 2px; font-size: 11.5px; }
+.heat .hl { color: var(--ink-2); font-weight: 600; padding-right: 6px; align-self: center; }
+.heat .hd { color: var(--muted); text-align: center; }
+.heat .hc { border-radius: 4px; text-align: center; padding: 5px 0; font-variant-numeric: tabular-nums; color: var(--ink); }
+.heat .hc.dark { color: #fff; }
+.flag { color: var(--late); font-weight: 700; }
+.g-label .flag { fill: var(--late); }
+.note-row { border-left: 3px solid var(--line-strong); padding: 4px 8px; font-size: 12.5px; display: grid; gap: 2px; }
+.note-row.bad { border-left-color: var(--late); }
+.checks { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12.5px; }
+.why { color: var(--ink-2); font-size: 12px; white-space: normal; min-width: 220px; }
 </style>
 </head>
 <body>
@@ -188,12 +224,20 @@ details summary { cursor: pointer; font-size: 13px; }
 <main>
   <section class="kpis" id="kpis" aria-label="KPIs"></section>
 
+  <section class="panel cmd" aria-label="Command">
+    <h2><span data-i18n="cmd_title">Ask the planner assistant</span><span class="grow note" style="font-size:12px" data-i18n="cmd_hint">Laya reads the intent · rules find the facts · the solver answers</span></h2>
+    <div class="inrow"><input id="cmdin" data-i18n-ph="cmd_ph" placeholder="What if LKT-04 goes down for 8 hours? · Why is order 10004403 late?" autocomplete="off">
+      <button class="btn primary" id="cmdgo" data-i18n="cmd_go">Ask</button></div>
+    <div class="chips" id="cmdchips"></div>
+    <div id="cmdout"></div>
+  </section>
+
   <div class="cols">
     <div class="stack">
       <section class="panel">
         <h2><span data-i18n="gantt">Schedule by machine</span>
           <span class="grow">
-            <span class="seg" id="viewseg" style="display:none"><button id="v-cur" aria-pressed="true" data-i18n="current">Current</button><button id="v-prop" aria-pressed="false" data-i18n="proposal">Proposal</button></span>
+            <span class="seg" id="viewseg" style="display:none"></span>
             <button class="btn" id="zoom-out" aria-label="Zoom out">−</button><button class="btn" id="zoom-in" aria-label="Zoom in">+</button>
           </span>
         </h2>
@@ -223,19 +267,35 @@ details summary { cursor: pointer; font-size: 13px; }
             <thead><tr>
               <th data-i18n="c_order">SAP order</th><th data-i18n="c_mat">Material</th><th class="r" data-i18n="c_qty">Qty</th>
               <th data-i18n="c_cust">Customer</th><th class="r" data-i18n="c_prio">Priority</th><th data-i18n="c_due">Due</th>
-              <th data-i18n="c_finish">Planned finish</th><th class="r" data-i18n="c_slack">Slack (h)</th><th data-i18n="c_status">Status</th>
+              <th data-i18n="c_finish">Planned finish</th><th class="r" data-i18n="c_slack">Slack (h)</th><th data-i18n="c_status">Status</th><th data-i18n="c_why">Why</th>
             </tr></thead>
             <tbody id="otable"></tbody>
           </table>
         </div>
+        <div id="explain"></div>
+      </section>
+
+      <section class="panel">
+        <h2><span data-i18n="load">Load by work centre and day</span><span class="grow note" style="font-size:12px" id="loadnote"></span></h2>
+        <div id="heat"></div>
       </section>
     </div>
 
     <div class="stack">
       <section class="panel prop" id="proppanel" style="display:none"></section>
 
+      <section class="panel" id="followpanel" style="display:none">
+        <h2 data-i18n="follow">After the rejection</h2>
+        <div id="follow"></div>
+      </section>
+
       <section class="panel">
-        <h2 data-i18n="inbox">Disruption inbox</h2>
+        <h2 data-i18n="scenarios">What-if scenarios</h2>
+        <div id="scen"></div>
+      </section>
+
+      <section class="panel">
+        <h2><span data-i18n="inbox">Disruption inbox</span><span class="grow"><button class="btn" id="triagebtn" data-i18n="triage">Triage all with Laya</button></span></h2>
         <div id="suggest"></div>
         <div class="msglist" id="msglist"></div>
         <div style="margin-top:8px">
@@ -243,6 +303,14 @@ details summary { cursor: pointer; font-size: 13px; }
           <div class="row" style="margin-top:6px"><button class="btn" id="readbtn" data-i18n="read">Read with Laya</button><span class="note" id="readnote"></span></div>
         </div>
         <div id="reading"></div>
+      </section>
+
+      <section class="panel">
+        <h2 data-i18n="notes">Shift notes</h2>
+        <div class="note" data-i18n="notes_note">Operators' notes. Laya reads the machine's condition; a likely breakdown marks the machine on the Gantt.</div>
+        <div class="chips" id="notechips" style="margin:6px 0"></div>
+        <div class="row"><input class="who" id="notein" style="flex:1;min-width:0" data-i18n-ph="note_ph" placeholder="CNC-02 spindle getting louder…"><button class="btn" id="notego" data-i18n="read">Read with Laya</button></div>
+        <div id="notelist" style="display:grid;gap:4px;margin-top:8px"></div>
       </section>
 
       <section class="panel">
@@ -258,6 +326,7 @@ details summary { cursor: pointer; font-size: 13px; }
 
       <section class="panel">
         <h2 data-i18n="history">Versions and events</h2>
+        <div class="note" id="rejtally" style="margin-bottom:6px"></div>
         <div class="hist" id="hist"></div>
       </section>
     </div>
@@ -299,6 +368,38 @@ const I18N = {
     sug_title: "Suggested by other modules", src_quality: "Quality", review: "Review",
     from_module: "Suggested by the quality platform from live inspection data, not read by Laya.", back: "← Platform",
     days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    ev_maintenance: "Planned maintenance", ev_order_cancel: "Order cancelled", ev_due_change: "Due date moved", ev_quantity_change: "Quantity changed",
+    f_start_hours: "Starts in (h)", f_shift_hours: "Move due by (h, − = earlier)",
+    cmd_title: "Ask the planner assistant", cmd_hint: "Laya reads the intent · rules find the facts · the solver answers",
+    cmd_ph: "What if LKT-04 goes down for 8 hours? · Why is order 10004403 late?", cmd_go: "Ask",
+    in_what_if: "What-if", in_report: "Report", in_why: "Why", intent: "intent",
+    act_scenario: "Running a what-if scenario; nothing changes until you promote it.",
+    act_complete: "Complete the event below, then create a proposal.", act_choose: "Laya is not sure what you want. Pick one:",
+    act_quarantined: "Laya's guard flagged this text as a possible instruction to the system. Nothing runs by itself; pick what you meant, if anything:",
+    act_need_order: "Name the order, for example 10004403.",
+    scenarios: "What-if scenarios", sc_empty: "Ask “what if …” above, or run the event below as a scenario.",
+    sc_view: "View", sc_promote: "Make proposal", sc_discard: "Discard", sc_stale: "plan changed since — run again",
+    sc_run: "Run as what-if", sc_running: "Solving a what-if scenario (up to 30 s)…",
+    scenario: "Scenario", load: "Load by work centre and day", load_note: "share of shift time busy",
+    c_why: "Why", why_title: "Why is this order where it is?", finish: "finish", due: "due", late_by: "late by",
+    cause_h: "hours", triage: "Triage all with Laya", triaging: "reading every message…",
+    guard_ok: "guard: clean", guard_flag: "guard: prompt injection", agree: "two readings agree", disagree: "two readings disagree",
+    second: "second reading", urgency: "urgency", u_today: "today", u_this_week: "this week", u_info: "info only",
+    r_flagged: "flagged by the guard — check the sender", r_disagree: "readings disagree", r_below_gate: "below the confidence gate", r_missing: "facts missing",
+    auto_ok: "Both readings agree, above the gate, all facts found: safe to apply.", planner_confirms: "The planner confirms:",
+    process: "processing",
+    ev_priority_change: "Priority changed", f_priority: "Priority (1–3)",
+    reject_ph: "Why reject? Optional — Laya reads it and suggests the next step", follow: "After the rejection",
+    rs_too_many_changes: "too many changes", rs_customer_promise: "a customer promise breaks", rs_resources: "people or tools missing", rs_wrong_event: "the event was wrong",
+    laya_reason: "Laya reads the reason", unsure_reason: "Laya is not sure; pick the next step:",
+    st_narrow: "Re-run moving only the disrupted machine and order", st_protect: "Re-run protecting these orders",
+    st_resources: "Block the machine while people or tools are missing", st_wrong: "Correct the event",
+    no_orders: "Tick the orders to protect.", rej_tally: "Rejection reasons so far",
+    notes: "Shift notes", notes_note: "Operators' notes. Laya reads the machine's condition; a likely breakdown marks the machine on the Gantt.",
+    note_ph: "CNC-02 spindle getting louder…", note_flag: "likely breakdown", note_ok: "no problem read", p_problem: "problem",
+    report_down: "Report machine down",
+    r_hedged: "the sender is unsure — try it as a what-if", cue_line_stop: "customer's line would stop → priority 3", cue_flexible: "customer is flexible",
+    suggest_whatif: "The sender is not sure yet: run it as a what-if first.",
   },
   zh: {
     title: "一号工厂 · APS 工作台", subtitle: "L1 与 L3 产线 · 订单来自 SAP · 派工至 MES · 准时交付优先",
@@ -331,9 +432,41 @@ const I18N = {
     sug_title: "来自其他模块的建议", src_quality: "质量", review: "查看",
     from_module: "由质量平台根据实时检验数据建议，未经 Laya 识别。", back: "← 平台",
     days: ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
+    ev_maintenance: "计划保养", ev_order_cancel: "订单取消", ev_due_change: "交期变更", ev_quantity_change: "数量变更",
+    f_start_hours: "开始于（小时后）", f_shift_hours: "交期调整（小时，负数为提前）",
+    cmd_title: "计划助手", cmd_hint: "Laya 识别意图 · 规则提取事实 · 求解器给出答案",
+    cmd_ph: "如果 CNC-02 停机 4 小时会怎样？ · 订单 10004403 为什么延误？", cmd_go: "提问",
+    in_what_if: "假设分析", in_report: "上报", in_why: "原因", intent: "意图",
+    act_scenario: "正在运行假设场景；在转为方案前不会改变排程。",
+    act_complete: "请在下方补全事件，然后生成方案。", act_choose: "Laya 不确定您的意图，请选择：",
+    act_quarantined: "Laya 防护模型判定该文本可能是针对系统的指令。不会自动执行；如有需要，请选择您的意图：",
+    act_need_order: "请指明订单号，例如 10004403。",
+    scenarios: "假设场景", sc_empty: "在上方提问“如果……”，或将下方事件作为假设场景运行。",
+    sc_view: "查看", sc_promote: "转为方案", sc_discard: "删除", sc_stale: "排程已变化，请重新运行",
+    sc_run: "作为假设运行", sc_running: "正在求解假设场景（最多 30 秒）…",
+    scenario: "场景", load: "各工作中心每日负荷", load_note: "班次时间占用比例",
+    c_why: "原因", why_title: "该订单为何如此排程？", finish: "完工", due: "交期", late_by: "延误",
+    cause_h: "小时", triage: "用 Laya 全部分拣", triaging: "正在识别全部消息…",
+    guard_ok: "防护：正常", guard_flag: "防护：提示注入", agree: "两次识别一致", disagree: "两次识别不一致",
+    second: "第二次识别", urgency: "紧急度", u_today: "今天", u_this_week: "本周", u_info: "仅通知",
+    r_flagged: "被防护模型标记——请核实发件人", r_disagree: "识别不一致", r_below_gate: "低于置信度阈值", r_missing: "缺少信息",
+    auto_ok: "两次识别一致、高于阈值、信息齐全：可直接应用。", planner_confirms: "需计划员确认：",
+    process: "加工",
+    ev_priority_change: "优先级变更", f_priority: "优先级（1–3）",
+    reject_ph: "驳回原因（可选）— Laya 会识别并建议下一步", follow: "驳回之后",
+    rs_too_many_changes: "改动太多", rs_customer_promise: "违背客户承诺", rs_resources: "人员或工装不足", rs_wrong_event: "事件有误",
+    laya_reason: "Laya 识别的原因", unsure_reason: "Laya 不确定，请选择下一步：",
+    st_narrow: "重新求解，只调整受影响的设备和订单", st_protect: "重新求解并保护这些订单",
+    st_resources: "在缺人或缺工装期间封锁该设备", st_wrong: "修正该事件",
+    no_orders: "请勾选要保护的订单。", rej_tally: "历次驳回原因",
+    notes: "交接班记录", notes_note: "操作工的记录。Laya 识别设备状态；可能故障的设备会在甘特图上标出。",
+    note_ph: "CNC-02 主轴声音越来越大…", note_flag: "可能故障", note_ok: "未发现问题", p_problem: "问题概率",
+    report_down: "上报设备停机",
+    r_hedged: "发件人不确定——建议先做假设分析", cue_line_stop: "客户会停线 → 优先级 3", cue_flexible: "客户不急",
+    suggest_whatif: "发件人尚不确定：建议先作为假设场景运行。",
   },
 };
-let LANG = "en", S = null, VIEW = "cur", SEL = null, FILTER = "", ZOOM = 0.2, READING = null;
+let LANG = "en", S = null, VIEW = "cur", SEL = null, FILTER = "", ZOOM = 0.2, READING = null, SCD = null, EXPLAIN = null, CMD = null, TRIAGE = null;
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const t = (k) => (I18N[LANG][k] ?? I18N.en[k] ?? k);
@@ -346,6 +479,35 @@ function when(min) {
 }
 const pct = (v) => v == null ? "—" : (v * 100).toFixed(1) + "%";
 const evName = (k) => t("ev_" + k);
+const zhOr = (x, k) => LANG === "zh" ? (x[k + "_zh"] || x[k + "_en"]) : x[k + "_en"];
+
+// What the Gantt, KPIs and orders show: the current plan, the open proposal or a scenario.
+function viewSrc() {
+  if (VIEW === "prop" && S.proposal) return S.proposal;
+  if (VIEW.startsWith("sc:") && SCD && "sc:" + SCD.id === VIEW) return SCD;
+  return S;
+}
+function movedIds(src) {
+  if (src === S) return new Set();
+  if (src.moved) return new Set(src.moved);
+  const cur = Object.fromEntries(S.ops.map(o => [o.id, o]));
+  return new Set(src.ops.filter(o => cur[o.id] && (cur[o.id].machine !== o.machine || Math.abs(cur[o.id].start - o.start) > 30)).map(o => o.id));
+}
+async function setView(v) {
+  VIEW = v; EXPLAIN = null;
+  if (v.startsWith("sc:")) { try { SCD = await api("api/scenarios/" + v.slice(3)); } catch { VIEW = "cur"; } }
+  render();
+}
+function viewSeg() {
+  const seg = $("#viewseg"), sc = S.scenarios || [];
+  if (!S.proposal && !sc.length) { seg.style.display = "none"; if (VIEW !== "cur") VIEW = "cur"; return; }
+  if (VIEW === "prop" && !S.proposal) VIEW = "cur";
+  if (VIEW.startsWith("sc:") && !sc.some(x => "sc:" + x.id === VIEW)) VIEW = "cur";
+  const btns = [["cur", t("current")]].concat(S.proposal ? [["prop", t("proposal") + " #" + S.proposal.id]] : [], sc.map(x => ["sc:" + x.id, "S" + x.id]));
+  seg.style.display = "";
+  seg.innerHTML = btns.map(([v, l]) => `<button data-v="${v}" aria-pressed="${VIEW === v}">${esc(l)}</button>`).join("");
+  seg.querySelectorAll("button").forEach(b => b.onclick = () => setView(b.dataset.v));
+}
 
 async function api(path, opts) {
   const r = await fetch(path, opts);
@@ -373,7 +535,7 @@ $("#theme").onclick = () => {
 
 // ---------- KPIs ----------
 function kpiTiles() {
-  const cur = S.current_kpis, p = S.proposal && VIEW === "prop" ? S.proposal.kpis : null, k = p || cur;
+  const src = viewSrc(), cur = S.current_kpis, p = src !== S ? src.kpis : null, k = p || cur;
   if (!k) { $("#kpis").innerHTML = ""; return; }
   const v = S.versions[S.versions.length - 1];
   const edd = S.versions.length ? (S.versions.find(x => x.kpis.edd_baseline) || {}).kpis : null;
@@ -398,7 +560,7 @@ function kpiTiles() {
 
 // ---------- Gantt ----------
 function gantt() {
-  const src = S.proposal && VIEW === "prop" ? S.proposal : S;
+  const src = viewSrc();
   const ops = src.ops, blocked = src.blocked;
   const machines = S.machines, now = S.now;
   const maxEnd = Math.max(S.horizon_days * 1440, ...ops.map(o => o.end));
@@ -413,7 +575,7 @@ function gantt() {
     y += 6;
   });
   const H = y + 4, X = (min) => L + min * ZOOM;
-  const moved = new Set(S.proposal && VIEW === "prop" ? S.proposal.moved : []);
+  const moved = movedIds(src);
   const selOrder = SEL;
   let g = `<svg width="${W}" height="${H}" role="img" aria-label="${esc(t("gantt"))}">
     <defs><pattern id="g-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="var(--late-soft)"/><line x1="0" y1="0" x2="0" y2="6" stroke="var(--late)" stroke-width="1.2"/></pattern></defs>`;
@@ -424,7 +586,8 @@ function gantt() {
   }
   rows.forEach(({ m, y, alt }) => {
     g += `<rect x="${L}" y="${y}" width="${span * ZOOM}" height="${RH - 2}" class="g-row ${alt ? "alt" : ""}"/>`;
-    g += `<text x="12" y="${y + 18}" class="g-label">${esc(m.id)}</text>`;
+    const mf = (S.machine_flags || {})[m.id];
+    g += `<text x="12" y="${y + 18}" class="g-label">${esc(m.id)}${mf && mf.flagged ? ` <tspan class="flag">⚠</tspan>` : ""}</text>`;
     (blocked[m.id] || []).forEach(([b0, b1]) => {
       const night = (b1 - b0) === 480 && (b0 % 1440) === 960;
       g += `<rect x="${X(b0)}" y="${y}" width="${Math.max(1, (Math.min(b1, span) - b0) * ZOOM)}" height="${RH - 2}" class="${night ? "g-night" : "g-down"}"/>`;
@@ -443,7 +606,7 @@ function gantt() {
   g += `<line x1="${X(now)}" x2="${X(now)}" y1="18" y2="${H}" class="g-now"/></svg>`;
   $("#gantt").innerHTML = g;
   const byId = Object.fromEntries(ops.map(o => [o.id, o]));
-  const ords = Object.fromEntries((S.proposal && VIEW === "prop" ? S.proposal.orders : S.orders).map(o => [o.order, o]));
+  const ords = Object.fromEntries(src.orders.map(o => [o.order, o]));
   $("#gantt").querySelectorAll("[data-op]").forEach(el => {
     const o = byId[el.dataset.op], od = ords[o.order];
     el.addEventListener("mousemove", ev => {
@@ -454,7 +617,7 @@ function gantt() {
       tip.style.left = x + "px"; tip.style.top = (ev.clientY + 14) + "px";
     });
     el.addEventListener("mouseleave", () => $("#tip").hidden = true);
-    el.addEventListener("click", () => { SEL = SEL === o.order ? null : o.order; render(); });
+    el.addEventListener("click", () => selectOrder(o.order));
   });
 }
 $("#zoom-in").onclick = () => { ZOOM = Math.min(1.2, ZOOM * 1.5); gantt(); };
@@ -462,13 +625,51 @@ $("#zoom-out").onclick = () => { ZOOM = Math.max(0.08, ZOOM / 1.5); gantt(); };
 
 // ---------- orders ----------
 function ordersTable() {
-  const rows = (S.proposal && VIEW === "prop" ? S.proposal.orders : S.orders).filter(o => !FILTER || o.status === FILTER);
+  const rows = viewSrc().orders.filter(o => !FILTER || o.status === FILTER);
   $("#otable").innerHTML = rows.map(o => `<tr class="${SEL === o.order ? "sel" : ""}" data-o="${esc(o.order)}">
     <td class="mono">${esc(o.order)}</td><td>${esc(o.material)}</td><td class="r">${o.quantity}</td><td>${esc(o.customer)}</td>
     <td class="r">${o.weight}</td><td class="num">${when(o.due)}</td><td class="num">${when(o.finish)}</td>
     <td class="r">${o.slack == null ? "—" : (o.slack / 60).toFixed(1)}</td>
-    <td><span class="st ${o.status}">${o.status === "ok" ? "✓" : o.status === "risk" ? "▲" : "✕"} ${t(o.status === "risk" ? "risk_short" : "st_" + o.status)}</span></td></tr>`).join("");
-  $("#otable").querySelectorAll("tr").forEach(tr => tr.onclick = () => { SEL = SEL === tr.dataset.o ? null : tr.dataset.o; render(); });
+    <td><span class="st ${o.status}">${o.status === "ok" ? "✓" : o.status === "risk" ? "▲" : "✕"} ${t(o.status === "risk" ? "risk_short" : "st_" + o.status)}</span></td>
+    <td class="why">${o.why_en ? esc(zhOr(o, "why")) : ""}</td></tr>`).join("");
+  $("#otable").querySelectorAll("tr").forEach(tr => tr.onclick = () => selectOrder(tr.dataset.o));
+  explainPanel();
+}
+async function selectOrder(id) {
+  SEL = SEL === id ? null : id; EXPLAIN = null;
+  if (SEL) {
+    const v = VIEW === "prop" ? "proposal" : VIEW.startsWith("sc:") ? "scenario:" + VIEW.slice(3) : "current";
+    try { EXPLAIN = await api(`api/explain/${encodeURIComponent(SEL)}?view=${v}`); } catch { EXPLAIN = null; }
+  }
+  render();
+}
+function causesHtml(e) {
+  const max = Math.max(1, ...e.causes.map(c => c.hours));
+  return `<div><b class="mono">${esc(e.order)}</b> · ${esc(zhOr(e, "summary"))}</div>
+    <div class="note">${t("due")} ${when(e.due)} · ${t("finish")} ${when(e.finish)} · ${t("process")} ${e.process_h} ${t("hours")}</div>
+    <div class="causes">${e.causes.slice(0, 6).map(c => `<span>${esc(LANG === "zh" ? c.zh : c.en)}</span><span class="cb"><i style="width:${(c.hours / max * 100).toFixed(0)}%"></i></span><span class="num">${c.hours} ${t("hours")}</span>`).join("")}</div>`;
+}
+function explainPanel() {
+  const e = EXPLAIN, box = $("#explain");
+  box.innerHTML = e && e.order === SEL ? `<div class="reading"><div class="note" style="font-weight:600">${t("why_title")}</div>${causesHtml(e)}</div>` : "";
+}
+
+// ---------- load heatmap ----------
+function heatmap() {
+  const load = viewSrc().load || S.load || {}, wcs = Object.keys(load);
+  if (!wcs.length) { $("#heat").innerHTML = ""; return; }
+  const days = load[wcs[0]].length;
+  let h = `<div class="heat" style="grid-template-columns: auto repeat(${days}, minmax(34px, 1fr))"><span></span>`;
+  for (let d = 0; d < days; d++) h += `<span class="hd">${t("days")[d % 7]}</span>`;
+  wcs.forEach(wc => {
+    h += `<span class="hl">${esc(wc.replace("WC-", ""))}</span>`;
+    load[wc].forEach((v, d) => {
+      const p = Math.round(Math.min(1, v) * 100);
+      h += `<span class="hc ${p >= 60 ? "dark" : ""}" style="background: color-mix(in srgb, var(--accent) ${Math.max(6, p)}%, var(--sunk))" title="${esc(wc)} · ${t("days")[d % 7]} · ${p}%">${p}</span>`;
+    });
+  });
+  $("#heat").innerHTML = h + "</div>";
+  $("#loadnote").textContent = "% · " + t("load_note");
 }
 $("#ofilter").querySelectorAll("button").forEach(b => b.onclick = () => {
   FILTER = b.dataset.f; $("#ofilter").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); ordersTable();
@@ -477,11 +678,10 @@ $("#ofilter").querySelectorAll("button").forEach(b => b.onclick = () => {
 // ---------- proposal ----------
 function proposalPanel() {
   const p = S.proposal, box = $("#proppanel");
-  $("#viewseg").style.display = p ? "" : "none";
-  if (!p) { box.style.display = "none"; VIEW = "cur"; return; }
+  if (!p) { box.style.display = "none"; return; }
   box.style.display = "";
   const ev = p.event, b = p.before, a = p.kpis;
-  const evText = [ev.machine, ev.order, ev.material, ev.hours && ev.hours + " " + t("hours"), ev.percent && ev.percent + "%", ev.quantity && "× " + ev.quantity, ev.due_hours && "≤ " + ev.due_hours + " " + t("hours")].filter(Boolean).join(" · ");
+  const evText = evSummary(ev);
   const line = (k, x, y, fmt) => `<span>${k}</span><span class="num">${fmt(x)}</span><span class="arrow">→</span><span class="num"><b>${fmt(y)}</b></span>`;
   const aff = (S.events.find(e => e.proposal === p.id) || {}).affected;
   box.innerHTML = `<h2>${t("prop_title")} #${p.id} · ${esc(evName(ev.kind))}</h2>
@@ -499,22 +699,57 @@ function proposalPanel() {
       <input class="who" id="who" placeholder="${t("who")}" value="${esc(store.get("aps-who", ""))}" style="flex:1;min-width:120px">
       <button class="btn primary" id="approve" ${p.violations.length ? "disabled" : ""}>${t("approve")}</button>
       <button class="btn danger" id="reject">${t("reject")}</button>
-    </div><div id="propmsg"></div>`;
+    </div><textarea id="rejcomment" style="margin-top:6px;min-height:44px" placeholder="${esc(t("reject_ph"))}"></textarea><div id="propmsg"></div>`;
   $("#who").oninput = e => store.set("aps-who", e.target.value.trim());
   const decide = async (approve) => {
     const who = $("#who").value.trim();
     if (!who) { $("#propmsg").innerHTML = `<div class="warnbox">${t("name_needed")}</div>`; return; }
-    try { await post(`api/proposal/${p.id}/decide`, { approve, who }); VIEW = "cur"; await refresh(); }
+    const comment = approve ? "" : ($("#rejcomment").value || "").trim();
+    try { const r = await post(`api/proposal/${p.id}/decide`, { approve, who, comment }); FOLLOW = r.rejection; VIEW = "cur"; await refresh(); }
     catch (e) { $("#propmsg").innerHTML = `<div class="errbox">${esc(e.message)}</div>`; }
   };
   $("#approve").onclick = () => decide(true); $("#reject").onclick = () => decide(false);
 }
-$("#v-cur").onclick = () => { VIEW = "cur"; $("#v-cur").setAttribute("aria-pressed", true); $("#v-prop").setAttribute("aria-pressed", false); render(); };
-$("#v-prop").onclick = () => { VIEW = "prop"; $("#v-prop").setAttribute("aria-pressed", true); $("#v-cur").setAttribute("aria-pressed", false); render(); };
+function evSummary(ev) {
+  return [ev.machine, ev.order, ev.material, ev.start_hours != null && "+" + ev.start_hours + " " + t("hours") + " →",
+    ev.hours && ev.hours + " " + t("hours"), ev.percent && ev.percent + "%", ev.quantity && "× " + ev.quantity,
+    ev.due_hours && "≤ " + ev.due_hours + " " + t("hours"), ev.shift_hours && (ev.shift_hours > 0 ? "+" : "") + ev.shift_hours + " " + t("hours")].filter(Boolean).join(" · ");
+}
+
+// ---------- scenarios ----------
+function scenarioPanel() {
+  const sc = S.scenarios || [], busy = !!(S.job && S.job.running);
+  if (!sc.length) { $("#scen").innerHTML = `<div class="empty">${t("sc_empty")}</div>`; return; }
+  const b = S.current_kpis;
+  const d = (a, x, better, f) => { const v = a - x; if (Math.abs(v) < 1e-9) return ""; const good = better === "up" ? v > 0 : v < 0; return ` <span class="${good ? "up" : "down"}">${v > 0 ? "+" : ""}${f(v)}</span>`; };
+  $("#scen").innerHTML = sc.slice().reverse().map(x => `<div class="sc ${VIEW === "sc:" + x.id ? "on" : ""}">
+    <div><b>S${x.id} · ${esc(evName(x.event.kind))}</b> <span class="note">${esc(evSummary(x.event))}</span></div>
+    ${x.label ? `<div class="lbl">“${esc(x.label)}”</div>` : ""}
+    <div class="fig num"><span>${t("k_otd")} <b>${pct(x.kpis.otd)}</b>${d(x.kpis.otd * 100, b.otd * 100, "up", v => v.toFixed(1))}</span>
+      <span>${t("k_late")} <b>${x.kpis.late_orders}</b>${d(x.kpis.late_orders, b.late_orders, "down", v => v)}</span>
+      <span>${t("k_wt")} <b>${x.kpis.weighted_tardiness_h}</b>${d(x.kpis.weighted_tardiness_h, b.weighted_tardiness_h, "down", v => v.toFixed(1))}</span>
+      <span class="note">${x.seconds} s</span></div>
+    ${x.violations.length ? `<div class="errbox">${esc(x.violations.slice(0, 2).join("; "))}</div>` : ""}
+    ${x.stale ? `<div class="warnbox">${t("sc_stale")}</div>` : ""}
+    <div class="row"><button class="btn" data-scv="${x.id}">${t("sc_view")}</button>
+      <button class="btn primary" data-scp="${x.id}" ${x.stale || S.proposal || busy || x.violations.length ? "disabled" : ""}>${t("sc_promote")}</button>
+      <button class="btn danger" data-scx="${x.id}">${t("sc_discard")}</button></div></div>`).join("");
+  $("#scen").querySelectorAll("[data-scv]").forEach(el => el.onclick = () => setView("sc:" + el.dataset.scv));
+  $("#scen").querySelectorAll("[data-scp]").forEach(el => el.onclick = async () => {
+    try { await post(`api/scenarios/${el.dataset.scp}/promote`); VIEW = "prop"; await refresh(); } catch (e) { alert(e.message); }
+  });
+  $("#scen").querySelectorAll("[data-scx]").forEach(el => el.onclick = async () => {
+    await api(`api/scenarios/${el.dataset.scx}`, { method: "DELETE" }); if (VIEW === "sc:" + el.dataset.scx) VIEW = "cur"; refresh();
+  });
+}
 
 // ---------- event form (used by the inbox reading and manual entry) ----------
-const NEEDS = { machine_down: ["machine", "hours"], machine_degrading: ["machine", "percent"], material_late: ["order", "hours"],
-  rush_order: ["material", "quantity", "due_hours"], quality_hold: ["order", "hours"] };
+const NEEDS = { machine_down: ["machine", "hours"], machine_degrading: ["machine", "percent"], maintenance: ["machine", "start_hours", "hours"],
+  material_late: ["order", "hours"], rush_order: ["material", "quantity", "due_hours"], order_cancel: ["order"],
+  due_change: ["order", "shift_hours"], quantity_change: ["order", "quantity"], quality_hold: ["order", "hours"],
+  priority_change: ["order", "priority"] };
+const OPTIONAL = { rush_order: ["priority"], due_change: ["priority"], quantity_change: ["priority"], material_late: ["priority"], quality_hold: ["priority"] };
+const fieldsOf = (k) => (NEEDS[k] || []).concat(OPTIONAL[k] || []);
 function eventForm(prefix, ev, missing) {
   const kinds = S ? S.event_kinds : Object.keys(NEEDS);
   const opts = (arr, v) => arr.map(x => `<option value="${esc(x)}" ${x === v ? "selected" : ""}>${esc(x)}</option>`).join("");
@@ -524,15 +759,16 @@ function eventForm(prefix, ev, missing) {
     if (f === "machine") input = `<select id="${prefix}-machine"><option value=""></option>${opts(S.machines.map(m => m.id), ev.machine)}</select>`;
     else if (f === "order") input = `<select id="${prefix}-order"><option value=""></option>${opts(S.orders.map(o => o.order), ev.order)}</select>`;
     else if (f === "material") input = `<select id="${prefix}-material"><option value=""></option>${opts(S.materials, ev.material)}</select>`;
-    else input = `<input id="${prefix}-${f}" type="number" min="0" step="any" value="${ev[f] ?? ""}">`;
+    else if (f === "priority") input = `<select id="${prefix}-priority"><option value=""></option>${[1, 2, 3].map(x => `<option value="${x}" ${x === ev.priority ? "selected" : ""}>${x}</option>`).join("")}</select>`;
+    else input = `<input id="${prefix}-${f}" type="number" ${f === "shift_hours" ? "" : 'min="0"'} step="any" value="${ev[f] ?? ""}">`;
     return `<label class="field ${miss}">${t("f_" + f)}${input}</label>`;
   };
   return `<label class="field">${t("f_kind")}<select id="${prefix}-kind">${kinds.map(k => `<option value="${k}" ${k === ev.kind ? "selected" : ""}>${esc(evName(k))}</option>`).join("")}</select></label>
-    <div class="grid2" style="margin-top:6px">${(NEEDS[ev.kind] || []).map(fieldHtml).join("")}</div>`;
+    <div class="grid2" style="margin-top:6px">${fieldsOf(ev.kind).map(fieldHtml).join("")}</div>`;
 }
 function readForm(prefix) {
   const kind = $(`#${prefix}-kind`).value, ev = { kind };
-  (NEEDS[kind] || []).forEach(f => { const el = $(`#${prefix}-${f}`); if (el && el.value !== "") ev[f] = ["machine", "order", "material"].includes(f) ? el.value : Number(el.value); });
+  fieldsOf(kind).forEach(f => { const el = $(`#${prefix}-${f}`); if (el && el.value !== "") ev[f] = ["machine", "order", "material"].includes(f) ? el.value : Number(el.value); });
   return ev;
 }
 async function submitEvent(ev, msgEl) {
@@ -547,19 +783,47 @@ async function submitEvent(ev, msgEl) {
 let MANUAL = { kind: "machine_down" };
 function manualPanel() {
   const box = $("#manual");
-  box.innerHTML = eventForm("mf", MANUAL, null) + `<div class="row" style="margin-top:8px"><button class="btn primary" id="mf-go">${t("create")}</button></div><div id="mf-msg"></div>`;
+  box.innerHTML = eventForm("mf", MANUAL, null) + `<div class="row" style="margin-top:8px"><button class="btn primary" id="mf-go">${t("create")}</button><button class="btn" id="mf-sc">${t("sc_run")}</button></div><div id="mf-msg"></div>`;
   $("#mf-kind").onchange = e => { MANUAL = { kind: e.target.value }; manualPanel(); };
   box.querySelectorAll("input,select").forEach(el => { if (el.id !== "mf-kind") el.onchange = () => { MANUAL = readForm("mf"); }; });
   $("#mf-go").disabled = !!(S.job && S.job.running) || !!S.proposal;
   $("#mf-go").onclick = () => submitEvent(readForm("mf"), $("#mf-msg"));
+  $("#mf-sc").disabled = !!(S.job && S.job.running);
+  $("#mf-sc").onclick = () => runScenario(readForm("mf"), "", $("#mf-msg"));
+}
+async function runScenario(ev, label, msgEl) {
+  try { await post("api/scenarios", { ...ev, label }); await refresh(); }
+  catch (e) { msgEl.innerHTML = `<div class="errbox">${esc(e.message)}</div>`; }
 }
 
 // ---------- inbox ----------
 let SAMPLES = [];
-function inboxList() {
-  $("#msglist").innerHTML = SAMPLES.map(s => `<button class="msg" data-id="${s.id}"><span class="meta"><span class="lang">${esc(s.lang)}</span><span>${t("sample_from")} ${esc(s.from)}</span></span><span>${esc(s.text)}</span></button>`).join("");
-  $("#msglist").querySelectorAll(".msg").forEach(b => b.onclick = () => readText(SAMPLES.find(s => s.id === b.dataset.id).text));
+function readingTags(r) {
+  const tags = [];
+  if (r.guard) tags.push(r.guard.flagged ? ["bad", t("guard_flag")] : ["good", t("guard_ok")]);
+  if (!r.guard || !r.guard.flagged) {
+    tags.push([r.agree ? "good" : "warn", r.agree ? t("agree") : t("disagree")]);
+    if (r.urgency) tags.push([r.urgency === "today" ? "bad" : r.urgency === "this_week" ? "warn" : "", t("urgency") + ": " + t("u_" + r.urgency)]);
+  }
+  return `<span class="tags">${tags.map(([c, l]) => `<span class="tag ${c}">${esc(l)}</span>`).join("")}</span>`;
 }
+function inboxList() {
+  const list = TRIAGE || SAMPLES;
+  $("#msglist").innerHTML = list.map(s => {
+    const r = s.reading;
+    const head = r ? `<b>${r.guard.flagged ? "⚠ " : ""}${esc(r.event ? evName(r.event_type) : evName("no_action"))}</b> ${readingTags(r)}` : "";
+    return `<button class="msg" data-id="${s.id}"><span class="meta"><span class="lang">${esc(s.lang)}</span><span>${t("sample_from")} ${esc(s.from)}</span></span>${head}<span>${esc(s.text)}</span></button>`;
+  }).join("");
+  $("#msglist").querySelectorAll(".msg").forEach(b => b.onclick = () => {
+    const s = list.find(x => x.id === b.dataset.id);
+    if (s.reading) { READING = s.reading; readingPanel(); } else readText(s.text);
+  });
+}
+$("#triagebtn").onclick = async () => {
+  const b = $("#triagebtn"); b.disabled = true; b.textContent = t("triaging");
+  try { TRIAGE = await post("api/inbox/triage"); inboxList(); } catch (e) { $("#readnote").textContent = e.message; }
+  b.disabled = false; b.textContent = t("triage");
+};
 function suggestList() {
   const sug = S.suggestions || [];
   $("#suggest").innerHTML = sug.length ? `<div class="note" style="margin-bottom:4px">${t("sug_title")}</div>` + sug.map(x => `<div class="sug">
@@ -589,13 +853,19 @@ function readingPanel() {
   if (c) {
     html += `<div><b>${t("laya_read")}: ${esc(evName(r.event_type))}</b> · ${t("conf")} ${(conf * 100).toFixed(0)}% · ${t("gate")} ${(r.gate * 100).toFixed(0)}%</div>
     <div class="bar" title="${t("conf")}"><i style="width:${(conf * 100).toFixed(0)}%"></i><b style="left:${r.gate * 100}%"></b></div>
+    ${r.second_reading ? `<div class="note">${t("second")}: ${esc(evName(r.second_reading.event_type))} · ${(r.second_reading.confidence * 100).toFixed(0)}%</div>` : ""}
+    ${readingTags(r)}
     <div class="note">${t("routed")} <b>${esc(c.routing.model || "")}</b> · ${c.ms} ms</div>`;
-    if (conf < r.gate) html += `<div class="warnbox">${t("below_gate")}</div>`;
-  } else html += `<div class="note">${t("from_module")}</div>`;
+    if (r.cues && r.cues.consequence) html += `<div class="note">${t("cue_" + r.cues.consequence)} (“${esc(r.cues.words.join("”, “"))}”)</div>`;
+    if (r.reasons && r.reasons.length) html += `<div class="${r.reasons.includes("flagged") ? "errbox" : "warnbox"}">${t("planner_confirms")} ${r.reasons.map(x => t("r_" + x)).join(" · ")}</div>`;
+    else if (r.event) html += `<div class="note" style="color:var(--good)">${t("auto_ok")}</div>`;
+  } else if (r.suggestion) html += `<div class="note">${t("from_module")}</div>`;
   if (!r.event) html += `<div class="note">${t("no_event")}</div><div class="row"><button class="btn" id="rd-dismiss">${t("dismiss")}</button></div>`;
   else {
     if (r.missing && r.missing.length) html += `<div class="warnbox">${t("missing")} ${r.missing.map(f => t("f_" + f)).join(", ")}</div>`;
-    html += eventForm("rd", r.event, r.missing) + `<div class="row"><button class="btn primary" id="rd-go">${t("create")}</button><button class="btn" id="rd-dismiss">${t("dismiss")}</button></div><div id="rd-msg"></div>`;
+    const wi = r.suggest === "what_if";
+    if (wi) html += `<div class="note">${t("suggest_whatif")}</div>`;
+    html += eventForm("rd", r.event, r.missing) + `<div class="row"><button class="btn ${wi ? "" : "primary"}" id="rd-go">${t("create")}</button><button class="btn ${wi ? "primary" : ""}" id="rd-sc">${t("sc_run")}</button><button class="btn" id="rd-dismiss">${t("dismiss")}</button></div><div id="rd-msg"></div>`;
   }
   box.innerHTML = html + "</div>";
   const d = $("#rd-dismiss"); if (d) d.onclick = async () => {
@@ -605,6 +875,110 @@ function readingPanel() {
   const k = $("#rd-kind"); if (k) k.onchange = e => { READING.event = { ...READING.event, kind: e.target.value }; readingPanel(); };
   const go = $("#rd-go");
   if (go) { go.disabled = !!(S.job && S.job.running) || !!S.proposal; go.onclick = () => submitEvent(readForm("rd"), $("#rd-msg")); }
+  const sc = $("#rd-sc");
+  if (sc) { sc.disabled = !!(S.job && S.job.running); sc.onclick = () => runScenario(readForm("rd"), r.text, $("#rd-msg")); }
+}
+
+// ---------- after a rejection ----------
+let FOLLOW = null;
+function followPanel() {
+  const lr = S.last_rejected, r = FOLLOW || (lr && lr.reading), box = $("#followpanel");
+  if (!r || !lr || S.proposal) { box.style.display = "none"; return; }
+  box.style.display = "";
+  const busy = !!(S.job && S.job.running);
+  const cand = [...new Set([...(r.steps.customer_promise.orders || []), ...S.orders.filter(o => o.status !== "ok").map(o => o.order)])];
+  const pre = new Set(r.steps.customer_promise.orders || []);
+  const step = (k, body) => `<div class="sc ${r.confident && r.reason === k ? "on" : ""}"><b>${t("rs_" + k)}</b>${body}</div>`;
+  $("#follow").innerHTML = `<div class="note">“${esc(r.text)}”</div>
+    <div>${r.confident ? `${t("laya_read")}: <b>${t("rs_" + r.reason)}</b> · ${(r.confidence * 100).toFixed(0)}%` : `<span class="warnbox">${t("unsure_reason")}</span>`}</div>
+    ${step("too_many_changes", `<div class="row"><button class="btn ${r.confident && r.reason === "too_many_changes" ? "primary" : ""}" data-rr="narrow" ${busy ? "disabled" : ""}>${t("st_narrow")}</button></div>`)}
+    ${step("customer_promise", `<div class="checks">${cand.slice(0, 12).map(o => `<label><input type="checkbox" value="${esc(o)}" ${pre.has(o) ? "checked" : ""}> <span class="mono">${esc(o)}</span></label>`).join("")}</div>
+       <div class="row"><button class="btn ${r.confident && r.reason === "customer_promise" ? "primary" : ""}" data-rr="protect" ${busy ? "disabled" : ""}>${t("st_protect")}</button></div>`)}
+    ${step("resources", `<div class="row"><button class="btn" data-rf="resources">${t("st_resources")}</button></div>`)}
+    ${step("wrong_event", `<div class="row"><button class="btn" data-rf="wrong_event">${t("st_wrong")}</button></div>`)}
+    <div id="follow-msg"></div>`;
+  $("#follow").querySelectorAll("[data-rr]").forEach(b => b.onclick = async () => {
+    const mode = b.dataset.rr, orders = [...$("#follow").querySelectorAll("input[type=checkbox]:checked")].map(x => x.value);
+    if (mode === "protect" && !orders.length) { $("#follow-msg").innerHTML = `<div class="warnbox">${t("no_orders")}</div>`; return; }
+    try { await post("api/rerun", { mode, orders }); FOLLOW = null; VIEW = "prop"; await refresh(); }
+    catch (e) { $("#follow-msg").innerHTML = `<div class="errbox">${esc(e.message)}</div>`; }
+  });
+  $("#follow").querySelectorAll("[data-rf]").forEach(b => b.onclick = () => {
+    const ev = r.steps[b.dataset.rf].event;
+    READING = { text: r.text, classification: null, event_type: ev.kind, confidence: 1, gate: 0.5, event: { ...ev },
+                missing: (NEEDS[ev.kind] || []).filter(f => ev[f] == null || ev[f] === "") };
+    readingPanel(); $("#reading").scrollIntoView({ block: "nearest" });
+  });
+}
+function rejTally() {
+  const r = S.rejections;
+  $("#rejtally").innerHTML = r && r.total ? `${t("rej_tally")}: ` + Object.entries(r.counts).filter(([, n]) => n).map(([k, n]) => `${t("rs_" + k)} <b>${n}</b>`).join(" · ") : "";
+}
+
+// ---------- shift notes ----------
+let NOTE_SAMPLES = [];
+function notesPanel() {
+  $("#notechips").innerHTML = NOTE_SAMPLES.map((n, i) => `<button class="chip" data-n="${i}" title="${esc(n.text)}">${esc(n.text)}</button>`).join("");
+  $("#notechips").querySelectorAll(".chip").forEach(b => b.onclick = () => readNote(NOTE_SAMPLES[+b.dataset.n].text));
+  $("#notelist").innerHTML = (S.notes || []).slice().reverse().map((n, i) => `<div class="note-row ${n.flagged ? "bad" : ""}">
+      <span><b class="mono">${esc(n.machine || "?")}</b> · ${n.flagged ? `<span class="flag">⚠ ${t("note_flag")}</span>` : t("note_ok")} · ${t("p_problem")} ${(n.p_problem * 100).toFixed(0)}%</span>
+      <span class="note">${esc(n.text)}</span>
+      ${n.flagged && n.machine ? `<span><button class="btn" data-down="${esc(n.machine)}" data-i="${i}">${t("report_down")}</button></span>` : ""}</div>`).join("");
+  $("#notelist").querySelectorAll("[data-down]").forEach(b => b.onclick = () => {
+    const n = S.notes.slice().reverse()[+b.dataset.i];
+    READING = { text: n.text, classification: null, event_type: "machine_down", confidence: 1, gate: 0.5,
+                event: { kind: "machine_down", machine: n.machine }, missing: ["hours"] };
+    readingPanel(); $("#reading").scrollIntoView({ block: "nearest" });
+  });
+}
+async function readNote(text) {
+  try { await post("api/notes/read", { text }); $("#notein").value = ""; lastSig = ""; await refresh(); }
+  catch (e) { $("#notelist").insertAdjacentHTML("afterbegin", `<div class="errbox">${esc(e.message)}</div>`); }
+}
+$("#notego").onclick = () => { const v = $("#notein").value.trim(); if (v) readNote(v); };
+
+// ---------- command bar ----------
+let CMD_SAMPLES = [];
+function cmdChips() {
+  $("#cmdchips").innerHTML = CMD_SAMPLES.map((c, i) => `<button class="chip" data-i="${i}" title="${esc(c.text)}">${esc(c.text)}</button>`).join("");
+  $("#cmdchips").querySelectorAll(".chip").forEach(b => b.onclick = () => { $("#cmdin").value = CMD_SAMPLES[+b.dataset.i].text; ask(); });
+}
+async function ask(forceIntent) {
+  const text = $("#cmdin").value.trim(); if (!text) return;
+  $("#cmdout").innerHTML = `<div class="note">…</div>`;
+  try {
+    CMD = await post("api/command", { text });
+    if (forceIntent) CMD.action = forceIntent === "why" ? (CMD.reading.fields.order ? "explain_client" : "need_order") : forceIntent === "what_if" ? "scenario_client" : "complete";
+    if (CMD.action === "explain_client") { CMD.explanation = await api("api/explain/" + CMD.reading.fields.order); CMD.action = "explain"; }
+    if (CMD.action === "scenario_client") {
+      if (CMD.reading.event && !CMD.reading.missing.length) { await post("api/scenarios", { ...CMD.reading.event, label: text }); CMD.action = "scenario_started"; }
+      else CMD.action = "complete";
+    }
+    await refresh(); cmdPanel();
+  } catch (e) { $("#cmdout").innerHTML = `<div class="errbox">${esc(e.message)}</div>`; }
+}
+$("#cmdgo").onclick = () => ask();
+$("#cmdin").onkeydown = e => { if (e.key === "Enter") ask(); };
+function cmdPanel() {
+  const c = CMD, box = $("#cmdout");
+  if (!c) { box.innerHTML = ""; return; }
+  const r = c.reading;
+  let h = `<div class="cmdout"><div class="tags"><span class="tag">${t("intent")}: <b>${t("in_" + c.intent)}</b> ${(c.intent_confidence * 100).toFixed(0)}%</span>
+    ${r.event ? `<span class="tag">${esc(evName(r.event_type))} ${(r.confidence * 100).toFixed(0)}%</span>` : ""}${readingTags(r).replace(/^<span class="tags">|<\/span>$/g, "")}</div>`;
+  const pickIntent = `<div class="row">${["what_if", "report", "why"].map(i => `<button class="btn" data-int="${i}">${t("in_" + i)}</button>`).join("")}</div>`;
+  if (c.action === "quarantined") h += `<div class="errbox">${t("act_quarantined")}</div>` + pickIntent;
+  else if (c.action === "choose_intent") h += `<div class="warnbox">${t("act_choose")}</div>` + pickIntent;
+  else if (c.action === "need_order") h += `<div class="warnbox">${esc(c.error || t("act_need_order"))}</div>`;
+  else if (c.action === "explain") h += causesHtml(c.explanation);
+  else if (c.action === "scenario_started") h += `<div class="note">${t("act_scenario")}</div><div class="note">${esc(evSummary(r.event))}</div>`;
+  else if (c.action === "complete") {
+    if (c.error) h += `<div class="errbox">${esc(c.error)}</div>`;
+    h += `<div class="note">${t("act_complete")}</div>`;
+    READING = r.event ? r : { ...r, event: { kind: r.event_type === "no_action" ? "machine_down" : r.event_type }, missing: [] };
+    readingPanel(); $("#reading").scrollIntoView({ block: "nearest" });
+  }
+  box.innerHTML = h + "</div>";
+  box.querySelectorAll("[data-int]").forEach(b => b.onclick = () => ask(b.dataset.int));
 }
 
 // ---------- publish & history ----------
@@ -625,7 +999,7 @@ function history() {
 // ---------- status ----------
 function statusBar() {
   const j = S.job, bar = $("#jobbar");
-  if (j && j.running) { bar.className = "jobbar"; bar.style.display = "block"; bar.textContent = (j.kind === "repair" ? t("solving_repair") : t("solving_full")) + ` ${Math.round(Date.now() / 1000 - j.started)} s`; }
+  if (j && j.running) { bar.className = "jobbar"; bar.style.display = "block"; bar.textContent = (j.kind === "repair" ? t("solving_repair") : j.kind === "scenario" ? t("sc_running") : t("solving_full")) + ` ${Math.round(Date.now() / 1000 - j.started)} s`; }
   else if (j && j.error) { bar.className = "jobbar err"; bar.style.display = "block"; bar.textContent = j.error; }
   else bar.style.display = "none";
   const e = S.engine;
@@ -639,15 +1013,14 @@ function statusBar() {
 
 function render() {
   if (!S) return;
-  statusBar(); kpiTiles(); proposalPanel(); gantt(); ordersTable(); manualPanel(); readingPanel(); history(); inboxList(); suggestList();
-  $("#v-cur").setAttribute("aria-pressed", VIEW === "cur"); $("#v-prop").setAttribute("aria-pressed", VIEW === "prop");
+  viewSeg(); statusBar(); kpiTiles(); proposalPanel(); followPanel(); rejTally(); notesPanel(); scenarioPanel(); gantt(); ordersTable(); heatmap(); manualPanel(); readingPanel(); history(); inboxList(); suggestList(); cmdChips();
 }
 
 let lastSig = "";
 async function refresh() {
   try {
     S = await api("api/state");
-    const sig = JSON.stringify([S.now, S.versions.length, S.proposal && S.proposal.id, S.job && [S.job.running, S.job.error], S.engine && S.engine.state, S.events.length, (S.suggestions || []).map(x => x.id)]);
+    const sig = JSON.stringify([S.now, S.versions.length, S.proposal && S.proposal.id, S.job && [S.job.running, S.job.error], S.engine && S.engine.state, S.events.length, (S.suggestions || []).map(x => x.id), (S.scenarios || []).map(x => [x.id, x.stale]), (S.notes || []).length, S.last_rejected && S.last_rejected.proposal]);
     if (sig !== lastSig) { lastSig = sig; render(); } else statusBar();
   } catch (e) { $("#jobbar").style.display = "block"; $("#jobbar").textContent = e.message; }
 }
@@ -662,6 +1035,8 @@ if (location.pathname !== "/") $("#back").hidden = false;     // mounted inside 
   const saved = store.get("aps-lang", null);
   LANG = location.hash === "#zh" ? "zh" : (saved || ((navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"));
   SAMPLES = await api("api/inbox/samples").catch(() => []);
+  CMD_SAMPLES = await api("api/command/samples").catch(() => []);
+  NOTE_SAMPLES = await api("api/notes/samples").catch(() => []);
   await refresh();
   applyLang(LANG);
   setInterval(refresh, 2000);

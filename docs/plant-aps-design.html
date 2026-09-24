@@ -488,8 +488,11 @@ footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
       </div>
       <div class="callout acc">
         <h4><span lang="en">Laya questions for the disruption inbox</span><span lang="zh">异常收件箱的 Laya 问题</span></h4>
-        <p lang="en">Choice questions only, as measured on the quality platform: <b>event type</b> and <b>urgency</b> (today, this week, informational). Each answer carries a calibrated confidence; below 50%, the planner confirms. The option wording was chosen by measurement: the final wording (“everything is normal…”, “a machine has stopped…”, “a machine is running slower or noisy…”, “a supplier delivery arrives late”, “a customer wants an extra urgent order”, “parts failed a quality test…”) made no confident errors on the sample inbox; the first draft read a Chinese “camera cleaned, no impact” note as a late delivery at 0.86.</p>
-        <p lang="zh">沿用质量平台的实测结论，只使用选择题：<b>事件类型</b>与<b>紧急度</b>（今天、本周、仅通知）。每个答案附带校准置信度；低于 50% 时由计划员确认。选项措辞经实测选定：最终措辞（“一切正常…”“设备已停机…”“设备变慢或有异响…”“供应商交货延迟”“客户需要加急订单”“零件质检不合格…”）在示例收件箱上没有高置信度错误；初稿曾把中文“镜头已清洁、不影响生产”以 0.86 的置信度误判为交货延迟。</p>
+        <p lang="en">Choice questions only, as measured on the quality platform, all answered in one forward pass: the <b>event kind</b> read twice with different wording (one flat list of ten, and area first, then the kind within the area), <b>urgency</b> (today, this week, informational), and for the planner's command bar the <b>intent</b> (what-if, report, why). <code>guard_questions()</code> screen the text for prompt injection first. An event applies itself only when both readings agree, both clear 50%, the guard is quiet and the rules found every fact; otherwise the planner confirms Laya's prefilled reading. Measured: either reading alone made 2–3 confident errors on 18 messages, on different messages; requiring agreement left none. Laya never produces the numbers: rules extract machines, orders, hours, start times, date shifts and quantities, and check them against master data.</p>
+        <p lang="zh">沿用质量平台的实测结论，只使用选择题，一次前向计算全部回答：以两种不同措辞识别<b>事件类型</b>（一组十个选项的平铺列表，以及先判断领域、再判断领域内类型），<b>紧急度</b>（今天、本周、仅通知），以及计划助手命令的<b>意图</b>（假设分析、上报、原因）。先用 <code>guard_questions()</code> 检查提示注入。只有两次识别一致、均高于 50%、防护无告警且规则提取到全部信息时，事件才会自动应用；否则由计划员确认 Laya 预填的结果。实测：在 18 条消息上，任一识别单独使用会产生 2–3 条高置信度错误，且出错的消息不同；要求一致后为零。数字从不由 Laya 给出：设备、订单、小时数、开始时间、交期调整和数量由规则提取并与主数据核对。</p>
+        <h4><span lang="en">Two more jobs for Laya, and three cues it does not read</span><span lang="zh">Laya 的另两项任务，以及它不负责的三类信号</span></h4>
+        <p lang="en"><b>Rejected proposals:</b> Laya reads the planner's comment (too many changes, a customer promise, people or tools missing, the event was wrong) and the workbench offers the matching next step: re-run with only the disrupted machine and order free, re-run protecting orders, block a machine, or correct the event. All four stay on screen, because two of eight confident readings on held-out comments were wrong. <b>Shift notes:</b> Laya reads the machine's condition; a likely breakdown marks the machine on the Gantt. <b>Rules instead of Laya</b> read whether the sender is unsure, what a delay costs the customer, and urgency: measured on 32 new messages, Laya could not separate these, while a short word list in three languages could.</p>
+        <p lang="zh"><b>被驳回的方案：</b>Laya 识别计划员的驳回意见（改动太多、违背客户承诺、人员或工装不足、事件有误），工作台给出对应的下一步：只放开受影响设备和订单重新求解、保护指定订单重新求解、封锁设备或修正事件。四个选项始终显示，因为在保留测试集上 8 个高置信度识别中有 2 个错误。<b>交接班记录：</b>Laya 识别设备状态；可能故障的设备会在甘特图上标出。<b>由规则而非 Laya</b> 判断发件人是否确定、延误对客户的影响以及紧急度：在 32 条新消息上实测，Laya 无法区分这些信号，而三种语言的简短词表可以。</p>
       </div>
     </section>
 
@@ -556,13 +559,19 @@ footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
       </figure>
       <ul lang="en">
         <li><b>Orders list:</b> due date, planned finish, slack, status pill (on time, at risk, late), SAP order number.</li>
-        <li><b>Disruption inbox:</b> incoming events with Laya's classification and confidence; one click applies or dismisses.</li>
+        <li><b>Disruption inbox:</b> incoming messages with Laya's two readings, urgency, guard result and the reason a message needs the planner; one click triages the whole inbox by urgency.</li>
+        <li><b>Command bar:</b> “What if LKT-04 goes down for 8 hours?” runs a scenario; “Why is 10004403 late?” shows the ranked causes.</li>
+        <li><b>What-if scenarios:</b> up to six side by side with KPI deltas; view one on the Gantt, promote it to the proposal, or discard it.</li>
+        <li><b>Why late and load:</b> the main cause of every late or at-risk order, and a heatmap of load by work centre and day.</li>
         <li><b>Proposal panel:</b> OTD, weighted tardiness, late orders and setup hours before and after; operations moved; approve or reject.</li>
         <li><b>Publish:</b> shows the MES dispatch lists and SAP date updates that will be sent.</li>
       </ul>
       <ul lang="zh">
         <li><b>订单列表：</b>交期、计划完工、余量、状态（准时、有风险、延误）、SAP 订单号。</li>
-        <li><b>异常收件箱：</b>显示事件及 Laya 的分类和置信度；一键应用或忽略。</li>
+        <li><b>异常收件箱：</b>显示 Laya 的两次识别、紧急度、防护结果以及需计划员确认的原因；一键按紧急度分拣全部消息。</li>
+        <li><b>计划助手：</b>“如果 CNC-02 停机 4 小时会怎样？”运行假设场景；“订单 10004407 为什么有延误风险？”显示排序后的原因。</li>
+        <li><b>假设场景：</b>最多六个并列，显示指标变化；可在甘特图中查看、转为方案或删除。</li>
+        <li><b>延误原因与负荷：</b>每个延误或有风险订单的主要原因，以及按工作中心和日期的负荷热力图。</li>
         <li><b>方案面板：</b>变更前后的 OTD、加权延误、延误订单数、换型工时；被调整的工序；批准或驳回。</li>
         <li><b>发布：</b>预览将发送的 MES 派工单与 SAP 日期更新。</li>
       </ul>
@@ -619,8 +628,8 @@ footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
             <tr><td><span lang="en">SAP</span><span lang="zh">SAP</span></td><td><span lang="en">Orders, routings and work centres as SAP-shaped JSON; write-back payload shown, not sent</span><span lang="zh">订单、工艺路线、工作中心为 SAP 格式 JSON；回写报文仅展示，不发送</span></td><td><span class="pill sim"><span lang="en">Simulated</span><span lang="zh">模拟</span></span></td></tr>
             <tr><td><span lang="en">MES</span><span lang="zh">MES</span></td><td><span lang="en">Dispatch endpoint and confirmation events on a mock</span><span lang="zh">派工接口与报工事件使用模拟服务</span></td><td><span class="pill sim"><span lang="en">Simulated</span><span lang="zh">模拟</span></span></td></tr>
             <tr><td><span lang="en">Solver</span><span lang="zh">求解器</span></td><td><span lang="en">CP-SAT, full and repair modes, lexicographic objective, setups, shifts, frozen window</span><span lang="zh">CP-SAT，全量与修复模式，分级目标、换型、班次、冻结窗口</span></td><td><span class="pill demo"><span lang="en">Real</span><span lang="zh">真实</span></span></td></tr>
-            <tr><td><span lang="en">Disruption inbox</span><span lang="zh">异常收件箱</span></td><td><span lang="en">Sample emails and notes in English, Chinese and German, classified by Laya</span><span lang="zh">英文、中文、德文示例邮件与留言，由 Laya 分类</span></td><td><span class="pill demo"><span lang="en">Real model</span><span lang="zh">真实模型</span></span></td></tr>
-            <tr><td><span lang="en">Workbench</span><span lang="zh">工作台</span></td><td><span lang="en">Gantt, orders, inbox, proposal compare, publish preview; English / 中文</span><span lang="zh">甘特图、订单、收件箱、方案对比、发布预览；English / 中文</span></td><td><span class="pill demo"><span lang="en">Real</span><span lang="zh">真实</span></span></td></tr>
+            <tr><td><span lang="en">Disruption inbox</span><span lang="zh">异常收件箱</span></td><td><span lang="en">18 emails and notes in English, Chinese and German plus 2 injections, read by Laya; planner commands</span><span lang="zh">英文、中文、德文 18 条邮件与留言及 2 条注入攻击，由 Laya 识别；计划助手命令</span></td><td><span class="pill demo"><span lang="en">Real model</span><span lang="zh">真实模型</span></span></td></tr>
+            <tr><td><span lang="en">Workbench</span><span lang="zh">工作台</span></td><td><span lang="en">Gantt, orders with why-late, load heatmap, inbox, command bar, what-if scenarios, proposal compare, publish preview; English / 中文</span><span lang="zh">甘特图、含延误原因的订单、负荷热力图、收件箱、计划助手、假设场景、方案对比、发布预览；English / 中文</span></td><td><span class="pill demo"><span lang="en">Real</span><span lang="zh">真实</span></span></td></tr>
           </tbody>
         </table>
       </div>
@@ -631,12 +640,12 @@ footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
             <tr><td><span lang="en">Feasibility</span><span lang="zh">可行性</span></td><td><span lang="en">An independent checker finds no overlap, routing, shift, release or frozen-window violation in any schedule</span><span lang="zh">独立校验程序在任何排程中都未发现重叠、工序顺序、班次、到货或冻结窗口违规</span></td><td><span class="pill ok">✓ <span lang="en">0 violations</span><span lang="zh">0 违规</span></span></td></tr>
             <tr><td><span lang="en">On-time first</span><span lang="zh">准时优先</span></td><td><span lang="en">Weighted tardiness is never worse than a due-date dispatching rule on the same orders</span><span lang="zh">在同一批订单上，加权延误不劣于按交期派工规则</span></td><td><span class="pill ok">✓ 3.3 h vs 62.4 h</span></td></tr>
             <tr><td><span lang="en">Repair</span><span lang="zh">修复重排</span></td><td><span lang="en">Each scenario event yields a proposal within the 15 s limit; frozen operations do not move</span><span lang="zh">每个场景事件在 15 秒内给出方案；冻结工序不移动</span></td><td><span class="pill risk">▲ <span lang="en">1–30 s; limit raised to 30 s</span><span lang="zh">1–30 秒；时限调整为 30 秒</span></span></td></tr>
-            <tr><td><span lang="en">Disruption inbox</span><span lang="zh">异常收件箱</span></td><td><span lang="en">Every sample message gets the expected event type, or goes to the planner below the gate</span><span lang="zh">每条示例消息得到预期事件类型，或因低于阈值转交计划员</span></td><td><span class="pill ok">✓ <span lang="en">6/8 right, 2 to planner</span><span lang="zh">6/8 正确，2 条转人工</span></span></td></tr>
+            <tr><td><span lang="en">Disruption inbox</span><span lang="zh">异常收件箱</span></td><td><span lang="en">No wrong event applies itself; injections are flagged</span><span lang="zh">没有错误事件自动应用；注入攻击被标记</span></td><td><span class="pill ok">✓ <span lang="en">0 confident errors · 6 auto · 2/2 flagged</span><span lang="zh">0 条高置信度错误 · 6 条自动 · 2/2 标记</span></span></td></tr>
             <tr><td><span lang="en">Bilingual</span><span lang="zh">双语</span></td><td><span lang="en">Every workbench label exists in both languages</span><span lang="zh">工作台所有标签均有中英文</span></td><td><span class="pill ok">✓</span></td></tr>
           </tbody>
         </table>
       </div>
-      <p class="note"><span lang="en">Demo code: <code>demos/aps</code> in the Laya repository; 46 offline tests; <code>evaluate.py</code> produced the numbers in section 13.</span><span lang="zh">演示代码：Laya 仓库中的 <code>demos/aps</code>；46 项离线测试；第 13 节数据由 <code>evaluate.py</code> 生成。</span></p>
+      <p class="note"><span lang="en">Demo code: <code>demos/aps</code> in the Laya repository; 101 offline tests; <code>evaluate.py</code> produced the numbers in section 13.</span><span lang="zh">演示代码：Laya 仓库中的 <code>demos/aps</code>；101 项离线测试；第 13 节数据由 <code>evaluate.py</code> 生成。</span></p>
     </section>
 
     <!-- 13 results -->
@@ -657,8 +666,8 @@ footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
             <text x="85" y="76" class="c-val" text-anchor="middle">28</text><text x="155" y="47" class="c-val" text-anchor="middle">35</text>
             <rect x="300" y="66.3" width="50" height="133.7" rx="3" class="c-s2"/><rect x="370" y="192.9" width="50" height="7.1" rx="2" class="c-s1"/>
             <text x="325" y="59" class="c-val" text-anchor="middle">62.4</text><text x="395" y="186" class="c-val" text-anchor="middle">3.3</text>
-            <rect x="540" y="55.5" width="50" height="144.5" rx="3" class="c-s2"/><rect x="610" y="164" width="50" height="36" rx="3" class="c-s1"/>
-            <text x="565" y="48" class="c-val" text-anchor="middle">28.9</text><text x="635" y="157" class="c-val" text-anchor="middle">7.2</text>
+            <rect x="540" y="55.5" width="50" height="144.5" rx="3" class="c-s2"/><rect x="610" y="157.5" width="50" height="42.5" rx="3" class="c-s1"/>
+            <text x="565" y="48" class="c-val" text-anchor="middle">28.9</text><text x="635" y="150" class="c-val" text-anchor="middle">8.5</text>
             <g class="c-axis" text-anchor="middle">
               <text x="85" y="218"><tspan lang="en">rule</tspan><tspan lang="zh">规则</tspan></text><text x="155" y="218">CP-SAT</text>
               <text x="325" y="218"><tspan lang="en">rule</tspan><tspan lang="zh">规则</tspan></text><text x="395" y="218">CP-SAT</text>
@@ -666,90 +675,178 @@ footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
             </g>
             <rect x="20" y="30" width="200" height="170" class="c-hit" data-tip="On-time: rule 28/36 (77.8%) · CP-SAT 35/36 (97.2%)"/>
             <rect x="260" y="30" width="200" height="170" class="c-hit" data-tip="Weighted lateness: rule 62.4 h · CP-SAT 3.3 h (proven optimal)"/>
-            <rect x="500" y="30" width="200" height="170" class="c-hit" data-tip="Setups: rule 28.9 h · CP-SAT 7.2 h"/>
+            <rect x="500" y="30" width="200" height="170" class="c-hit" data-tip="Setups: rule 28.9 h · CP-SAT 8.5 h"/>
           </svg>
         </div>
-        <figcaption><b><span lang="en">Figure 4. Full plan against the due-date rule.</span><span lang="zh">图 4. 全量排程与按交期规则对比。</span></b> <span lang="en">36 orders, 150 operations, one week. The on-time level was proven optimal; setups were then cut to a quarter.</span><span lang="zh">36 个订单、150 道工序、一周。准时交付级已证明最优；随后换型时间降至约四分之一。</span></figcaption>
+        <figcaption><b><span lang="en">Figure 4. Full plan against the due-date rule.</span><span lang="zh">图 4. 全量排程与按交期规则对比。</span></b> <span lang="en">36 orders, 150 operations, one week. The on-time level was proven optimal; setups were then cut to under a third.</span><span lang="zh">36 个订单、150 道工序、一周。准时交付级已证明最优；随后换型时间降至不到三分之一。</span></figcaption>
       </figure>
 
       <figure>
         <div class="fig chart chart-box" data-chart>
-          <svg viewBox="0 0 740 240" role="img" aria-label="Repair time per disruption">
-            <g class="c-grid"><line x1="230" x2="230" y1="20" y2="210"/><line x1="326" x2="326" y1="20" y2="210"/><line x1="422" x2="422" y1="20" y2="210"/><line x1="518" x2="518" y1="20" y2="210"/><line x1="614" x2="614" y1="20" y2="210"/></g>
-            <line x1="614" x2="614" y1="14" y2="210" class="c-ref"/>
-            <g class="c-axis" text-anchor="middle"><text x="230" y="228">0</text><text x="326" y="228">7.5</text><text x="422" y="228">15</text><text x="518" y="228">22.5</text><text x="614" y="228">30 s</text></g>
+          <svg viewBox="0 0 740 390" role="img" aria-label="Repair time per disruption">
+            <g class="c-grid"><line x1="230" x2="230" y1="20" y2="360"/><line x1="326" x2="326" y1="20" y2="360"/><line x1="422" x2="422" y1="20" y2="360"/><line x1="518" x2="518" y1="20" y2="360"/><line x1="614" x2="614" y1="20" y2="360"/></g>
+            <line x1="614" x2="614" y1="14" y2="360" class="c-ref"/>
+            <g class="c-axis" text-anchor="middle"><text x="230" y="378">0</text><text x="326" y="378">7.5</text><text x="422" y="378">15</text><text x="518" y="378">22.5</text><text x="614" y="378">30 s</text></g>
             <g class="c-lab" text-anchor="end">
-              <text x="220" y="42"><tspan lang="en">LKT-04 down 6 h</tspan><tspan lang="zh">LKT-04 停机 6 小时</tspan></text>
-              <text x="220" y="80"><tspan lang="en">Rush order</tspan><tspan lang="zh">插单</tspan></text>
-              <text x="220" y="118"><tspan lang="en">Quality hold 8 h</tspan><tspan lang="zh">质量冻结 8 小时</tspan></text>
-              <text x="220" y="156"><tspan lang="en">CNC-02 30% slower</tspan><tspan lang="zh">CNC-02 降速 30%</tspan></text>
-              <text x="220" y="194"><tspan lang="en">Castings late 24 h</tspan><tspan lang="zh">铸件延迟 24 小时</tspan></text>
+            <text x="220" y="42"><tspan lang="en">LKT-04 down 6 h</tspan><tspan lang="zh">LKT-04 停机 6 小时</tspan></text>
+            <text x="220" y="76"><tspan lang="en">Rush order 80 in 30 h</tspan><tspan lang="zh">插单 80 件 / 30 小时</tspan></text>
+            <text x="220" y="110"><tspan lang="en">Quality hold 8 h</tspan><tspan lang="zh">质量冻结 8 小时</tspan></text>
+            <text x="220" y="144"><tspan lang="en">CNC-02 30% slower</tspan><tspan lang="zh">CNC-02 降速 30%</tspan></text>
+            <text x="220" y="178"><tspan lang="en">Castings late 24 h</tspan><tspan lang="zh">铸件延迟 24 小时</tspan></text>
+            <text x="220" y="212"><tspan lang="en">CNC-02 down 4 h</tspan><tspan lang="zh">CNC-02 停机 4 小时</tspan></text>
+            <text x="220" y="246"><tspan lang="en">CNC-01 maintenance 3 h</tspan><tspan lang="zh">CNC-01 保养 3 小时</tspan></text>
+            <text x="220" y="280"><tspan lang="en">Order cancelled</tspan><tspan lang="zh">订单取消</tspan></text>
+            <text x="220" y="314"><tspan lang="en">Due 48 h earlier</tspan><tspan lang="zh">交期提前 48 小时</tspan></text>
+            <text x="220" y="348"><tspan lang="en">Quantity 60</tspan><tspan lang="zh">数量改为 60</tspan></text>
             </g>
-            <rect x="230" y="28" width="385.3" height="20" rx="3" class="c-s1"/>
-            <rect x="230" y="66" width="170.2" height="20" rx="3" class="c-s1"/>
-            <rect x="230" y="104" width="317.4" height="20" rx="3" class="c-s1"/>
-            <rect x="230" y="142" width="385.3" height="20" rx="3" class="c-s1"/>
-            <rect x="230" y="180" width="12.8" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="28" width="327.7" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="62" width="257.3" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="96" width="9.0" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="130" width="385.3" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="164" width="9.0" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="198" width="385.3" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="232" width="98.6" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="266" width="7.7" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="300" width="11.5" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="334" width="10.2" height="20" rx="3" class="c-s1"/>
             <g class="c-val">
-              <text x="622" y="43">30.1 s · 91.7%</text>
-              <text x="408" y="81">13.3 s · 91.9%</text>
-              <text x="555" y="119">24.8 s · 94.4%</text>
-              <text x="622" y="157">30.1 s · 97.2%</text>
-              <text x="250" y="195">1.0 s · 97.2%</text>
+            <text x="566" y="43">25.6 s · 35/36</text>
+            <text x="495" y="77">20.1 s · 33/37</text>
+            <text x="247" y="111">0.7 s · 35/36</text>
+            <text x="622" y="145">30.1 s · 35/36</text>
+            <text x="247" y="179">0.7 s · 35/36</text>
+            <text x="622" y="213">30.1 s · 35/36</text>
+            <text x="337" y="247">7.7 s · 35/36</text>
+            <text x="246" y="281">0.6 s · 34/35</text>
+            <text x="250" y="315">0.9 s · 33/36</text>
+            <text x="248" y="349">0.8 s · 35/36</text>
             </g>
-            <rect x="0" y="24" width="720" height="28" class="c-hit" data-tip="LKT-04 down 6 h · 30.1 s · on-time 97.2% → 91.7% · 59 ops moved · 0 violations"/>
-            <rect x="0" y="62" width="720" height="28" class="c-hit" data-tip="Rush order 80 × HSG-7731 in 30 h · 13.3 s optimal · 97.2% → 91.9% · 62 moved"/>
-            <rect x="0" y="100" width="720" height="28" class="c-hit" data-tip="Quality hold 8 h · 24.8 s optimal · 97.2% → 94.4% · 83 moved"/>
-            <rect x="0" y="138" width="720" height="28" class="c-hit" data-tip="CNC-02 30% slower · 30.1 s · 97.2% → 97.2% · 88 moved"/>
-            <rect x="0" y="176" width="720" height="28" class="c-hit" data-tip="Castings late 24 h · 1.0 s optimal · 97.2% → 97.2% · 0 moved"/>
-          </svg>
+            <rect x="0" y="24" width="740" height="28" class="c-hit" data-tip="LKT-04 down 6 h · 25.6 s, tardiness optimal · on time 35 → 35 · weighted lateness 3.3 → 3.3 h · 19 ops moved · 0 violations"/>
+            <rect x="0" y="58" width="740" height="28" class="c-hit" data-tip="Rush order 80 in 30 h · 20.1 s, tardiness optimal · on time 35 → 33 · weighted lateness 3.3 → 10.0 h · 51 ops moved · 0 violations"/>
+            <rect x="0" y="92" width="740" height="28" class="c-hit" data-tip="Quality hold 8 h · 0.7 s, tardiness optimal · on time 35 → 35 · weighted lateness 3.3 → 3.3 h · 4 ops moved · 0 violations"/>
+            <rect x="0" y="126" width="740" height="28" class="c-hit" data-tip="CNC-02 30% slower · 30.1 s, tardiness optimal · on time 35 → 35 · weighted lateness 3.3 → 3.3 h · 62 ops moved · 0 violations"/>
+            <rect x="0" y="160" width="740" height="28" class="c-hit" data-tip="Castings late 24 h · 0.7 s, tardiness optimal · on time 35 → 35 · weighted lateness 3.3 → 3.3 h · 0 ops moved · 0 violations"/>
+            <rect x="0" y="194" width="740" height="28" class="c-hit" data-tip="CNC-02 down 4 h · 30.1 s, tardiness optimal · on time 35 → 35 · weighted lateness 3.3 → 3.3 h · 67 ops moved · 0 violations"/>
+            <rect x="0" y="228" width="740" height="28" class="c-hit" data-tip="CNC-01 maintenance 3 h · 7.7 s, tardiness optimal · on time 35 → 35 · weighted lateness 3.3 → 3.3 h · 5 ops moved · 0 violations"/>
+            <rect x="0" y="262" width="740" height="28" class="c-hit" data-tip="Order cancelled · 0.6 s, tardiness optimal · on time 35 → 34 · weighted lateness 3.3 → 3.3 h · 0 ops moved · 0 violations"/>
+            <rect x="0" y="296" width="740" height="28" class="c-hit" data-tip="Due 48 h earlier · 0.9 s, tardiness optimal · on time 35 → 33 · weighted lateness 3.3 → 40.9 h · 30 ops moved · 0 violations"/>
+            <rect x="0" y="330" width="740" height="28" class="c-hit" data-tip="Quantity 60 · 0.8 s, tardiness optimal · on time 35 → 35 · weighted lateness 3.3 → 3.3 h · 0 ops moved · 0 violations"/>
+            </svg>
         </div>
-        <figcaption><b><span lang="en">Figure 5. Time to a repair proposal.</span><span lang="zh">图 5. 生成修复方案的耗时。</span></b> <span lang="en">Each event repaired from the same approved plan (97.2% on time). Label: solve time · on-time delivery after the repair. Every repair reached a proven optimum for on-time delivery within its neighbourhood; the two at 30 s used the remaining time to reduce moved operations. CP-SAT runs 8 threads, so repeated runs vary.</span><span lang="zh">每个事件均从同一已批准排程（准时率 97.2%）出发修复。标注：求解时间 · 修复后准时率。所有修复均在邻域内证明了准时交付级最优；两个 30 秒的案例用剩余时间减少被移动的工序。CP-SAT 使用 8 线程，重复运行结果会有差异。</span></figcaption>
+        <figcaption><b><span lang="en">Figure 5. Time to a repair proposal.</span><span lang="zh">图 5. 生成修复方案的耗时。</span></b> <span lang="en">Ten events, each repaired from the same approved plan (35 of 36 on time). Label: solve time · orders on time after the repair. Every repair proved the on-time optimum within its neighbourhood and passed the independent check; those at 30 s used the remaining time to reduce moved operations. Only the rush order and the due date moved two days earlier cost on-time orders, and neither can be fully absorbed. CP-SAT runs 8 threads, so repeated runs vary.</span><span lang="zh">十个事件均从同一已批准排程（36 个订单中 35 个准时）出发修复。标注：求解时间 · 修复后准时订单数。所有修复均在邻域内证明了准时交付级最优并通过独立校验；耗时 30 秒的案例用剩余时间减少被移动的工序。只有插单和交期提前两天会减少准时订单，这两者都无法被完全消化。CP-SAT 使用 8 线程，重复运行结果会有差异。</span></figcaption>
       </figure>
 
       <figure>
         <div class="fig chart chart-box" data-chart>
           <div class="legend">
-            <span><i style="background:var(--good)"></i><span lang="en">✓ right, applied</span><span lang="zh">✓ 正确，自动应用</span></span>
-            <span><i style="background:var(--bar)"></i><span lang="en">✓ right, planner confirms</span><span lang="zh">✓ 正确，计划员确认</span></span>
-            <span><i style="background:var(--bad)"></i><span lang="en">✗ wrong, planner catches</span><span lang="zh">✗ 错误，计划员拦截</span></span>
+            <span><i style="background:var(--good)"></i><span lang="en">applied by itself (all right)</span><span lang="zh">自动应用（全部正确）</span></span>
+            <span><i style="background:var(--bar)"></i><span lang="en">right, planner confirms</span><span lang="zh">正确，计划员确认</span></span>
+            <span><i style="background:var(--bad)"></i><span lang="en">wrong, planner catches</span><span lang="zh">错误，计划员拦截</span></span>
+            <span><span lang="en">left bar reading 1, right bar reading 2 · ⚑ guard flagged</span><span lang="zh">左柱为第一次识别，右柱为第二次 · ⚑ 防护标记</span></span>
           </div>
-          <svg viewBox="0 0 720 250" role="img" aria-label="Laya confidence on the sample inbox">
+          <svg viewBox="0 0 720 270" role="img" aria-label="Laya two readings on the sample inbox">
             <g class="c-grid"><line x1="50" x2="710" y1="200" y2="200"/><line x1="50" x2="710" y1="160" y2="160"/><line x1="50" x2="710" y1="80" y2="80"/><line x1="50" x2="710" y1="40" y2="40"/></g>
             <line x1="50" x2="710" y1="120" y2="120" class="c-ref"/>
             <g class="c-axis" text-anchor="end"><text x="44" y="204">0</text><text x="44" y="164">.25</text><text x="44" y="124">.50</text><text x="44" y="84">.75</text><text x="44" y="44">1.0</text></g>
-            <text x="708" y="114" class="c-axis" text-anchor="end"><tspan lang="en">gate 0.50</tspan><tspan lang="zh">阈值 0.50</tspan></text>
-            <rect x="68" y="64.3" width="48" height="135.7" rx="3" class="c-good"/>
-            <rect x="148" y="99.5" width="48" height="100.5" rx="3" class="c-good"/>
-            <rect x="228" y="184.5" width="48" height="15.5" rx="3" class="c-bad"/>
-            <rect x="308" y="40" width="48" height="160" rx="3" class="c-good"/>
-            <rect x="388" y="122.1" width="48" height="77.9" rx="3" class="c-bad"/>
-            <rect x="468" y="119.7" width="48" height="80.3" rx="3" class="c-good"/>
-            <rect x="548" y="150.2" width="48" height="49.8" rx="3" class="c-s1"/>
-            <rect x="628" y="153.6" width="48" height="46.4" rx="3" class="c-s1"/>
-            <g class="c-val" text-anchor="middle">
-              <text x="92" y="58">.85</text><text x="172" y="93">.63</text><text x="252" y="178">.10</text><text x="332" y="34">1.0</text>
-              <text x="412" y="116">.49</text><text x="492" y="113">.50</text><text x="572" y="144">.31</text><text x="652" y="147">.29</text>
+            <text x="708" y="24" class="c-axis" text-anchor="end"><tspan lang="en">dashed line: gate 0.50</tspan><tspan lang="zh">虚线：阈值 0.50</tspan></text>
+            <g class="c-lab" text-anchor="middle" style="font-size:10.5px">
+            <text x="66.5" y="218">m1</text><text x="66.5" y="234">✗</text>
+            <text x="99.5" y="218">m2</text><text x="99.5" y="234">✗</text>
+            <text x="132.5" y="218">m3</text><text x="132.5" y="234">✓</text>
+            <text x="165.5" y="218">m4</text><text x="165.5" y="234">⚑</text>
+            <text x="198.5" y="218">m5</text><text x="198.5" y="234">✓</text>
+            <text x="231.5" y="218">m6</text><text x="231.5" y="234">✓</text>
+            <text x="264.5" y="218">m7</text><text x="264.5" y="234">✗</text>
+            <text x="297.5" y="218">m8</text><text x="297.5" y="234">⚑</text>
+            <text x="330.5" y="218">m9</text><text x="330.5" y="234">✓</text>
+            <text x="363.5" y="218">m10</text><text x="363.5" y="234">✓</text>
+            <text x="396.5" y="218">m11</text><text x="396.5" y="234">⚑</text>
+            <text x="429.5" y="218">m12</text><text x="429.5" y="234">✓</text>
+            <text x="462.5" y="218">m13</text><text x="462.5" y="234">✓</text>
+            <text x="495.5" y="218">m14</text><text x="495.5" y="234">✗</text>
+            <text x="528.5" y="218">m15</text><text x="528.5" y="234">✗</text>
+            <text x="561.5" y="218">m16</text><text x="561.5" y="234">✓</text>
+            <text x="594.5" y="218">m17</text><text x="594.5" y="234">✓</text>
+            <text x="627.5" y="218">m18</text><text x="627.5" y="234">✓</text>
+            <text x="660.5" y="218">x1</text><text x="660.5" y="234">⚑</text>
+            <text x="693.5" y="218">x2</text><text x="693.5" y="234">⚑</text>
             </g>
-            <g class="c-lab" text-anchor="middle"><text x="92" y="218">EN</text><text x="172" y="218">中</text><text x="252" y="218">DE</text><text x="332" y="218">EN</text><text x="412" y="218">中</text><text x="492" y="218">DE</text><text x="572" y="218">EN</text><text x="652" y="218">中</text></g>
-            <g class="c-axis" text-anchor="middle">
-              <text x="92" y="236"><tspan lang="en">down</tspan><tspan lang="zh">停机</tspan></text><text x="172" y="236"><tspan lang="en">slower</tspan><tspan lang="zh">劣化</tspan></text>
-              <text x="252" y="236"><tspan lang="en">late ✗</tspan><tspan lang="zh">延迟 ✗</tspan></text><text x="332" y="236"><tspan lang="en">rush</tspan><tspan lang="zh">插单</tspan></text>
-              <text x="412" y="236"><tspan lang="en">hold ✗</tspan><tspan lang="zh">冻结 ✗</tspan></text><text x="492" y="236"><tspan lang="en">none</tspan><tspan lang="zh">无</tspan></text>
-              <text x="572" y="236"><tspan lang="en">none</tspan><tspan lang="zh">无</tspan></text><text x="652" y="236"><tspan lang="en">none</tspan><tspan lang="zh">无</tspan></text>
-            </g>
-            <rect x="60" y="30" width="64" height="170" class="c-hit" data-tip="EN “LKT-04 … stopped, 6 hours” → machine stopped 0.85 · applied"/>
-            <rect x="140" y="30" width="64" height="170" class="c-hit" data-tip="中 “CNC-02 主轴异响 … 降低约30%” → machine slow 0.63 · applied"/>
-            <rect x="220" y="30" width="64" height="170" class="c-hit" data-tip="DE “Gussteile … kommen erst in 24 Std.” → read as quality block 0.10 · planner"/>
-            <rect x="300" y="30" width="64" height="170" class="c-hit" data-tip="EN “80 extra HSG-7731 within 30 hours” → urgent order 1.00 · applied"/>
-            <rect x="380" y="30" width="64" height="170" class="c-hit" data-tip="中 “泄漏测试不合格，已冻结” → read as delivery late 0.49 · planner"/>
-            <rect x="460" y="30" width="64" height="170" class="c-hit" data-tip="DE “CNC-03 läuft wieder normal” → normal 0.50 · applied (no change)"/>
-            <rect x="540" y="30" width="64" height="170" class="c-hit" data-tip="EN “canteen closes early” → normal 0.31 · planner confirms"/>
-            <rect x="620" y="30" width="64" height="170" class="c-hit" data-tip="中 “镜头已清洁，不影响生产” → normal 0.29 · planner confirms"/>
-          </svg>
+            <rect x="55.5" y="43.7" width="10" height="156.3" rx="2" class="c-bad" fill-opacity="1"/>
+            <rect x="67.5" y="110.1" width="10" height="89.9" rx="2" class="c-bad" fill-opacity="0.55"/>
+            <rect x="88.5" y="113.0" width="10" height="87.0" rx="2" class="c-bad" fill-opacity="1"/>
+            <rect x="100.5" y="66.7" width="10" height="133.3" rx="2" class="c-bad" fill-opacity="0.55"/>
+            <rect x="121.5" y="93.6" width="10" height="106.4" rx="2" class="c-s1" fill-opacity="1"/>
+            <rect x="133.5" y="162.7" width="10" height="37.3" rx="2" class="c-s1" fill-opacity="0.55"/>
+            <rect x="154.5" y="42.6" width="10" height="157.4" rx="2" class="c-s1" fill-opacity="1"/>
+            <rect x="166.5" y="84.0" width="10" height="116.0" rx="2" class="c-s1" fill-opacity="0.55"/>
+            <rect x="187.5" y="51.0" width="10" height="149.0" rx="2" class="c-good" fill-opacity="1"/>
+            <rect x="199.5" y="46.7" width="10" height="153.3" rx="2" class="c-good" fill-opacity="0.55"/>
+            <rect x="220.5" y="84.6" width="10" height="115.4" rx="2" class="c-s1" fill-opacity="1"/>
+            <rect x="232.5" y="152.0" width="10" height="48.0" rx="2" class="c-s1" fill-opacity="0.55"/>
+            <rect x="253.5" y="136.6" width="10" height="63.4" rx="2" class="c-bad" fill-opacity="1"/>
+            <rect x="265.5" y="191.7" width="10" height="8.3" rx="2" class="c-bad" fill-opacity="0.55"/>
+            <rect x="286.5" y="158.4" width="10" height="41.6" rx="2" class="c-bad" fill-opacity="1"/>
+            <rect x="298.5" y="161.8" width="10" height="38.2" rx="2" class="c-bad" fill-opacity="0.55"/>
+            <rect x="319.5" y="40.0" width="10" height="160.0" rx="2" class="c-good" fill-opacity="1"/>
+            <rect x="331.5" y="74.9" width="10" height="125.1" rx="2" class="c-good" fill-opacity="0.55"/>
+            <rect x="352.5" y="41.0" width="10" height="159.0" rx="2" class="c-s1" fill-opacity="1"/>
+            <rect x="364.5" y="181.3" width="10" height="18.7" rx="2" class="c-s1" fill-opacity="0.55"/>
+            <rect x="385.5" y="115.5" width="10" height="84.5" rx="2" class="c-s1" fill-opacity="1"/>
+            <rect x="397.5" y="148.2" width="10" height="51.8" rx="2" class="c-s1" fill-opacity="0.55"/>
+            <rect x="418.5" y="40.0" width="10" height="160.0" rx="2" class="c-good" fill-opacity="1"/>
+            <rect x="430.5" y="69.0" width="10" height="131.0" rx="2" class="c-good" fill-opacity="0.55"/>
+            <rect x="451.5" y="40.0" width="10" height="160.0" rx="2" class="c-good" fill-opacity="1"/>
+            <rect x="463.5" y="40.5" width="10" height="159.5" rx="2" class="c-good" fill-opacity="0.55"/>
+            <rect x="484.5" y="179.2" width="10" height="20.8" rx="2" class="c-bad" fill-opacity="1"/>
+            <rect x="496.5" y="177.8" width="10" height="22.2" rx="2" class="c-bad" fill-opacity="0.55"/>
+            <rect x="517.5" y="40.2" width="10" height="159.8" rx="2" class="c-bad" fill-opacity="1"/>
+            <rect x="529.5" y="82.6" width="10" height="117.4" rx="2" class="c-bad" fill-opacity="0.55"/>
+            <rect x="550.5" y="40.0" width="10" height="160.0" rx="2" class="c-good" fill-opacity="1"/>
+            <rect x="562.5" y="51.7" width="10" height="148.3" rx="2" class="c-good" fill-opacity="0.55"/>
+            <rect x="583.5" y="40.0" width="10" height="160.0" rx="2" class="c-good" fill-opacity="1"/>
+            <rect x="595.5" y="99.4" width="10" height="100.6" rx="2" class="c-good" fill-opacity="0.55"/>
+            <rect x="616.5" y="108.3" width="10" height="91.7" rx="2" class="c-s1" fill-opacity="1"/>
+            <rect x="628.5" y="167.8" width="10" height="32.2" rx="2" class="c-s1" fill-opacity="0.55"/>
+            <rect x="649.5" y="40.0" width="10" height="160.0" rx="2" class="c-s1" fill-opacity="1"/>
+            <rect x="661.5" y="185.9" width="10" height="14.1" rx="2" class="c-s1" fill-opacity="0.55"/>
+            <rect x="682.5" y="130.2" width="10" height="69.8" rx="2" class="c-s1" fill-opacity="1"/>
+            <rect x="694.5" y="134.9" width="10" height="65.1" rx="2" class="c-s1" fill-opacity="0.55"/>
+            <rect x="50.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m1 (en) expected machine_down · reading 1 maintenance 0.98 · reading 2 maintenance 0.56 · planner: missing"/>
+            <rect x="83.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m2 (zh) expected machine_degrading · reading 1 maintenance 0.54 · reading 2 maintenance 0.83 · planner: missing"/>
+            <rect x="116.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m3 (de) expected material_late · reading 1 material_late 0.67 · reading 2 quality_hold 0.23 · planner: disagree"/>
+            <rect x="149.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m4 (en) expected rush_order · reading 1 rush_order 0.98 · reading 2 rush_order 0.72 · guard flagged · planner: flagged"/>
+            <rect x="182.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m5 (zh) expected quality_hold · reading 1 quality_hold 0.93 · reading 2 quality_hold 0.96 · applied by itself"/>
+            <rect x="215.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m6 (de) expected no_action · reading 1 no_action 0.72 · reading 2 machine_down 0.30 · planner: disagree"/>
+            <rect x="248.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m7 (en) expected no_action · reading 1 order_cancel 0.40 · reading 2 quality_hold 0.05 · planner: disagree, below_gate, missing"/>
+            <rect x="281.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m8 (zh) expected no_action · reading 1 quality_hold 0.26 · reading 2 quality_hold 0.24 · guard flagged · planner: flagged, below_gate, missing"/>
+            <rect x="314.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m9 (en) expected maintenance · reading 1 maintenance 1.00 · reading 2 maintenance 0.78 · applied by itself"/>
+            <rect x="347.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m10 (zh) expected maintenance · reading 1 maintenance 0.99 · reading 2 quality_hold 0.12 · planner: disagree"/>
+            <rect x="380.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m11 (de) expected maintenance · reading 1 maintenance 0.53 · reading 2 maintenance 0.32 · guard flagged · planner: flagged, below_gate"/>
+            <rect x="413.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m12 (en) expected order_cancel · reading 1 order_cancel 1.00 · reading 2 order_cancel 0.82 · applied by itself"/>
+            <rect x="446.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m13 (zh) expected order_cancel · reading 1 order_cancel 1.00 · reading 2 order_cancel 1.00 · applied by itself"/>
+            <rect x="479.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m14 (en) expected due_change · reading 1 order_cancel 0.13 · reading 2 quality_hold 0.14 · planner: disagree, below_gate"/>
+            <rect x="512.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m15 (zh) expected due_change · reading 1 material_late 1.00 · reading 2 due_change 0.73 · planner: disagree"/>
+            <rect x="545.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m16 (de) expected quantity_change · reading 1 quantity_change 1.00 · reading 2 quantity_change 0.93 · applied by itself"/>
+            <rect x="578.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m17 (en) expected quantity_change · reading 1 quantity_change 1.00 · reading 2 quantity_change 0.63 · applied by itself"/>
+            <rect x="611.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m18 (en) expected machine_down · reading 1 machine_down 0.57 · reading 2 machine_down 0.20 · planner: below_gate, missing"/>
+            <rect x="644.0" y="30" width="33.0" height="210" class="c-hit" data-tip="x1 (en) expected flagged · reading 1 order_cancel 1.00 · reading 2 quality_hold 0.09 · guard flagged · planner: flagged, disagree, missing"/>
+            <rect x="677.0" y="30" width="33.0" height="210" class="c-hit" data-tip="x2 (en) expected flagged · reading 1 no_action 0.44 · reading 2 no_action 0.41 · guard flagged · planner: flagged, below_gate"/>
+            </svg>
         </div>
-        <figcaption><b><span lang="en">Figure 6. Laya on the disruption inbox.</span><span lang="zh">图 6. Laya 识别异常收件箱。</span></b> <span lang="en">6 of 8 messages right; both errors fell below the gate and went to the planner, so no wrong event reached the scheduler. Median 0.5 s per message on CPU.</span><span lang="zh">8 条消息中 6 条正确；2 条错误均低于阈值并转交计划员，没有错误事件进入排程。CPU 上每条中位耗时约 0.5 秒。</span></figcaption>
+        <figcaption><b><span lang="en">Figure 6. Laya on the disruption inbox.</span><span lang="zh">图 6. Laya 识别异常收件箱。</span></b> <span lang="en">18 messages in English, Chinese and German plus 2 injections. 12 of 18 read right and both injections flagged. 6 applied by themselves, all correct: <b>no confident errors</b>, against 3 and 2 for either reading alone at the same gate. The guard also flagged 3 genuine messages; they go to the planner with the reading prefilled. 0.6–3.9 s per message on CPU for the four questions (median 1.8 s), plus the guard.</span><span lang="zh">英文、中文、德文 18 条消息及 2 条注入攻击。18 条中 12 条识别正确，2 条注入均被标记。6 条自动应用且全部正确：<b>没有高置信度错误</b>；在相同阈值下，单独使用任一识别分别会产生 3 条和 2 条。防护模型还误标了 3 条正常消息，它们带着预填结果转交计划员。CPU 上四个问题每条 0.6–3.9 秒（中位 1.8 秒），另加防护。</span></figcaption>
       </figure>
+
+      <div class="tbl">
+        <table>
+          <thead><tr><th><span lang="en">Held-out test</span><span lang="zh">保留测试集</span></th><th><span lang="en">Read by</span><span lang="zh">识别方</span></th><th><span lang="en">Result</span><span lang="zh">结果</span></th></tr></thead>
+          <tbody>
+            <tr><td><span lang="en">12 rejection comments</span><span lang="zh">12 条驳回意见</span></td><td>Laya</td><td><span lang="en">9 right; 8 above the gate, 2 of them wrong: the next step is only suggested</span><span lang="zh">9 条正确；8 条高于阈值，其中 2 条错误：下一步仅作建议</span></td></tr>
+            <tr><td><span lang="en">12 shift notes</span><span lang="zh">12 条交接班记录</span></td><td>Laya</td><td><span lang="en">5 flagged, none healthy: 4 of 4 breakdowns, 1 of 4 early warnings</span><span lang="zh">标记 5 条，无误报：故障 4/4，早期征兆 1/4</span></td></tr>
+            <tr><td><span lang="en">20 messages: sure or not, customer consequence</span><span lang="zh">20 条消息：是否确定、客户影响</span></td><td><span lang="en">Rules</span><span lang="zh">规则</span></td><td><span lang="en">20 of 20 and 19 of 20</span><span lang="zh">20/20 与 19/20</span></td></tr>
+            <tr><td><span lang="en">Re-run with only LKT-04 free vs. normal repair</span><span lang="zh">只放开 LKT-04 重新求解 vs 常规修复</span></td><td>CP-SAT</td><td><span lang="en">Same on-time result, 1.2 s instead of 18 s, 21 vs 18 operations moved</span><span lang="zh">准时结果相同，1.2 秒对 18 秒，移动工序 21 对 18</span></td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <!-- 14 risks -->

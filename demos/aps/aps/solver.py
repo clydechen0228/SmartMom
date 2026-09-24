@@ -46,7 +46,15 @@ class Problem:
         """Plant blocks plus nights for the spill days after the horizon."""
         extra = [(d * DAY + SHIFT_END, (d + 1) * DAY + SHIFT_START)
                  for d in range(HORIZON_DAYS, HORIZON_DAYS + SPILL_DAYS)]
-        return sorted(self.plant.blocked.get(machine, []) + extra)
+        merged: List[Tuple[int, int]] = []
+        # merged, because a downtime or maintenance window can overlap a night, and the
+        # solver puts blocked time in a no-overlap constraint
+        for b0, b1 in sorted(self.plant.blocked.get(machine, []) + extra):
+            if merged and b0 <= merged[-1][1]:
+                merged[-1] = (merged[-1][0], max(merged[-1][1], b1))
+            else:
+                merged.append((b0, b1))
+        return merged
 
     def machine_tail(self, machine: str) -> Tuple[int, Optional[str]]:
         """End and setup family of the last finished op on a machine."""
@@ -113,14 +121,30 @@ def list_schedule(p: Problem, priority, prefer=None, stick: int = 60, pinned=Non
         if a["end"] >= free[a["machine"]]:
             free[a["machine"]], last[a["machine"]] = a["end"], a["family"]
     todo = {op.id: (o, op) for o, op in p.pending_ops() if op.id not in sched}
+    # Pinned ops also keep their previous order on their machine (the repair model demands
+    # it); otherwise the warm start is infeasible and the solver starts from nothing.
+    chain_prev: Dict[str, str] = {}
+    if pinned and p.previous:
+        by_m: Dict[str, List[str]] = {}
+        for k in pinned:
+            if k in todo and k in p.previous:
+                by_m.setdefault(p.previous[k]["machine"], []).append(k)
+        for ids in by_m.values():
+            ids.sort(key=lambda i: p.previous[i]["start"])
+            chain_prev.update(zip(ids[1:], ids))
     while todo:
         cands = []
-        for op_id, (o, op) in todo.items():
-            preds = [x for x in o.ops if x.seq < op.seq and x.id not in p.done]
-            if any(x.id not in sched for x in preds):
-                continue
-            r = max([_earliest(p, o, op)] + [sched[x.id]["end"] for x in preds])
-            cands.append((priority(o, op, r), r, op_id))
+        for strict in (True, False):
+            for op_id, (o, op) in todo.items():
+                preds = [x for x in o.ops if x.seq < op.seq and x.id not in p.done]
+                if any(x.id not in sched for x in preds):
+                    continue
+                if strict and chain_prev.get(op_id) in todo:
+                    continue
+                r = max([_earliest(p, o, op)] + [sched[x.id]["end"] for x in preds])
+                cands.append((priority(o, op, r), r, op_id))
+            if cands:
+                break
         cands.sort()
         _, r, op_id = cands[0]
         o, op = todo.pop(op_id)

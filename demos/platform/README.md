@@ -12,7 +12,7 @@ python demos/platform/server.py --mock    # no Laya weights; the Laya console is
 |---|---|---|
 | `/` | Portal: live overview of every module (EN / 中文) | `demos/platform/static/index.html` |
 | `/quality/` | Quality inspection: IoT gateway, rules, SPC, Laya on operator notes, QA review | `demos/quality_inspection` |
-| `/aps/` | Planning and scheduling: SAP orders, CP-SAT, repairs, disruption inbox (EN / 中文) | `demos/aps` |
+| `/aps/` | Planning and scheduling: SAP orders, CP-SAT, repairs, what-if scenarios, why-late, Laya inbox and command bar (EN / 中文) | `demos/aps` |
 | `/laya/` | Laya console: ask your own typed questions | `webui` |
 | `/docs/` | The design documents | `docs/` |
 
