@@ -156,6 +156,7 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
       <li><a href="#reject"><span lang="en">Rejecting a proposal</span><span lang="zh">驳回方案</span></a></li>
       <li><a href="#notes"><span lang="en">Shift notes</span><span lang="zh">交接班记录</span></a></li>
       <li><a href="#priority"><span lang="en">Priorities</span><span lang="zh">优先级</span></a></li>
+      <li><a href="#labels"><span lang="en">Training labels</span><span lang="zh">训练标签</span></a></li>
       <li><a href="#trust"><span lang="en">How far to trust it</span><span lang="zh">可信程度</span></a></li>
     </ol>
   </nav>
@@ -168,8 +169,8 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
         <p class="lede"><span lang="en">Ask questions in plain language, compare what-if scenarios before touching the plan, see why an order is late, and let the workbench turn rejections and shift notes into next steps. Nothing changes the approved plan until you approve a proposal.</span><span lang="zh">用自然语言提问，在改动排程前比较假设场景，查看订单延误的原因，并让工作台把驳回意见和交接班记录转化为下一步操作。在您批准方案之前，已批准的排程不会被改动。</span></p>
       </div>
       <div class="start">
-        <span><span lang="en">Open</span><span lang="zh">打开</span> <b class="mono">http://127.0.0.1:8100/aps/</b></span>
-        <span><span lang="en">or on its own:</span><span lang="zh">或单独运行：</span> <code>python demos/aps/server.py</code> → <b class="mono">:8095</b></span>
+        <span><span lang="en">Start from the project root:</span><span lang="zh">在项目根目录启动：</span> <code>./run.sh start</code>, <span lang="en">then open</span><span lang="zh">然后打开</span> <b class="mono">http://127.0.0.1:8100/aps/</b></span>
+        <span><span lang="en">planning alone:</span><span lang="zh">单独运行排程：</span> <code>./run.sh start aps</code> → <b class="mono">:8095</b> · <code>./run.sh help</code> <span lang="en">lists every command</span><span lang="zh">列出全部命令</span></span>
         <span><span lang="en">The first plan takes about a minute. The</span><span lang="zh">首次排程约需一分钟。右上角</span> <span class="btn">EN</span> <span class="btn">中文</span> <span lang="en">switch sets the language.</span><span lang="zh">按钮切换语言。</span></span>
       </div>
       <div class="flow" aria-label="Who does what">
@@ -266,7 +267,21 @@ footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--lin
       <h2><span lang="en">Shift notes</span><span lang="zh">交接班记录</span> <span class="who laya">Laya</span></h2>
       <p class="where"><span lang="en">In</span><span lang="zh">在</span> <span class="panel-name"><span lang="en">Shift notes</span><span lang="zh">交接班记录</span></span><span lang="en">, click a sample or type an operator's note and press</span><span lang="zh">中点击示例或输入操作工记录，然后点击</span> <span class="btn"><span lang="en">Read with Laya</span><span lang="zh">用 Laya 识别</span></span>.</p>
       <p><span lang="en">If Laya reads a likely breakdown, the note shows</span><span lang="zh">若 Laya 判断可能故障，记录会显示</span> <span class="flag"><span lang="en">⚠ likely breakdown</span><span lang="zh">⚠ 可能故障</span></span><span lang="en">, the machine gets a</span><span lang="zh">，该设备在甘特图上出现</span> <span class="flag">⚠</span> <span lang="en">on the Gantt, and</span><span lang="zh">标记，并可点击</span> <span class="btn"><span lang="en">Report machine down</span><span lang="zh">上报设备停机</span></span> <span lang="en">opens a machine-down event — fill in the hours.</span><span lang="zh">打开停机事件——填写小时数即可。</span></p>
+      <p><span lang="en">Under each note,</span><span lang="zh">每条记录下方有</span> <span class="panel-name"><span lang="en">Actually:</span><span lang="zh">实际情况：</span></span> <span class="btn"><span lang="en">OK</span><span lang="zh">正常</span></span> <span class="btn"><span lang="en">Watch</span><span lang="zh">需关注</span></span> <span class="btn"><span lang="en">Stop</span><span lang="zh">停机</span></span> <span lang="en">records what the machine's condition really was. Laya learns from it (see Training labels).</span><span lang="zh">按钮，用于记录设备的真实状态，Laya 会从中学习（见“训练标签”）。</span></p>
       <p class="callout warn"><span lang="en">It catches breakdowns but mostly misses early warnings (“vibration still within limits”). <b>A note without a flag does not mean the machine is fine.</b></span><span lang="zh">它能发现故障，但大多识别不出早期征兆（如“振动仍在范围内”）。<b>没有标记不代表设备正常。</b></span></p>
+    </section>
+
+    <section id="labels">
+      <div class="eyebrow"><span lang="en">Happens as you work</span><span lang="zh">在工作中自动完成</span></div>
+      <h2><span lang="en">Training labels</span><span lang="zh">训练标签</span> <span class="who laya">Laya</span></h2>
+      <p><span lang="en">Every decision you take on something Laya read is saved as an example Laya can later be trained on. Nothing extra to do:</span><span lang="zh">您对 Laya 识别结果做出的每个决定都会保存为日后训练 Laya 的样本，无需额外操作：</span></p>
+      <div class="steps">
+        <div class="step"><span class="k"><span lang="en">Inbox</span><span lang="zh">收件箱</span></span><span class="v"><span lang="en">the event you create or run as a what-if says what the message really was; dismissing it counts as “no action” (a weak label)</span><span lang="zh">您生成或作为假设运行的事件表明消息的真实含义；忽略消息计为“无需处理”（弱标签）</span></span></div>
+        <div class="step"><span class="k"><span lang="en">Command bar</span><span lang="zh">计划助手</span></span><span class="v"><span lang="en">the intent you pick when Laya is unsure</span><span lang="zh">Laya 不确定时您选择的意图</span></span></div>
+        <div class="step"><span class="k"><span lang="en">Rejections</span><span lang="zh">驳回</span></span><span class="v"><span lang="en">the next step you click after rejecting</span><span lang="zh">驳回后您点击的下一步</span></span></div>
+        <div class="step"><span class="k"><span lang="en">Shift notes</span><span lang="zh">交接班记录</span></span><span class="v"><span lang="en">Actually: OK / Watch / Stop, or Report machine down</span><span lang="zh">实际情况：正常 / 需关注 / 停机，或上报设备停机</span></span></div>
+      </div>
+      <p class="gate"><span lang="en">The</span><span lang="zh">在</span> <span class="panel-name"><span lang="en">Versions and events</span><span lang="zh">版本与事件</span></span> <span lang="en">panel shows how many labels exist and how often Laya was right. The labels stay on the plant's server. Engineers turn them into a better Laya with <code>laya_train</code>, and every training run appears at <b class="mono">http://127.0.0.1:8100/training/</b>. A trained model reaches planning only after it beats the current one on messages it never saw.</span><span lang="zh">面板显示标签数量及 Laya 的正确率。标签保存在工厂服务器上。工程师用 <code>laya_train</code> 训练出更好的 Laya，每次训练记录可在 <b class="mono">http://127.0.0.1:8100/training/</b> 查看。训练后的模型只有在从未见过的消息上优于当前模型，才会用于排程。</span></p>
     </section>
 
     <section id="priority">

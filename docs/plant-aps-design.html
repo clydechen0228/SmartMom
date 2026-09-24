@@ -565,6 +565,7 @@ footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
         <li><b>Command bar:</b> “What if LKT-04 goes down for 8 hours?” runs a scenario; “Why is 10004403 late?” shows the ranked causes.</li>
         <li><b>What-if scenarios:</b> up to six side by side with KPI deltas; view one on the Gantt, promote it to the proposal, or discard it.</li>
         <li><b>Why late and load:</b> the main cause of every late or at-risk order, and a heatmap of load by work centre and day.</li>
+        <li><b>Shift notes and training labels:</b> operators' notes read for likely breakdowns; every planner decision on a Laya reading (event submitted, intent picked, next step after a rejection, <i>Actually: OK / Watch / Stop</i> on a note) is saved as a training label, and the workbench shows how many exist and how often Laya was right.</li>
         <li><b>Proposal panel:</b> OTD, weighted tardiness, late orders and setup hours before and after; operations moved; approve or reject.</li>
         <li><b>Publish:</b> shows the MES dispatch lists and SAP date updates that will be sent.</li>
       </ul>
@@ -574,6 +575,7 @@ footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
         <li><b>计划助手：</b>“如果 CNC-02 停机 4 小时会怎样？”运行假设场景；“订单 10004407 为什么有延误风险？”显示排序后的原因。</li>
         <li><b>假设场景：</b>最多六个并列，显示指标变化；可在甘特图中查看、转为方案或删除。</li>
         <li><b>延误原因与负荷：</b>每个延误或有风险订单的主要原因，以及按工作中心和日期的负荷热力图。</li>
+        <li><b>交接班记录与训练标签：</b>识别操作工记录中可能的故障；计划员对 Laya 识别结果的每个决定（提交的事件、选择的意图、驳回后的下一步、交接班记录上的“实际情况：正常 / 需关注 / 停机”）都保存为训练标签，工作台显示标签数量及 Laya 的正确率。</li>
         <li><b>方案面板：</b>变更前后的 OTD、加权延误、延误订单数、换型工时；被调整的工序；批准或驳回。</li>
         <li><b>发布：</b>预览将发送的 MES 派工单与 SAP 日期更新。</li>
       </ul>
@@ -647,7 +649,7 @@ footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
           </tbody>
         </table>
       </div>
-      <p class="note"><span lang="en">Demo code: <code>demos/aps</code> in the Laya repository; 101 offline tests; <code>evaluate.py</code> produced the numbers in section 13.</span><span lang="zh">演示代码：Laya 仓库中的 <code>demos/aps</code>；101 项离线测试；第 13 节数据由 <code>evaluate.py</code> 生成。</span></p>
+      <p class="note"><span lang="en">Demo code: <code>demos/aps</code> in the Laya repository; 115 offline tests; <code>evaluate.py</code> produced the numbers in section 13. Start it from the repository root with <code>./run.sh start</code> (the whole platform) or <code>./run.sh start aps</code>.</span><span lang="zh">演示代码：Laya 仓库中的 <code>demos/aps</code>；115 项离线测试；第 13 节数据由 <code>evaluate.py</code> 生成。在仓库根目录用 <code>./run.sh start</code>（整个平台）或 <code>./run.sh start aps</code> 启动。</span></p>
     </section>
 
     <!-- 13 results -->
@@ -846,6 +848,7 @@ footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
             <tr><td><span lang="en">12 shift notes</span><span lang="zh">12 条交接班记录</span></td><td>Laya</td><td><span lang="en">5 flagged, none healthy: 4 of 4 breakdowns, 1 of 4 early warnings</span><span lang="zh">标记 5 条，无误报：故障 4/4，早期征兆 1/4</span></td></tr>
             <tr><td><span lang="en">20 messages: sure or not, customer consequence</span><span lang="zh">20 条消息：是否确定、客户影响</span></td><td><span lang="en">Rules</span><span lang="zh">规则</span></td><td><span lang="en">20 of 20 and 19 of 20</span><span lang="zh">20/20 与 19/20</span></td></tr>
             <tr><td><span lang="en">Re-run with only LKT-04 free vs. normal repair</span><span lang="zh">只放开 LKT-04 重新求解 vs 常规修复</span></td><td>CP-SAT</td><td><span lang="en">Same on-time result, 1.2 s instead of 18 s, 21 vs 18 operations moved</span><span lang="zh">准时结果相同，1.2 秒对 18 秒，移动工序 21 对 18</span></td></tr>
+            <tr><td><span lang="en">50 messages, after fine-tuning the multilingual checkpoint on 41 others (demonstration)</span><span lang="zh">50 条消息，多语言检查点在另外 41 条上微调后（演示）</span></td><td>Laya + <code>laya_train</code></td><td><span lang="en">Accuracy 63.0% → 77.8%, calibration error 0.224 → 0.082, confident but wrong 14 → 3; too little data to deploy</span><span lang="zh">准确率 63.0% → 77.8%，校准误差 0.224 → 0.082，高置信度错误 14 → 3；数据太少，不可部署</span></td></tr>
           </tbody>
         </table>
       </div>

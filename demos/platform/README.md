@@ -4,9 +4,14 @@ Every demo in one process on one port, with one shared Laya model and a live lin
 quality and planning.
 
 ```bash
-python demos/platform/server.py           # http://127.0.0.1:8100
-python demos/platform/server.py --mock    # no Laya weights; the Laya console is disabled
+./run.sh start                  # from the repo root → http://127.0.0.1:8100
+./run.sh start platform --mock  # no Laya weights; the Laya console is disabled
+./run.sh status                 # what is running;  ./run.sh stop  stops it
+./run.sh help                   # every command, server option and environment variable
 ```
+
+`run.sh` starts the server in the background (log in `var/run/platform.log`) and waits
+until it answers. Without it: `python demos/platform/server.py [--mock]`.
 
 | Path | Module | Source |
 |---|---|---|
@@ -14,10 +19,11 @@ python demos/platform/server.py --mock    # no Laya weights; the Laya console is
 | `/quality/` | Quality inspection: IoT gateway, rules, SPC, Laya on operator notes, QA review | `demos/quality_inspection` |
 | `/aps/` | Planning and scheduling: SAP orders, CP-SAT, repairs, what-if scenarios, why-late, Laya inbox and command bar (EN / 中文) | `demos/aps` |
 | `/laya/` | Laya console: ask your own typed questions | `webui` |
-| `/docs/` | The design documents | `docs/` |
+| `/training/` | Laya training runs: data, settings, improvement curves, before and after | `laya_train` (runs from `ckpt/` or `$LAYA_RUNS`) |
+| `/docs/` | The design documents and the APS workbench guide | `docs/` |
 
-Each module still runs on its own (`demos/quality_inspection/server.py` on :8090,
-`demos/aps/server.py` on :8095, `webui/server.py`). The platform imports the same apps and
+Each module still runs on its own (`./run.sh start quality` on :8090, `./run.sh start aps`
+on :8095, `./run.sh start console` on :8000), for work on one module. The platform imports the same apps and
 mounts them. Their pages use relative API paths, so they work both at `/` and under a
 prefix, and they show a "← Platform" link only when mounted.
 
@@ -41,6 +47,11 @@ prefix, and they show a "← Platform" link only when mounted.
   unit was started against. The platform plays that role: a unit is assigned to the
   earliest-due unfinished SAP order for its material until that order's quantity is used
   up. The order shows in the quality feed, the QA queue and the unit detail.
+- **Trained checkpoints for planning only.** `--aps-laya-english` / `--aps-laya-multilingual`
+  (or `$LAYA_ENGLISH` / `$LAYA_MULTILINGUAL`) give planning a checkpoint trained with
+  `laya_train`; quality inspection, the console and the injection guard keep the published
+  ones. Planner decisions on Laya readings are saved as training labels
+  (see `demos/aps/README.md`, *Training data from normal use*).
 - **One overview.** `/api/overview` returns the headline figures of every module, which
   the portal shows every 3 s.
 

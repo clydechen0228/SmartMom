@@ -429,6 +429,14 @@ as a fast base to specialise, not as a zero-shot decision engine.
 
 Runtime on 2xT4 is roughly 4-5 hours for 4 epochs over ~30k questions.
 
+For your own labelled texts, **[`laya_train/`](laya_train/README.md)** runs the same RLCD loop as a
+library and command line (single GPU, CPU head-only, or `torchrun`), plus evaluation against the
+published checkpoints and temperature calibration on held-out data.
+
+**Plant demos.** `demos/` holds a smart-factory platform built on Laya (quality inspection,
+planning, the Laya console, training runs). From the repo root: `./run.sh start`, then
+http://127.0.0.1:8100/. `./run.sh help` lists every command; see [`GUIDE.md`](GUIDE.md#9-the-plant-demos-and-runsh).
+
 ---
 
 ## Support the Project

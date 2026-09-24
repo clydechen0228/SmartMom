@@ -9,9 +9,13 @@ custom MES and SAP would receive.
 
 ```bash
 pip install -e . fastapi uvicorn "ortools==9.10.4067" "numpy<2"   # from the repo root
-python demos/aps/server.py                                       # http://127.0.0.1:8095
-python demos/aps/server.py --mock                                # no Laya weights
+./run.sh start                     # the whole platform; planning at http://127.0.0.1:8100/aps/
+./run.sh start aps                 # planning alone → http://127.0.0.1:8095
+./run.sh start aps --mock          # no Laya weights
+./run.sh help aps                  # every option and environment variable
 ```
+
+Without `run.sh`: `python demos/aps/server.py [--mock]`.
 
 `ortools` 9.10 is pinned because later releases require numpy 2, and torch 2.2 (the
 newest on Intel Macs) needs numpy 1.x. On a machine with a newer torch, recent ortools works.
@@ -100,6 +104,40 @@ urgent a message is. These cues are carried by a few words, so rules read them:
 
 Below the gate, or when the guard flags the text, the planner picks the intent.
 
+## Training data from normal use
+
+Every Laya reading gets an id. When the planner acts on it, the decision is saved as a
+labelled example for training (`data/labels/labels.jsonl`, or `$APS_LABELS`):
+
+| Laya read | The label comes from |
+|---|---|
+| Inbox message: event kind | The event the planner submitted, or a dismissal (a weak "no action" label, left out unless asked) |
+| Command: intent | The intent the planner picked when Laya was unsure |
+| Rejection comment: reason | The next step the planner clicked |
+| Shift note: machine condition | The planner's **Actually: OK / Watch / Stop**, or **Report machine down** |
+
+The workbench shows how many labels exist and how often Laya was right. The log holds
+plant text: it is ignored by git and should stay in the plant.
+
+```bash
+python demos/aps/export_labels.py stats
+python demos/aps/export_labels.py heldout --out work/aps_heldout.jsonl   # the hand-labelled measurement sets
+python demos/aps/export_labels.py export  --out work/aps_labels.jsonl    # held-out texts are left out
+```
+
+Then evaluate, calibrate or fine-tune with [`laya_train`](../../laya_train/README.md) (every
+run appears on the platform's `/training/` page), and run the workbench on the result:
+
+```bash
+./run.sh restart aps --laya-multilingual ckpt/plant-v1                 # or --laya-english, or $LAYA_MULTILINGUAL
+./run.sh restart platform --aps-laya-multilingual ckpt/plant-v1        # the same inside the platform
+```
+
+A custom checkpoint is used for planning only; the injection guard keeps the published one.
+The published pair scores 70.7% on the 103 hand-labelled messages (188 answers), with 22
+of 106 answers above the 50% gate wrong. Those numbers are the baseline a trained
+checkpoint has to beat.
+
 ## Measured
 
 `python demos/aps/evaluate.py` wrote `data/eval_results.json` on a 2019 Intel laptop CPU
@@ -185,7 +223,8 @@ now and then"), so a quiet note is not evidence that a machine is fine.
 | `aps/explain.py` | Why-late causes and the load by work centre and day |
 | `data/inbox_dev.json`, `data/eval_sets.json` | Messages for choosing wordings (dev) and measuring (test) |
 | `server.py`, `static/index.html` | API and the bilingual workbench |
-| `test_aps.py` | 101 offline tests (mock classifier, short limits, a few minutes) |
+| `aps/labels.py`, `export_labels.py` | Labels from planner decisions; export to training records |
+| `test_aps.py` | 115 offline tests (mock classifier, short limits, a few minutes) |
 | `evaluate.py` | The measurements above |
 
 ## Not in the demo

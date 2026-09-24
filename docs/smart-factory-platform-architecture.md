@@ -482,7 +482,15 @@ Each step has a gate a quality engineer signs off; a failing gate sends the mode
 
 **Registry and rollout:** models, rules and policies are versioned, signed artifacts with an evaluation report attached. Edge nodes pull only signed versions and keep the previous one on disk, so rollback is one command and does not need the network.
 
-**Improving Laya:** first by rewording the typed questions and tuning the gate, measured with the demo's `evaluate.py` extended to real notes. Fine-tuning a checkpoint on the plant's own notes is a later option once a few thousand reviewed notes exist.
+**Improving Laya**, in order of cost, all with `laya_train` (repo root):
+
+1. Reword the typed questions and tune each gate on a dev set; report on a held-out set. Rewording has a ceiling: on 32 new planning messages it did not move event-kind accuracy past 55–60%.
+2. Calibrate. `laya-multilingual` ships with no fitted temperatures, so its confidence is uncalibrated in every language but English. Fitting needs a few hundred labelled answers per question type and option count; with fewer, it fits the noise.
+3. Fine-tune on the plant's own labelled texts once a few thousand exist, on a GPU inside the plant, then calibrate on separate records.
+
+The labels come from normal use: every QA review, and every planner decision on a Laya reading (the event submitted, the intent picked, the next step after a rejection, the condition marked on a shift note), is saved as a training example. A trained checkpoint replaces a published one only for the module it was trained for, and only after it beats the published one on the held-out set.
+
+Every calibration and fine-tuning run records its data, settings, curves, before-and-after scores, temperatures and how far each part of the network moved; the platform shows them at `/training/`. The first demonstration run fine-tuned the multilingual checkpoint on 41 planning messages and lifted accuracy on 50 others from 63% to 78%, with calibration error from 0.22 to 0.08. That is too little data to deploy, but it shows the loop works on this hardware (11 minutes on a laptop CPU).
 
 ## Security
 

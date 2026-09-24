@@ -1037,6 +1037,8 @@ footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
         </table>
       </div>
       <p>The gate for each model and class is the lowest confidence at which the escape rate on reviewed and audited data stays under target. It is recomputed monthly and changes only through the same approval.</p>
+      <p><b>Improving Laya</b> goes through the same gates, cheapest step first, all with <code>laya_train</code> in the repo: reword questions and tune gates on a dev set; calibrate (the multilingual checkpoint ships with no fitted temperatures, and fitting needs a few hundred labelled answers per question type and option count); fine-tune on the plant's own labelled texts on a GPU inside the plant once a few thousand exist, then calibrate on separate records. Labels come from normal use: QA reviews, and every planner decision on a Laya reading in planning. A trained checkpoint replaces a published one only for the module it was trained for, and only after it beats it on the held-out set.</p>
+      <p>Every calibration and fine-tuning run records its data, settings, curves, before-and-after scores, temperatures and how far each part of the network moved; the platform shows them at <code>/training/</code>. The first demonstration run fine-tuned the multilingual checkpoint on 41 planning messages and lifted accuracy on 50 others from 63% to 78%, with calibration error from 0.22 to 0.08: too little data to deploy, but proof that the loop runs on this hardware (11 minutes on a laptop CPU).</p>
     </section>
 
     <!-- 12 -->

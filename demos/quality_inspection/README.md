@@ -7,8 +7,12 @@ engineer, with a traceable reason for every unit.
 
 ```bash
 pip install -e . fastapi uvicorn httpx          # from the repo root
-python demos/quality_inspection/server.py       # http://127.0.0.1:8090
+./run.sh start                                  # the whole platform; quality at http://127.0.0.1:8100/quality/
+./run.sh start quality                          # quality alone → http://127.0.0.1:8090
+./run.sh help quality                           # every option (--mock, --no-simulate, --interval …)
 ```
+
+Without `run.sh`: `python demos/quality_inspection/server.py`.
 
 The first start loads the English and multilingual checkpoints (about 10–15 s each on
 CPU, cached after the first download). Records without an operator note are processed

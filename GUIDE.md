@@ -12,6 +12,7 @@ Everything here was measured on this checkout, on an Intel Mac (2019 i7), CPU on
 - [6. MCP server](#6-mcp-server)
 - [7. The WebFetch hook](#7-the-webfetch-hook)
 - [8. Where to actually use it](#8-where-to-actually-use-it)
+- [9. The plant demos and run.sh](#9-the-plant-demos-and-runsh)
 - [Troubleshooting](#troubleshooting)
 - [Uninstall](#uninstall)
 
@@ -206,7 +207,17 @@ loading would be unusable.
 cold load separately as `cold_load`. Without that split the first call reads as ~18 s
 of "inference" when the pass itself is ~200 ms.
 
-**Keep it running** with the bundled launchd job:
+**Start and stop it** from the repo root with `./run.sh`:
+
+```bash
+./run.sh start laya          # the service on :8077, all three checkpoints preloaded
+./run.sh stop laya
+./run.sh status              # every server: platform, laya, and the modules on their own
+./run.sh start all           # the demo platform (:8100) and the Laya service
+./run.sh install-service     # the launchd job below, filled in for this checkout
+```
+
+**Keep it running** with the bundled launchd job (what `./run.sh install-service` does):
 
 ```bash
 sed -e "s|__LAYA_ROOT__|$PWD|g" -e "s|__HOME__|$HOME|g" \
@@ -332,6 +343,25 @@ when a hook errors or is slow — silent success is invisible by design.
 **Poor fits:** anything about code (diffs, correctness, review, task difficulty),
 anything needing more than ~1000 tokens of context, and anything where you need
 generated text rather than a score.
+
+---
+
+## 9. The plant demos and run.sh
+
+`demos/` holds a smart-factory platform built on Laya: quality inspection, planning (APS),
+the Laya console and a page of Laya training runs, in one process. `run.sh` in the repo
+root starts and stops it and the Laya service:
+
+```bash
+./run.sh start                 # the platform → http://127.0.0.1:8100/
+./run.sh start all             # platform + Laya service (:8077)
+./run.sh status
+./run.sh stop all
+./run.sh help                  # every command, server option and environment variable
+```
+
+Details: `demos/platform/README.md`, `demos/aps/README.md`,
+`demos/quality_inspection/README.md`. Training Laya on plant data: `laya_train/README.md`.
 
 ---
 
