@@ -310,7 +310,11 @@ Two integration rules came out of that work and apply to every Laya use in the p
 - **Give Laya the human text alone.** Mixing in rule output ("Leak rate 0.61 ml/min, within tolerance") made it answer "leak" for healthy parts.
 - **Use `choice` questions.** On the multilingual checkpoint, yes/no questions scored near 0 on non-English notes that plainly reported a problem.
 
-Next uses of the same service: routing maintenance requests by trade and urgency, classifying nonconformance reports, and screening any text an AI agent will act on with Laya's prompt-injection guard.
+- **Measure a question on new messages before building on it.** In planning, Laya could not tell a confirmed report from a possible one, or read urgency or how critical an order is to the customer; a short word list in three languages could. Asking the same thing twice in different wordings and requiring agreement removed confident errors on the inbox (0, against 2–3 for either wording alone).
+
+The planning module uses the same service for disruption messages, planner commands, rejection comments and shift notes; see *Plant APS design* (`docs/plant-aps-design.html`) and the *APS workbench guide* (`docs/aps-workbench-guide.html`).
+
+Next uses of the same service: routing maintenance requests by trade, classifying nonconformance reports, and screening any text an AI agent will act on with Laya's prompt-injection guard.
 
 ### Vision defects
 
@@ -348,7 +352,11 @@ Laya decides; LLMs explain. Laya sits in the real-time loop for every unit, beca
 | Job | Who | Why |
 | --- | --- | --- |
 | Classify each operator note in the unit's decision | Laya | Per unit, real time, needs a gate |
-| Route maintenance requests by trade and urgency | Laya | A fixed set of trades and levels |
+| Route maintenance requests by trade | Laya | A fixed set of trades |
+| Urgency; is the sender sure; what a delay costs the customer | Rules | Laya measured unreliable on these; the cues are a few words |
+| Planning inbox and planner commands | Laya, two readings that must agree | Event kind and intent; the facts come from rules |
+| Why a proposal was rejected; breakdowns in shift notes | Laya, as a suggestion only | Measured good enough to suggest, not to act |
+| Why an order is late | Schedule analysis | Computed from the schedule, not generated |
 | Classify nonconformance reports | Laya | A fixed defect taxonomy |
 | Screen any text an agent will act on | Laya's guard | Prompt injection must be caught before the LLM reads it |
 | Explain a held unit to the reviewer; translate its note | LLM | Helps a person decide faster; the person still decides |

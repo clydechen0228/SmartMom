@@ -16,6 +16,9 @@ python demos/aps/server.py --mock                                # no Laya weigh
 `ortools` 9.10 is pinned because later releases require numpy 2, and torch 2.2 (the
 newest on Intel Macs) needs numpy 1.x. On a machine with a newer torch, recent ortools works.
 
+How to use the workbench, in English and 中文: [`docs/aps-workbench-guide.html`](../../docs/aps-workbench-guide.html)
+(also served by the platform at `/docs/aps-workbench-guide.html`).
+
 The first full plan takes up to 60 s. The workbench (EN / 中文 toggle) shows the result
 as soon as it lands. Set `APS_FULL_S` and `APS_REPAIR_S` to change the time limits.
 

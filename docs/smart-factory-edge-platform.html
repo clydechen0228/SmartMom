@@ -810,7 +810,10 @@ footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
         <p><b>Give Laya the human text alone.</b> With rule output mixed in (“Leak rate 0.61 ml/min, within tolerance”), it answered <i>leak</i> for healthy parts and missed an operator's dent report.</p>
         <p><b>Use choice questions.</b> Yes/no questions fail on the multilingual checkpoint (Figure 6).</p>
         <p><b>Set <code>TORCHINDUCTOR_COMPILE_THREADS=1</code>.</b> With torch 2.2, each checkpoint load forked 12 compile workers that kept a server's port bound after it exited.</p>
+        <p><b>Measure a question on new messages before building on it.</b> In planning, Laya could not tell a confirmed report from a possible one, or read urgency or how critical an order is to the customer; a short word list in three languages could. Asking the same thing twice in different wordings and requiring agreement removed confident errors on the inbox (0, against 2–3 for either wording alone).</p>
       </div>
+
+      <p>The planning module uses the same service for disruption messages, planner commands, rejection comments and shift notes. Its design, measurements and user guide are separate documents: <a href="plant-aps-design.html">Plant APS design</a> and <a href="aps-workbench-guide.html">APS workbench guide</a>.</p>
 
       <h3>7.2 Vision defects</h3>
       <ul>
@@ -875,7 +878,11 @@ footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
           <thead><tr><th>Job</th><th>Who</th><th>Why</th></tr></thead>
           <tbody>
             <tr><td>Classify each operator note in the unit's decision</td><td>Laya</td><td>Per unit, real time, needs a gate</td></tr>
-            <tr><td>Route maintenance requests by trade and urgency</td><td>Laya</td><td>Fixed set of trades and levels</td></tr>
+            <tr><td>Route maintenance requests by trade</td><td>Laya</td><td>Fixed set of trades</td></tr>
+            <tr><td>Urgency; is the sender sure; what a delay costs the customer</td><td>Rules</td><td>Laya measured unreliable on these; the cues are a few words</td></tr>
+            <tr><td>Planning inbox and planner commands</td><td>Laya, two readings that must agree</td><td>Event kind and intent; facts come from rules</td></tr>
+            <tr><td>Why a proposal was rejected; breakdowns in shift notes</td><td>Laya, suggestion only</td><td>Measured good enough to suggest, not to act</td></tr>
+            <tr><td>Why an order is late</td><td>Schedule analysis</td><td>Computed from the schedule, not generated</td></tr>
             <tr><td>Classify nonconformance reports</td><td>Laya</td><td>Fixed defect taxonomy</td></tr>
             <tr><td>Screen text an agent will act on</td><td>Laya guard</td><td>Catch prompt injection before the LLM reads it</td></tr>
             <tr><td>Explain a held unit; translate its note</td><td>LLM</td><td>Helps a person decide faster</td></tr>
