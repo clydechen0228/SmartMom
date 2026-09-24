@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Line Quality Inspection</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%237a5cff'/%3E%3Cpath d='M4 8.5l2.5 2.5L12 5' stroke='white' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E" />
+<style>
+:root {
+  --bg: #f7f7f5; --panel: #ffffff; --ink: #1d1d1b; --ink-2: #45453f; --muted: #6b6b66;
+  --line: #e2e2dd; --grid: #efefeb; --accent: #7a5cff; --accent-soft: #efeaff;
+  --ok: #1f8a5b; --ok-soft: #e3f4ec; --warn: #a45f0a; --warn-soft: #fbf0df;
+  --bad: #c0392b; --bad-soft: #fbe6e3; --hold: #6a4de0; --hold-soft: #eee9ff;
+  --band: rgba(31, 138, 91, 0.08); --code-bg: #f2f2ef; --shadow: 0 8px 30px rgba(0,0,0,.12);
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17171a; --panel: #1f1f23; --ink: #ececea; --ink-2: #c9c9c4; --muted: #9a9a94;
+    --line: #32323a; --grid: #2a2a31; --accent: #a78bfa; --accent-soft: #2b2545;
+    --ok: #4ade80; --ok-soft: #173325; --warn: #fbbf24; --warn-soft: #3a2e12;
+    --bad: #f87171; --bad-soft: #3d1e1e; --hold: #b69cff; --hold-soft: #2d2550;
+    --band: rgba(74, 222, 128, 0.07); --code-bg: #26262c; --shadow: 0 8px 30px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17171a; --panel: #1f1f23; --ink: #ececea; --ink-2: #c9c9c4; --muted: #9a9a94;
+  --line: #32323a; --grid: #2a2a31; --accent: #a78bfa; --accent-soft: #2b2545;
+  --ok: #4ade80; --ok-soft: #173325; --warn: #fbbf24; --warn-soft: #3a2e12;
+  --bad: #f87171; --bad-soft: #3d1e1e; --hold: #b69cff; --hold-soft: #2d2550;
+  --band: rgba(74, 222, 128, 0.07); --code-bg: #26262c; --shadow: 0 8px 30px rgba(0,0,0,.5);
+}
+* { box-sizing: border-box; }
+/* no overflow on html/body: it turns the body into its own scroller in some browsers */
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.5 ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+}
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.num { font-variant-numeric: tabular-nums; }
+button { font: inherit; color: inherit; }
+
+header {
+  display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap;
+  padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--panel);
+  position: sticky; top: 0; z-index: 5;
+}
+.brand { display: flex; flex-direction: column; margin-right: auto; min-width: 0; }
+h1 { margin: 0; font-size: 18px; letter-spacing: -0.01em; }
+h1 span { color: var(--accent); }
+.sub { color: var(--muted); font-size: 12.5px; }
+.pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.pill {
+  display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line);
+  border-radius: 999px; padding: 3px 10px; font-size: 12px; color: var(--ink-2); white-space: nowrap;
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+.dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
+.dot.pulse { animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+@media (max-width: 720px) { header { position: static; } #line-hint { display: none; } }
+.iconbtn { background: none; border: 1px solid var(--line); border-radius: 8px; padding: 4px 9px; cursor: pointer; }
+
+main { max-width: 1320px; margin: 0 auto; padding: 16px 16px 60px; display: grid; gap: 16px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; min-width: 0; }
+.panel > h2, .h2 {
+  margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 8px;
+}
+.h2 .grow { margin-left: auto; }
+.mockbar {
+  display: none; background: var(--warn-soft); color: var(--warn); border: 1px solid var(--warn);
+  border-radius: var(--radius); padding: 8px 12px; font-size: 13px;
+}
+
+/* KPI tiles */
+.kpis { display: grid; gap: 10px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+@media (max-width: 1080px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
+.kpi .k { font-size: 12px; color: var(--muted); }
+.kpi .v { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; margin-top: 2px; }
+.kpi .d { font-size: 12px; color: var(--muted); }
+
+/* line map */
+.line { display: grid; gap: 10px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 1080px) { .line { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); } }
+.station {
+  border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; cursor: pointer;
+  background: var(--panel); text-align: left; width: 100%; position: relative; min-width: 0;
+}
+.station:hover { border-color: var(--accent); }
+.station.sel { outline: 2px solid var(--accent); outline-offset: -1px; }
+.station.alarm { border-color: var(--bad); }
+.station .top { display: flex; align-items: center; gap: 6px; }
+.station .id { font-weight: 650; white-space: nowrap; flex: none; }
+.station .nm { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.station .val { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.station .val b { color: var(--ink); font-size: 16px; font-weight: 600; }
+.spark { width: 100%; height: 52px; display: block; margin-top: 4px; }
+.station .foot { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.arrow { position: absolute; right: -10px; top: 50%; color: var(--muted); font-size: 12px; transform: translateY(-50%); }
+@media (max-width: 1080px) { .arrow { display: none; } }
+
+/* chips */
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 1px 8px;
+  font-size: 12px; font-weight: 600; white-space: nowrap; border: 1px solid transparent;
+}
+.chip.pass { color: var(--ok); background: var(--ok-soft); }
+.chip.rework { color: var(--warn); background: var(--warn-soft); }
+.chip.scrap { color: var(--bad); background: var(--bad-soft); }
+.chip.hold { color: var(--hold); background: var(--hold-soft); }
+.chip.stop { color: var(--bad); background: var(--bad-soft); }
+.chip.watch { color: var(--warn); background: var(--warn-soft); }
+.chip.ghost { color: var(--muted); border-color: var(--line); font-weight: 500; }
+.lang { font-size: 11px; font-weight: 600; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; text-transform: uppercase; }
+
+/* two-column body */
+.cols { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) 360px; align-items: start; }
+@media (max-width: 1080px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+.side { display: grid; gap: 16px; min-width: 0; }
+
+.tablewrap { overflow-x: auto; margin: 0 -14px -14px; }
+.tablewrap thead th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
+.nw { white-space: nowrap; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-weight: 600; font-size: 11.5px; color: var(--muted); padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 7px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: var(--code-bg); }
+tr.flash { animation: flash 1.4s ease-out; }
+@keyframes flash { from { background: var(--accent-soft); } to { background: transparent; } }
+.note { color: var(--ink-2); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.muted { color: var(--muted); }
+.failed { color: var(--bad); }
+.empty { color: var(--muted); padding: 16px 0; text-align: center; font-size: 13px; }
+.filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.fbtn { border: 1px solid var(--line); background: none; border-radius: 999px; padding: 2px 10px; font-size: 12px; cursor: pointer; color: var(--muted); }
+.fbtn.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+/* alerts */
+.alert { border-left: 3px solid var(--warn); padding: 6px 10px; margin-bottom: 8px; background: var(--code-bg); border-radius: 0 8px 8px 0; font-size: 13px; }
+.alert.stop { border-left-color: var(--bad); }
+.alert.acked { opacity: .55; }
+.alert .row1 { display: flex; align-items: center; gap: 6px; }
+.alert .row1 .grow { margin-left: auto; }
+.alert ul { margin: 4px 0 0; padding-left: 18px; color: var(--ink-2); }
+.small { font-size: 12px; }
+.btn {
+  border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 5px 11px;
+  font-size: 12.5px; cursor: pointer;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn.pass:hover { border-color: var(--ok); color: var(--ok); }
+.btn.rework:hover { border-color: var(--warn); color: var(--warn); }
+.btn.scrap:hover { border-color: var(--bad); color: var(--bad); }
+
+/* scenarios */
+.scen { display: grid; gap: 6px; }
+.scen button {
+  text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 8px;
+  padding: 7px 10px; cursor: pointer; display: grid; gap: 1px;
+}
+.scen button:hover { border-color: var(--accent); }
+.scen button b { font-size: 13px; }
+.scen button span { font-size: 12px; color: var(--muted); }
+.scen button.active { border-color: var(--accent); background: var(--accent-soft); }
+.scen .st { font-size: 11px; color: var(--accent); font-weight: 600; }
+
+/* review queue */
+.queue { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.card { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 6px; min-width: 0; }
+.card .why { font-size: 12.5px; color: var(--ink-2); }
+.card .q { font-size: 12.5px; background: var(--code-bg); border-radius: 6px; padding: 5px 8px; overflow-wrap: anywhere; }
+.card .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+input[type=text] {
+  background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; color: var(--ink);
+  padding: 5px 9px; font: inherit; font-size: 13px; min-width: 0;
+}
+
+/* drawer */
+.scrim { position: fixed; inset: 0; background: rgba(0,0,0,.28); z-index: 20; display: none; }
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(640px, 100vw); background: var(--panel);
+  z-index: 21; box-shadow: var(--shadow); transform: translateX(100%); transition: transform .2s ease;
+  display: flex; flex-direction: column;
+}
+.drawer.open { transform: none; }
+.drawer .dh { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.drawer .dh .t { font-weight: 650; font-size: 16px; }
+.drawer .dh .x { margin-left: auto; }
+.drawer .db { overflow-y: auto; padding: 14px 16px 40px; display: grid; gap: 18px; }
+.sec h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+ol.trace { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+ol.trace li { padding-left: 2px; }
+.quote { background: var(--code-bg); border-radius: 8px; padding: 8px 10px; overflow-wrap: anywhere; }
+.bars { display: grid; gap: 4px; margin-top: 8px; }
+.bar { display: grid; grid-template-columns: 150px minmax(0, 1fr) 44px; gap: 8px; align-items: center; font-size: 12.5px; }
+.bar .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); }
+.bar .trk { height: 10px; background: var(--grid); border-radius: 4px; position: relative; overflow: hidden; }
+.bar .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--muted); border-radius: 4px; opacity: .55; }
+.bar.win .fill { background: var(--accent); opacity: 1; }
+.bar.win .lbl { color: var(--ink); font-weight: 600; }
+.bar .pct { text-align: right; color: var(--muted); }
+.gatecap { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.meas td, .meas th { padding: 5px 8px; }
+.meas tr { cursor: default; }
+.meas tr:hover { background: none; }
+.chartbox { position: relative; }
+.chartbox svg { width: 100%; height: auto; display: block; }
+.tip {
+  position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 8px; font-size: 12px; box-shadow: var(--shadow); display: none; white-space: nowrap; z-index: 2;
+}
+.legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.legend i { display: inline-block; width: 14px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 4px; }
+.review { display: grid; gap: 8px; }
+.review .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* how it works */
+.flow { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 1080px) { .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .flow { grid-template-columns: minmax(0, 1fr); } }
+.step { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; font-size: 12.5px; color: var(--ink-2); position: relative; }
+.step b { display: block; color: var(--ink); font-size: 13.5px; margin-bottom: 2px; }
+.step .n { font-size: 11px; color: var(--muted); font-weight: 600; }
+.step.laya { border-color: var(--accent); background: var(--accent-soft); }
+.step ul { margin: 4px 0 0; padding-left: 16px; }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; font-size: 13px; }
+@media (max-width: 720px) { .split { grid-template-columns: 1fr; } }
+.split > div { border: 1px dashed var(--line); border-radius: var(--radius); padding: 10px 12px; }
+.split h4 { margin: 0 0 4px; font-size: 13px; }
+
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: none; padding: 5px 10px; cursor: pointer; font: inherit; font-size: 13px; color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.more { display: block; margin: 10px auto 4px; }
+.order-tag { font: 600 11.5px var(--mono); color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 0 5px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <a id="platform-back" href="../" hidden style="font-size:12.5px;color:var(--accent);text-decoration:none" data-i18n="back">← Platform</a>
+    <h1><span>Laya</span> · <span data-i18n="title">Line quality inspection</span></h1>
+    <div class="sub" id="sub">…</div>
+  </div>
+  <div class="pills">
+    <span class="pill" id="p-engine"><span class="dot"></span></span>
+    <span class="pill" id="p-gw"><span class="dot"></span></span>
+    <span class="pill" id="p-queue"><span class="dot"></span></span>
+    <span class="pill" id="p-live"><span class="dot"></span></span>
+  </div>
+  <div class="seg" role="group" aria-label="Language / 语言"><button id="l-en" aria-pressed="true">EN</button><button id="l-zh" aria-pressed="false">中文</button></div>
+  <button class="iconbtn" id="theme" aria-label="Theme">◐</button>
+</header>
+
+<main>
+  <div class="mockbar" id="mockbar" data-i18n="mock">Mock engine: decisions on operator notes come from keyword heuristics, not Laya. Start the server without --mock to see the model.</div>
+
+  <section class="kpis" id="kpis" aria-label="KPIs"></section>
+
+  <section class="panel" aria-label="Line">
+    <div class="h2"><span data-i18n="line_title">Line 3 · stations in flow order</span> <span class="grow small muted" id="line-hint" data-i18n="line_hint">click a station to filter the feed</span></div>
+    <div class="line" id="line"></div>
+  </section>
+
+  <div class="cols">
+    <section class="panel" aria-label="Inspection feed">
+      <div class="h2"><span data-i18n="feed">Inspection feed</span><span class="grow filters" id="filters"></span></div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th data-i18n="c_time">Time</th><th data-i18n="c_unit">Unit</th><th data-i18n="c_station">Station</th><th data-i18n="c_meas">Measurements</th><th data-i18n="c_note">Operator note → Laya</th><th data-i18n="c_disp">Disposition</th></tr></thead>
+          <tbody id="feed"></tbody>
+        </table>
+        <div class="empty" id="feed-empty"></div>
+        <button class="btn more" id="feed-more" hidden></button>
+      </div>
+    </section>
+
+    <div class="side">
+      <section class="panel" aria-label="Line alerts">
+        <h2 data-i18n="alerts">Line alerts</h2>
+        <div id="alerts"></div>
+        <button class="btn more" id="alerts-more" hidden></button>
+      </section>
+      <section class="panel" aria-label="Fault injection">
+        <div class="h2"><span data-i18n="inject">Inject a fault</span> <span class="grow"><button class="btn" id="gw-toggle"></button></span></div>
+        <div class="small muted" style="margin-bottom:8px" data-i18n="inject_note">Drives the in-process IoT gateway. Each fault lasts a few units at its station.</div>
+        <div class="scen" id="scen"></div>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel" aria-label="QA review queue">
+    <div class="h2"><span data-i18n="queue">QA review queue</span> <span class="chip ghost" id="q-count">0</span>
+      <span class="grow small muted"><span data-i18n="reviewer">Reviewer</span> <input type="text" id="reviewer" size="10" /></span>
+    </div>
+    <div class="queue" id="queue"></div>
+  </section>
+
+  <section class="panel" aria-label="How it works">
+    <h2 data-i18n="how">How it works</h2>
+    <div class="flow" id="flow"></div>
+    <div class="split" id="split"></div>
+  </section>
+</main>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Inspection detail" aria-hidden="true">
+  <div class="dh"><span class="t" id="d-title">—</span><span id="d-chip"></span><button class="iconbtn x" id="d-close" aria-label="Close">✕</button></div>
+  <div class="db" id="d-body"></div>
+</aside>
+
+<script>
+"use strict";
+const I18N = {
+  en: {
+    back: "← Platform", title: "Line quality inspection", sub: (p, n) => `${p} · ${n} stations · rules for numbers, Laya for words`,
+    mock: "Mock engine: decisions on operator notes come from keyword heuristics, not Laya. Start the server without --mock to see the model.",
+    eng_mock: "mock engine", eng_loading: "loading Laya checkpoints…", eng_err: "Laya failed to load",
+    devices: "devices", buffered: "buffered", paused: "paused", queue_w: "queue", reading: "reading", idle: "idle", live: "live", reconnecting: "reconnecting…",
+    k_units: "Units inspected", k_units_d: n => `${n} station records`, k_fpy: "First-pass yield", k_fpy_d: "units passed at every station",
+    k_auto: "Auto-dispositioned", k_auto_d: "no human needed", k_qa: "Awaiting QA", k_qa_d: n => `${n} reviewed`,
+    k_sr: "Scrap · rework", k_sr_d: "final dispositions", k_lat: "Laya per note", k_lat_none: "median, no notes read yet", k_lat_d: p => `median · p95 ${p} ms`,
+    line_title: "Line 3 · stations in flow order", line_hint: "click a station to filter the feed", no_data: "no data", online: "device online", offline: "no recent data",
+    feed: "Inspection feed", f_all: "All", f_pending: "Awaiting QA", f_auto: "Auto", f_reviewed: "Reviewed",
+    c_time: "Time", c_unit: "Unit", c_station: "Station", c_meas: "Measurements", c_note: "Operator note → Laya", c_disp: "Disposition",
+    in_tol: "in tolerance", reviewed: "reviewed", qa: "QA", feed_wait: "Waiting for the first reading from the gateway…", feed_none: "No inspections match this filter.",
+    more: n => `Show ${n} more`, alerts: "Line alerts", no_alerts: "No alerts.", units: "units", last: "last", acked: "acknowledged", ack: "Acknowledge",
+    cause: "likely cause", alerts_all: n => `Show all ${n}`, inject: "Inject a fault", inject_note: "Drives the in-process IoT gateway. Each fault lasts a few units at its station.",
+    pause: "Pause line", resume: "Resume line", active: (u, n) => `active · unit ${u} of ${n}`,
+    queue: "QA review queue", reviewer: "Reviewer", your_name: "your name", name_req: "name required", details: "Details",
+    release: "✓ Release", rework_b: "↻ Rework", scrap_b: "✕ Scrap", queue_empty: "Nothing waiting. Units Laya and the rules can settle never land here.",
+    how: "How it works", order: "Order",
+    awaiting: "awaiting QA", s_qa: "QA decision", note_ph: "Note for the record (optional)", by: "by", s_why: "Why this disposition",
+    defect: "defect", root: "root cause", none: "none", s_meas: "Measurements", m_char: "Characteristic", m_val: "Value", m_spec: "Spec",
+    process: "process", no_reading: "no reading", ok: "✓ ok", out: "✕ out", missing: "✕ missing", s_laya: "What Laya read",
+    no_note: "No operator note on this record, so Laya was not called. The disposition rests on the measurements and codes.",
+    laya_err: "Laya error", routed: "Routed to", fwd: ms => `Forward pass ${ms} ms`, cold: s => `, after a ${s} s cold load`,
+    q_topic: "What does the operator report?", q_kind: "What kind of defect is described?",
+    conf: "confidence", at_above: "at or above", below: "below", gate_cap: g => `the ${g}% gate`,
+    s_chart: "Control chart", few: "Not enough points yet.", cl: "control limits ±3σ", sl: "specification limits",
+    s_record: "Full record", record_note: "", err: "Error",
+    d: { pass: "pass", rework: "rework", scrap: "scrap", hold: "hold", stop: "stop", watch: "watch" },
+    topic: { nothing: "nothing wrong", part_defect: "part defect", machine_problem: "machine problem", material_problem: "material problem", measurement_problem: "measurement problem", handling_problem: "handling damage" },
+    kind: { none: "no defect", dimensional: "dimensional", surface: "surface", assembly: "assembly", leak: "leak", contamination: "contamination", unclassified: "unclassified" },
+    causes: { machine: "machine", material: "material", measurement: "measurement", handling: "handling" },
+    flow: [["1 · COLLECT", "Sensors & PLCs", "Bore gauge, CMM, nutrunner, leak tester, camera. Operators type notes at the station HMI."],
+      ["2 · FORWARD", "IoT edge gateway", "Batches readings with a per-device sequence number; store-and-forward with backoff when the link drops."],
+      ["3 · INGEST", "Telemetry API", "Bearer auth per gateway, schema validation, duplicate drop on (device, seq), 429 backpressure. Raw payload stored first."],
+      ["4 · RULES", "Limits & SPC", "Tolerances, reaction plans, Western Electric rules, alarm-code table. Deterministic; the final word on numbers."],
+      ["5 · LAYA", "Reads the operator note", "One forward pass, typed questions, any language. Routed to the English or multilingual checkpoint. Records without a note skip it."],
+      ["6 · DECIDE", "Policy gate", g => `Auto-release only when rules pass and Laya is ≥ ${g}% sure the note is harmless. Everything else goes to QA, with the reasons.`]],
+    split: [["Rules decide", "Whether a measurement is in tolerance · the reaction plan (rework / scrap) · SPC drift · what an alarm code means. A note can never overrule a failed measurement."],
+      ["Laya decides", "What a person on the line wrote, in their language: a defect the sensors missed, a suspect gauge (hold instead of scrap), a bad material lot, a machine problem. Combined with SPC drift, a machine problem stops the line."]],
+  },
+  zh: {
+    back: "← 平台", title: "产线质量检验", sub: (p, n) => `${p.replace("pump housing", "泵壳")} · ${n} 个工位 · 数值由规则判定，文字由 Laya 识别`,
+    mock: "模拟引擎：操作员留言由关键词规则判定，不是 Laya。不带 --mock 启动即可使用模型。",
+    eng_mock: "模拟引擎", eng_loading: "Laya 模型加载中…", eng_err: "Laya 加载失败",
+    devices: "台设备", buffered: "条缓存", paused: "已暂停", queue_w: "队列", reading: "正在处理", idle: "空闲", live: "实时", reconnecting: "重新连接中…",
+    k_units: "已检产品", k_units_d: n => `${n} 条工位记录`, k_fpy: "一次合格率", k_fpy_d: "所有工位一次放行的产品",
+    k_auto: "自动处置", k_auto_d: "无需人工", k_qa: "待 QA 复核", k_qa_d: n => `已复核 ${n}`,
+    k_sr: "报废 · 返工", k_sr_d: "最终处置", k_lat: "Laya 每条留言", k_lat_none: "中位数，尚未识别留言", k_lat_d: p => `中位数 · p95 ${p} 毫秒`,
+    line_title: "3 号线 · 按工序排列的工位", line_hint: "点击工位可筛选记录", no_data: "无数据", online: "设备在线", offline: "近期无数据",
+    feed: "检验记录", f_all: "全部", f_pending: "待 QA", f_auto: "自动", f_reviewed: "已复核",
+    c_time: "时间", c_unit: "产品", c_station: "工位", c_meas: "测量", c_note: "操作员留言 → Laya", c_disp: "处置",
+    in_tol: "在公差内", reviewed: "已复核", qa: "QA", feed_wait: "等待网关的第一条数据…", feed_none: "没有符合筛选条件的记录。",
+    more: n => `再显示 ${n} 条`, alerts: "产线告警", no_alerts: "暂无告警。", units: "件", last: "最近", acked: "已确认", ack: "确认",
+    cause: "可能原因", alerts_all: n => `显示全部 ${n} 条`, inject: "注入故障", inject_note: "驱动进程内的 IoT 网关。每个故障在其工位持续若干件产品。",
+    pause: "暂停产线", resume: "恢复产线", active: (u, n) => `进行中 · 第 ${u}/${n} 件`,
+    queue: "QA 复核队列", reviewer: "复核人", your_name: "您的姓名", name_req: "请输入姓名", details: "详情",
+    release: "✓ 放行", rework_b: "↻ 返工", scrap_b: "✕ 报废", queue_empty: "暂无待复核。规则和 Laya 能确定的产品不会进入这里。",
+    how: "工作原理", order: "订单",
+    awaiting: "待 QA 复核", s_qa: "QA 决定", note_ph: "记录备注（可选）", by: "复核人", s_why: "处置原因",
+    defect: "缺陷", root: "根因", none: "无", s_meas: "测量值", m_char: "特性", m_val: "数值", m_spec: "规格",
+    process: "过程参数", no_reading: "无读数", ok: "✓ 合格", out: "✕ 超差", missing: "✕ 缺失", s_laya: "Laya 识别内容",
+    no_note: "该记录没有操作员留言，因此未调用 Laya。处置完全依据测量值和代码。",
+    laya_err: "Laya 错误", routed: "路由至", fwd: ms => `推理耗时 ${ms} 毫秒`, cold: s => `，此前冷启动 ${s} 秒`,
+    q_topic: "操作员报告了什么？", q_kind: "描述的是哪类缺陷？",
+    conf: "置信度", at_above: "达到或高于", below: "低于", gate_cap: g => `${g}% 阈值`,
+    s_chart: "控制图", few: "数据点还不够。", cl: "控制限 ±3σ", sl: "规格限",
+    s_record: "完整记录", record_note: "（记录原文为英文）", err: "错误",
+    d: { pass: "放行", rework: "返工", scrap: "报废", hold: "冻结", stop: "停线", watch: "关注" },
+    topic: { nothing: "无异常", part_defect: "零件缺陷", machine_problem: "设备问题", material_problem: "物料问题", measurement_problem: "测量问题", handling_problem: "搬运损伤" },
+    kind: { none: "无缺陷", dimensional: "尺寸", surface: "表面", assembly: "装配", leak: "泄漏", contamination: "污染", unclassified: "未分类" },
+    causes: { machine: "设备", material: "物料", measurement: "测量", handling: "搬运" },
+    flow: [["1 · 采集", "传感器与 PLC", "镗孔量仪、三坐标、拧紧枪、泄漏测试仪、相机。操作员在工位 HMI 上填写留言。"],
+      ["2 · 转发", "IoT 边缘网关", "按设备序号批量发送数据；断网时本地缓存并退避重试。"],
+      ["3 · 接收", "遥测接口", "每个网关独立令牌认证、数据校验、按（设备，序号）去重、429 背压。先存原始数据。"],
+      ["4 · 规则", "公差与 SPC", "公差、反应计划、西方电气规则、报警代码表。确定性判定，数值以规则为准。"],
+      ["5 · LAYA", "识别操作员留言", "一次前向推理，结构化问题，支持任意语言。自动路由到英文或多语言模型。没有留言的记录不调用。"],
+      ["6 · 决策", "策略闸门", g => `只有规则通过且 Laya 以 ≥ ${g}% 的把握判定留言无害时才自动放行，其余连同原因一并交 QA。`]],
+    split: [["规则决定", "测量值是否在公差内 · 反应计划（返工 / 报废）· SPC 漂移 · 报警代码的含义。留言永远不能推翻超差的测量值。"],
+      ["Laya 决定", "产线人员用自己的语言写了什么：传感器漏检的缺陷、可疑的量具（冻结而非报废）、有问题的物料批次、设备问题。设备问题与 SPC 漂移同时出现时停线。"]],
+  },
+};
+const STATION_ZH = { "CNC-02": "镗孔加工", "CMM-01": "三坐标测量", "ASM-03": "盖板螺栓装配", "LKT-04": "泄漏测试", "AOI-01": "终检视觉" };
+const LABEL_ZH = { "Bore diameter": "镗孔直径", "Spindle vibration": "主轴振动", "Sealing face flatness": "密封面平面度", "Bolt-hole true position": "螺栓孔位置度",
+  "Bolt 1 torque": "1 号螺栓扭矩", "Bolt 2 torque": "2 号螺栓扭矩", "Bolt 3 torque": "3 号螺栓扭矩", "Bolt 4 torque": "4 号螺栓扭矩",
+  "Leak rate": "泄漏率", "Vision defect score": "视觉缺陷评分" };
+const SPC_ZH = { WE1: "点超出 3σ 控制限", WE2: "近 3 点中有 2 点超出同侧 2σ", WE3: "近 5 点中有 4 点超出同侧 1σ", WE4: "连续 8 点位于中心线同侧" };
+const SCEN_ZH = {
+  tool_wear: ["CNC-02 刀具磨损", "刀具 T14 磨损，镗孔直径逐渐变大。SPC 在零件超差前发现趋势；操作员的振纹留言让 Laya 判断为设备问题 → 停线。"],
+  torque_gun: ["拧紧枪打滑（中文留言）", "3 号螺栓扭矩不足。操作员用中文留言；Laya 判为零件缺陷，报警代码指向设备。"],
+  bad_lot: ["铸件气孔批次（德文留言）", "泄漏测试不合格。德文留言指向供应商批次 L-8812。"],
+  gauge_drift: ["三坐标测头漂移", "平面度读数超差，但留言说测头在漂移。Laya 判断为测量问题，零件冻结待量具核查，而不是返工。"],
+  tray_scratch: ["新托盘划伤（西班牙文留言）", "相机检测到划伤；西班牙文留言追溯到新的塑料托盘。"],
+  operator_dent: ["相机漏检的磕碰", "所有测量合格，但操作员报告磕碰。Laya 从文字中发现缺陷并冻结该产品。"],
+  sensor_dropout: ["泄漏传感器超时", "没有收到泄漏读数。缺少测量值的产品只冻结，绝不放行。"],
+};
+let LANG = "en";
+const t = (k, ...a) => { const v = I18N[LANG][k] ?? I18N.en[k] ?? k; return typeof v === "function" ? v(...a) : v; };
+const zh = () => LANG === "zh";
+const stName = (id, en) => zh() ? (STATION_ZH[id] || en) : en;
+const lbl = (en) => zh() ? (LABEL_ZH[en] || en) : en;
+
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = (v, d = 3) => v == null ? "—" : Number(v).toFixed(d);
+const pct = (v) => v == null ? "—" : (v * 100).toFixed(v >= 0.995 || v < 0.1 ? 1 : 0) + "%";
+const shortSerial = (s) => String(s ?? "").split("-").slice(-1)[0];
+const timeOf = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString(zh() ? "zh-CN" : [], {hour: "2-digit", minute: "2-digit", second: "2-digit"}); };
+const store = { get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
+                set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+const ICON = { pass: "✓", rework: "↻", scrap: "✕", hold: "⏸", stop: "■", watch: "▲" };
+const chip = (d, extra = "") => `<span class="chip ${esc(d)}">${ICON[d] || ""} ${esc(t("d")[d] || d)}${extra}</span>`;
+
+let META = null, FEED = [], FILTER = { station: null, status: null }, SELECTED = null, STATUS = null;
+let FEED_LIMIT = 30, ALERTS_ALL = false;
+
+// ---------- theme & language ----------
+(() => {
+  const th = store.get("qi-theme", null); if (th) document.documentElement.dataset.theme = th;
+  $("#theme").onclick = () => {
+    const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const nxt = cur === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = nxt; store.set("qi-theme", nxt);
+  };
+})();
+function applyLang(l) {
+  LANG = l; store.set("aps-lang", l);           // one language setting across the platform
+  document.documentElement.lang = l === "zh" ? "zh-CN" : "en";
+  $("#l-en").setAttribute("aria-pressed", l === "en"); $("#l-zh").setAttribute("aria-pressed", l === "zh");
+  document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = t(el.dataset.i18n));
+  $("#reviewer").placeholder = t("your_name");
+  renderAll();
+}
+$("#l-en").onclick = () => applyLang("en"); $("#l-zh").onclick = () => applyLang("zh");
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
+  return r.json();
+}
+function flash(msg) { const tb = $("#p-live"); tb.title = msg; }
+
+// ---------- header + KPIs ----------
+function renderStatus(s) {
+  if (!s) return;
+  const e = s.engine;
+  const eDot = e.state === "ready" ? "ok" : e.state === "error" ? "bad" : "warn pulse";
+  const eTxt = e.kind === "mock" ? t("eng_mock") :
+    e.state === "ready" ? `Laya ${esc(e.version)} · ${esc(e.device)} · ${esc((e.loaded || []).join(" + "))}` :
+    e.state === "error" ? t("eng_err") : t("eng_loading");
+  $("#p-engine").innerHTML = `<span class="dot ${eDot}"></span>${eTxt}`;
+  $("#p-engine").title = e.error || "";
+  $("#mockbar").style.display = e.kind === "mock" ? "block" : "none";
+  const g = s.gateway, online = s.devices.filter(d => d.online).length;
+  const gDot = !g || !g.running ? "" : g.last_error ? "bad" : online ? "ok" : "warn";
+  $("#p-gw").innerHTML = `<span class="dot ${gDot}"></span>${esc(g ? g.gateway : "gateway")} · ${online}/${s.devices.length} ${t("devices")}` +
+    (g && g.buffered > 1 ? ` · ${g.buffered} ${t("buffered")}` : "") + (g && !g.running ? ` · ${t("paused")}` : "");
+  $("#p-gw").title = (g && g.last_error) || "";
+  $("#gw-toggle").textContent = g && g.running ? t("pause") : t("resume");
+  $("#gw-toggle").dataset.running = g && g.running ? "1" : "";
+  const busy = s.processing ? `${t("reading")} ${s.processing.station}` : t("idle");
+  $("#p-queue").innerHTML = `<span class="dot ${s.queue > 20 ? "warn" : s.processing ? "ok pulse" : "ok"}"></span>${t("queue_w")} ${s.queue} · ${busy}`;
+  renderScenarioState(g);
+  const st = s.stats;
+  const tiles = [
+    [t("k_units"), st.units, t("k_units_d", st.n)],
+    [t("k_fpy"), pct(st.fpy), t("k_fpy_d")],
+    [t("k_auto"), pct(st.auto_rate), t("k_auto_d")],
+    [t("k_qa"), st.pending, t("k_qa_d", st.reviewed)],
+    [t("k_sr"), `${st.scrap} · ${st.rework}`, t("k_sr_d")],
+    [t("k_lat"), st.latency_p50 == null ? "—" : Math.round(st.latency_p50) + " ms",
+      st.latency_p95 == null ? t("k_lat_none") : t("k_lat_d", Math.round(st.latency_p95))],
+  ];
+  $("#kpis").innerHTML = tiles.map(([k, v, d]) => `<div class="kpi"><div class="k">${k}</div><div class="v num">${esc(v)}</div><div class="d">${esc(d)}</div></div>`).join("");
+}
+
+// ---------- line map ----------
+// The SVG is stretched horizontally (preserveAspectRatio="none"; viewBox height = CSS
+// height, so only x scales). Limit lines are 1-unit rects, not dashed strokes: a dashed
+// non-scaling stroke under that stretch stalls Chromium's rasterizer.
+function sparkline(p, w = 220, h = 52) {
+  const pts = p.points; if (!pts.length) return `<svg class="spark" viewBox="0 0 ${w} ${h}"></svg>`;
+  const L = p.limits;
+  const lo = Math.min(L.lsl ?? L.lcl, ...pts.map(x => x.value));
+  const hi = Math.max(L.usl ?? L.ucl, ...pts.map(x => x.value));
+  const pad = (hi - lo) * 0.12 || 1;
+  const y = v => h - 4 - ((v - (lo - pad)) / (hi - lo + 2 * pad)) * (h - 8);
+  const x = i => 4 + i * ((w - 8) / Math.max(1, 29));
+  const bandTop = y(L.usl ?? hi + pad), bandBot = y(L.lsl ?? Math.max(0, lo - pad));
+  const d = pts.map((q, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(q.value).toFixed(1)}`).join("");
+  const outs = pts.map((q, i) => q.status === "out" ? `<circle cx="${x(i)}" cy="${y(q.value)}" r="3.5" fill="var(--bad)" stroke="var(--panel)" stroke-width="1.5"/>` : "").join("");
+  const last = pts.length - 1;
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="${esc(p.label)}">
+    <rect x="0" y="${bandTop}" width="${w}" height="${Math.max(0, bandBot - bandTop)}" fill="var(--band)"/>
+    ${L.usl != null ? `<rect x="0" y="${(y(L.usl) - 0.5).toFixed(1)}" width="${w}" height="1" fill="var(--bad)" opacity=".6"/>` : ""}
+    ${L.lsl != null ? `<rect x="0" y="${(y(L.lsl) - 0.5).toFixed(1)}" width="${w}" height="1" fill="var(--bad)" opacity=".6"/>` : ""}
+    <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+    ${outs}
+    ${pts[last].status !== "out" ? `<circle cx="${x(last)}" cy="${y(pts[last].value)}" r="3" fill="var(--accent)"/>` : ""}
+  </svg>`;
+}
+let DEVICES = {}, LINE = [];
+async function loadLine() { LINE = await api("api/line"); renderLine(); }
+function renderLine() {
+  $("#line").innerHTML = LINE.map((s, i) => {
+    const last = s.last, lp = s.points[s.points.length - 1], dev = DEVICES[s.device], alarm = last && last.alert === "stop";
+    return `<button class="station ${FILTER.station === s.id ? "sel" : ""} ${alarm ? "alarm" : ""}" data-st="${esc(s.id)}">
+      <div class="top"><span class="dot ${dev && dev.online ? "ok" : ""}" title="${dev && dev.online ? t("online") : t("offline")}"></span>
+        <span class="id">${esc(s.id)}</span><span class="nm">${esc(stName(s.id, s.name))}</span></div>
+      <div class="val"><span>${esc(lbl(s.label))}</span><span><b class="num">${lp ? fmt(lp.value, s.decimals) : "—"}</b> ${esc(s.unit)}</span></div>
+      ${sparkline(s)}
+      <div class="foot"><span class="num">${s.limits.lsl != null ? fmt(s.limits.lsl, s.decimals) + " – " : "≤ "}${fmt(s.limits.usl, s.decimals)}</span>
+        ${last ? chip(last.disposition) : `<span class="muted">${t("no_data")}</span>`}</div>
+      ${i < LINE.length - 1 ? '<span class="arrow" aria-hidden="true">›</span>' : ""}
+    </button>`;
+  }).join("");
+  $("#line").querySelectorAll(".station").forEach(b => b.onclick = () => {
+    FILTER.station = FILTER.station === b.dataset.st ? null : b.dataset.st; FEED_LIMIT = 30;
+    renderLine(); renderFeed(); renderFilters();
+  });
+}
+let lineTimer = null;
+const refreshLine = () => { clearTimeout(lineTimer); lineTimer = setTimeout(loadLine, 400); };
+
+// ---------- feed ----------
+function renderFilters() {
+  const opts = [[null, t("f_all")], ["pending", t("f_pending")], ["auto", t("f_auto")], ["reviewed", t("f_reviewed")]];
+  $("#filters").innerHTML = opts.map(([v, l]) => `<button class="fbtn ${FILTER.status === v ? "on" : ""}" data-v="${v ?? ""}">${l}</button>`).join("") +
+    (FILTER.station ? `<button class="fbtn on" data-clear="1">${esc(FILTER.station)} ✕</button>` : "");
+  $("#filters").querySelectorAll(".fbtn").forEach(b => b.onclick = () => {
+    if (b.dataset.clear) { FILTER.station = null; renderLine(); } else FILTER.status = b.dataset.v || null;
+    FEED_LIMIT = 30; renderFeed(); renderFilters();
+  });
+}
+function rowHtml(r) {
+  const meas = r.failed.length ? `<span class="failed">✕ ${esc(r.failed.map(lbl).join(zh() ? "、" : ", "))}</span>` : `<span class="muted">✓ ${t("in_tol")}</span>`;
+  let note = '<span class="muted">—</span>';
+  if (r.model) {
+    note = `<div class="note">${r.lang ? `<span class="lang">${esc(r.lang)}</span> ` : ""}${esc(r.note || "")}</div>
+      <div class="small muted">→ ${esc(t("topic")[r.topic] || r.topic || "")}${r.topic_conf != null ? " · " + pct(r.topic_conf) : ""} · ${esc(r.model)}</div>`;
+  }
+  const disp = r.status === "reviewed" ? `${chip(r.final)} <span class="small muted">${t("reviewed")}</span>` :
+    chip(r.disposition) + (r.status === "pending" ? ` <span class="small muted">${t("qa")}</span>` : "");
+  return `<tr data-id="${r.id}">
+    <td class="num muted nw">${timeOf(r.ts)}</td><td class="mono nw" title="${esc(r.serial)}${r.order ? " · " + t("order") + " " + esc(r.order) : ""}">…${esc(shortSerial(r.serial))}</td><td class="nw">${esc(r.station)}</td>
+    <td>${meas}${r.alert ? " " + chip(r.alert) : ""}</td><td>${note}</td><td>${disp}</td></tr>`;
+}
+function renderFeed(flashId) {
+  const all = FEED.filter(r => (!FILTER.station || r.station === FILTER.station) && (!FILTER.status || r.status === FILTER.status));
+  const rows = all.slice(0, FEED_LIMIT);
+  $("#feed").innerHTML = rows.map(rowHtml).join("");
+  $("#feed-empty").style.display = rows.length ? "none" : "block";
+  $("#feed-empty").textContent = FEED.length ? t("feed_none") : t("feed_wait");
+  const rest = all.length - rows.length;
+  $("#feed-more").hidden = rest <= 0; $("#feed-more").textContent = t("more", Math.min(30, rest));
+  if (flashId) { const tr = $(`#feed tr[data-id="${flashId}"]`); if (tr) tr.classList.add("flash"); }
+  $("#feed").querySelectorAll("tr").forEach(tr => tr.onclick = () => openDetail(+tr.dataset.id));
+}
+$("#feed-more").onclick = () => { FEED_LIMIT += 30; renderFeed(); };
+function upsert(r) {
+  const i = FEED.findIndex(x => x.id === r.id);
+  if (i >= 0) FEED[i] = { ...FEED[i], ...r }; else FEED.unshift(r);
+  FEED.sort((a, b) => b.id - a.id); FEED.length = Math.min(FEED.length, 300);
+}
+
+// ---------- alerts ----------
+function alertHtml(a) {
+  const reasons = (zh() && Array.isArray(a.reasons_zh) ? a.reasons_zh : a.reasons) || [];
+  return `<div class="alert ${esc(a.level)} ${a.acked ? "acked" : ""}" data-id="${a.id}">
+    <div class="row1">${chip(a.level)} <b>${esc(a.station)}</b> <span class="small muted">${a.count > 1 ? `${a.count} ${t("units")} · ` : ""}${t("last")} ${esc(shortSerial(a.serial))}</span>
+      <span class="grow">${a.acked ? `<span class="small muted">${t("acked")}</span>` : `<button class="btn" data-ack="${a.id}">${t("ack")}</button>`}</span></div>
+    ${a.cause ? `<div class="small">${t("cause")}: <b>${esc(t("causes")[a.cause] || a.cause)}</b></div>` : ""}
+    <ul class="small">${reasons.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>`;
+}
+let ALERTS = [];
+function renderAlerts() {
+  const shown = ALERTS_ALL ? ALERTS : ALERTS.slice(0, 5);
+  $("#alerts").innerHTML = ALERTS.length ? shown.map(alertHtml).join("") : `<div class="empty">${t("no_alerts")}</div>`;
+  $("#alerts-more").hidden = ALERTS_ALL || ALERTS.length <= 5; $("#alerts-more").textContent = t("alerts_all", ALERTS.length);
+  $("#alerts").querySelectorAll("[data-ack]").forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    try { await api(`api/alerts/${b.dataset.ack}/ack`, { method: "POST" }); } catch (e) { b.disabled = false; }
+  });
+}
+$("#alerts-more").onclick = () => { ALERTS_ALL = true; renderAlerts(); };
+
+// ---------- scenarios ----------
+function renderScenarios() {
+  if (!META) return;
+  $("#scen").innerHTML = Object.entries(META.scenarios).map(([k, s]) => {
+    const [label, about] = zh() && SCEN_ZH[k] ? SCEN_ZH[k] : [s.label, s.about];
+    return `<button data-s="${esc(k)}" title="${esc(about)}"><b>${esc(label)}</b><span>${esc(s.station)} · ${esc(about)}</span><span class="st" data-st="${esc(k)}"></span></button>`;
+  }).join("");
+  $("#scen").querySelectorAll("button").forEach(b => b.onclick = async () => {
+    try { renderScenarioState(await api("api/sim/scenario", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ name: b.dataset.s }) })); }
+    catch (e) { flash(e.message); }
+  });
+  if (STATUS) renderScenarioState(STATUS.gateway);
+}
+function renderScenarioState(g) {
+  if (!META || !g) return;
+  for (const k of Object.keys(META.scenarios)) {
+    const b = $(`#scen button[data-s="${k}"]`); if (!b) continue;
+    const on = g.scenarios && k in g.scenarios;
+    b.classList.toggle("active", on);
+    $(`.st[data-st="${k}"]`, b).textContent = on ? t("active", g.scenarios[k] + 1, META.scenarios[k].units) : "";
+  }
+}
+$("#gw-toggle").onclick = async () => {
+  await api(`api/sim/${$("#gw-toggle").dataset.running ? "stop" : "start"}`, { method: "POST" }); pollStatus();
+};
+
+// ---------- review queue ----------
+$("#reviewer").value = store.get("qi-reviewer", "");
+$("#reviewer").oninput = e => store.set("qi-reviewer", e.target.value.trim());
+async function review(id, disposition, note = "") {
+  const reviewer = $("#reviewer").value.trim();
+  if (!reviewer) { $("#reviewer").focus(); $("#reviewer").placeholder = t("name_req"); return false; }
+  const r = await api(`api/inspections/${id}/review`, { method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ disposition, reviewer, note }) });
+  upsert(r); renderFeed(); renderQueue(); return true;
+}
+let PENDING = [];
+async function loadPending() { PENDING = await api("api/inspections?status=pending&limit=40"); renderQueue(); }
+function renderQueue() {
+  PENDING = PENDING.filter(p => { const f = FEED.find(x => x.id === p.id); return !f || f.status === "pending"; });
+  $("#q-count").textContent = PENDING.length;
+  $("#queue").innerHTML = PENDING.length ? PENDING.map(p => `
+    <div class="card" data-id="${p.id}">
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${chip("hold")} <b>${esc(p.station)}</b> <span class="mono small muted">${esc(p.serial)}</span>
+        ${p.order ? `<span class="order-tag" title="${t("order")}">${esc(p.order)}</span>` : ""}
+        <button class="btn" style="margin-left:auto" data-open="${p.id}">${t("details")}</button></div>
+      <div class="why">${esc(zh() ? (p.why_zh || p.why) : p.why)}</div>
+      ${p.note ? `<div class="q">${p.lang ? `<span class="lang">${esc(p.lang)}</span> ` : ""}${esc(p.note)}</div>` : ""}
+      <div class="acts"><button class="btn pass" data-r="pass">${t("release")}</button><button class="btn rework" data-r="rework">${t("rework_b")}</button><button class="btn scrap" data-r="scrap">${t("scrap_b")}</button></div>
+    </div>`).join("") : `<div class="empty">${t("queue_empty")}</div>`;
+  $("#queue").querySelectorAll(".card").forEach(c => {
+    const id = +c.dataset.id;
+    c.querySelector("[data-open]").onclick = () => openDetail(id);
+    c.querySelectorAll("[data-r]").forEach(b => b.onclick = async () => {
+      b.disabled = true;
+      try { if (!(await review(id, b.dataset.r))) b.disabled = false; } catch (e) { flash(e.message); b.disabled = false; }
+    });
+  });
+}
+
+// ---------- how it works ----------
+function renderHow() {
+  const g = META ? Math.round(META.policy.min_confidence * 100) : 50;
+  $("#flow").innerHTML = t("flow").map(([n, b, d], i) => `<div class="step ${i === 4 ? "laya" : ""}"><span class="n">${esc(n)}</span><b>${esc(b)}</b>${esc(typeof d === "function" ? d(g) : d)}</div>`).join("");
+  $("#split").innerHTML = t("split").map(([h, d]) => `<div><h4>${esc(h)}</h4>${esc(d)}</div>`).join("");
+}
+
+// ---------- detail drawer ----------
+function controlChart(key, c, currentId) {
+  const W = 600, H = 220, m = { l: 58, r: 16, t: 16, b: 26 };
+  const pts = c.points; if (pts.length < 2) return `<div class="small muted">${t("few")}</div>`;
+  const L = c.limits;
+  const vals = pts.map(p => p.value).concat([L.ucl, L.lcl, L.usl, L.lsl].filter(v => v != null));
+  let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
+  const x = i => m.l + i * ((W - m.l - m.r) / (pts.length - 1));
+  const y = v => m.t + (1 - (v - lo) / (hi - lo)) * (H - m.t - m.b);
+  const hl = (v, stroke, dash, label) => v == null ? "" :
+    `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${stroke}" stroke-width="1" ${dash ? `stroke-dasharray="${dash}"` : ""}/>
+     <text x="${m.l - 6}" y="${y(v) + 4}" text-anchor="end" font-size="10.5" fill="var(--muted)">${label}</text>`;
+  const path = pts.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join("");
+  const marks = pts.map((p, i) => {
+    const cur = p.id === currentId, out = p.status === "out", r = cur ? 5.5 : out ? 4.5 : 3;
+    return `<circle cx="${x(i)}" cy="${y(p.value)}" r="${r}" fill="${out ? "var(--bad)" : "var(--accent)"}" stroke="var(--panel)" stroke-width="2"/>` +
+      (cur ? `<circle cx="${x(i)}" cy="${y(p.value)}" r="9" fill="none" stroke="var(--ink)" stroke-width="1.5"/>` : "");
+  }).join("");
+  const id = "cc-" + key;
+  setTimeout(() => {
+    const box = document.getElementById(id); if (!box) return;
+    const svg = box.querySelector("svg"), tip = box.querySelector(".tip"), cross = svg.querySelector(".cross");
+    svg.addEventListener("pointermove", ev => {
+      const r = svg.getBoundingClientRect(), sx = (ev.clientX - r.left) * W / r.width;
+      const i = Math.max(0, Math.min(pts.length - 1, Math.round((sx - m.l) / ((W - m.l - m.r) / (pts.length - 1)))));
+      const p = pts[i];
+      cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.style.display = "";
+      tip.innerHTML = `<b class="num">${fmt(p.value, c.decimals)} ${esc(c.unit)}</b><br><span class="mono">${esc(p.serial)}</span><br>${timeOf(p.ts)} · ${esc(t("d")[p.disposition] || p.disposition)}`;
+      tip.style.display = "block";
+      const px = x(i) * r.width / W, left = px > r.width / 2 ? px - tip.offsetWidth - 12 : px + 12;
+      tip.style.left = left + "px"; tip.style.top = "8px";
+    });
+    svg.addEventListener("pointerleave", () => { tip.style.display = "none"; cross.style.display = "none"; });
+  });
+  return `<div class="chartbox" id="${id}">
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t("s_chart"))} ${esc(lbl(c.label))}">
+      ${hl(L.usl, "var(--bad)", "", "USL")}${hl(L.lsl, "var(--bad)", "", "LSL")}
+      ${hl(L.ucl, "var(--muted)", "4 3", "UCL")}${hl(L.lcl, "var(--muted)", "4 3", "LCL")}
+      ${hl(L.center, "var(--grid)", "", fmt(L.center, c.decimals))}
+      <line class="cross" x1="0" x2="0" y1="${m.t}" y2="${H - m.b}" stroke="var(--muted)" stroke-width="1" style="display:none"/>
+      <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+      ${marks}
+      <text x="${m.l}" y="${H - 6}" font-size="10.5" fill="var(--muted)">${esc(pts[0].serial.split("-").pop())}</text>
+      <text x="${W - m.r}" y="${H - 6}" font-size="10.5" fill="var(--muted)" text-anchor="end">${esc(pts[pts.length - 1].serial.split("-").pop())}</text>
+    </svg><div class="tip"></div></div>
+    <div class="legend"><span><i style="border-color:var(--accent)"></i>${esc(lbl(c.label))} (${esc(c.unit)})</span>
+      <span><i style="border-color:var(--muted);border-top-style:dashed"></i>${t("cl")}</span>
+      <span><i style="border-color:var(--bad)"></i>${t("sl")}</span></div>`;
+}
+function barsHtml(names, ans, gate) {
+  const probs = Object.entries(ans.probabilities || {}).sort((a, b) => b[1] - a[1]);
+  return `<div class="bars">${probs.map(([k, v]) => `<div class="bar ${k === ans.choice ? "win" : ""}">
+    <span class="lbl">${esc(names[k] || k)}</span>
+    <span class="trk"><span class="fill" style="width:${(v * 100).toFixed(1)}%"></span></span>
+    <span class="pct num">${(v * 100).toFixed(0)}%</span></div>`).join("")}</div>
+    <div class="gatecap">${t("conf")} <b class="num">${pct(ans.confidence)}</b> — ${ans.confidence >= gate ? t("at_above") : `<b>${t("below")}</b>`} ${t("gate_cap", Math.round(gate * 100))}</div>`;
+}
+function spcText(s) {
+  if (!zh()) return s.text;
+  if (s.rule === "TREND") return /decreas/.test(s.text) ? "连续 6 点持续下降" : "连续 6 点持续上升";
+  return SPC_ZH[s.rule] || s.text;
+}
+let DETAIL = null;
+async function openDetail(id) {
+  SELECTED = id;
+  const r = await api(`api/inspections/${id}`);
+  if (SELECTED !== id) return;
+  DETAIL = r; renderDetail();
+  $("#drawer").classList.add("open"); $("#drawer").setAttribute("aria-hidden", "false"); $("#scrim").style.display = "block";
+}
+function renderDetail() {
+  const r = DETAIL; if (!r || !META) return;
+  const d = r.decision, gate = META.policy.min_confidence, id = r.id;
+  $("#d-title").textContent = `${r.serial} · ${r.station}` + (r.order ? ` · ${t("order")} ${r.order}` : "");
+  $("#d-chip").innerHTML = r.status === "reviewed" ? chip(r.final) : chip(r.disposition) + (r.status === "pending" ? ` <span class="small muted">${t("awaiting")}</span>` : "");
+  const meas = r.findings.map(f => `<tr><td>${esc(lbl(f.label))}${f.role === "process" ? ` <span class="small muted">${t("process")}</span>` : ""}</td>
+    <td class="num">${f.value == null ? `<span class="failed">${t("no_reading")}</span>` : fmt(f.value, f.decimals) + " " + esc(f.unit)}</td>
+    <td class="num muted">${f.lsl != null ? fmt(f.lsl, f.decimals) + " – " : "≤ "}${fmt(f.usl, f.decimals)}</td>
+    <td>${f.status === "ok" ? `<span style="color:var(--ok)">${t("ok")}</span>` : `<span class="failed">${f.status === "out" ? t("out") : t("missing")}</span>`}</td></tr>`).join("");
+  const L = r.laya;
+  let laya = `<div class="small muted">${t("no_note")}</div>`;
+  if (L && L.error) laya = `<div class="quote">${esc(L.input)}</div><div class="failed small" style="margin-top:6px">${t("laya_err")}: ${esc(L.error)}</div>`;
+  else if (L && L.answers) {
+    laya = `<div class="quote">${esc(L.input)}</div>
+      <div class="small muted" style="margin-top:6px">${t("routed")} <b>${esc(L.routing.model)}</b> — ${esc(L.routing.reason || "")}. ${t("fwd", fmt(L.ms, 0))}${L.cold_load_ms ? t("cold", fmt(L.cold_load_ms / 1000, 1)) : ""}.</div>
+      <div style="margin-top:10px"><b class="small">${t("q_topic")}</b>${barsHtml(t("topic"), L.answers.topic, gate)}</div>
+      <div style="margin-top:12px"><b class="small">${t("q_kind")}</b>${barsHtml(t("kind"), L.answers.defect_kind, gate)}</div>`;
+  }
+  const charts = Object.entries(r.charts || {}).map(([k, c]) => `<div class="sec"><h3>${t("s_chart")} · ${esc(lbl(c.label))}</h3>${controlChart(k, c, r.id)}</div>`).join("");
+  const rv = r.status === "pending" ? `<div class="sec review"><h3>${t("s_qa")}</h3>
+      <input type="text" id="rv-note" placeholder="${esc(t("note_ph"))}" />
+      <div class="acts"><button class="btn pass" data-r="pass">${t("release")}</button><button class="btn rework" data-r="rework">${t("rework_b")}</button><button class="btn scrap" data-r="scrap">${t("scrap_b")}</button></div></div>`
+    : r.status === "reviewed" ? `<div class="sec"><h3>${t("s_qa")}</h3>${chip(r.final)} ${t("by")} <b>${esc(r.reviewer)}</b>${r.review_note ? ` — ${esc(r.review_note)}` : ""}</div>` : "";
+  const trace = zh() && d.trace_zh ? d.trace_zh : d.trace;
+  $("#d-body").innerHTML = `
+    ${rv}
+    <div class="sec"><h3>${t("s_why")}</h3><ol class="trace">${trace.map(x => `<li>${esc(x)}</li>`).join("")}</ol>
+      <div class="small muted" style="margin-top:6px">${t("defect")}: <b>${esc(d.defect ? (t("kind")[d.defect] || d.defect) : t("none"))}</b> · ${t("root")}: <b>${esc(d.root_cause ? (t("causes")[d.root_cause] || d.root_cause) : "—")}</b></div></div>
+    <div class="sec"><h3>${t("s_meas")}</h3><table class="meas"><thead><tr><th>${t("m_char")}</th><th>${t("m_val")}</th><th>${t("m_spec")}</th><th></th></tr></thead><tbody>${meas}</tbody></table>
+      ${r.spc.length ? `<div class="small" style="margin-top:6px">SPC: ${r.spc.map(s => `<b>${esc(s.rule)}</b> ${esc(spcText(s))}`).join("; ")}</div>` : ""}</div>
+    <div class="sec"><h3>${t("s_laya")}</h3>${laya}</div>
+    ${charts}
+    <div class="sec"><h3>${t("s_record")}${t("record_note")}</h3><div class="quote small">${esc(r.report)}</div></div>`;
+  $("#d-body").querySelectorAll("[data-r]").forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    try { if (await review(id, b.dataset.r, ($("#rv-note") || {}).value || "")) openDetail(id); else b.disabled = false; }
+    catch (e) { flash(e.message); b.disabled = false; }
+  });
+}
+function closeDetail() { SELECTED = null; DETAIL = null; $("#drawer").classList.remove("open"); $("#drawer").setAttribute("aria-hidden", "true"); $("#scrim").style.display = "none"; }
+$("#d-close").onclick = closeDetail; $("#scrim").onclick = closeDetail;
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeDetail(); });
+
+// ---------- live ----------
+let LIVE = null;
+function renderLive() { if (LIVE == null) return; $("#p-live").innerHTML = `<span class="dot ${LIVE ? "ok" : "bad pulse"}"></span>${LIVE ? t("live") : t("reconnecting")}`; }
+async function pollStatus() {
+  try {
+    STATUS = await api("api/status");
+    DEVICES = Object.fromEntries(STATUS.devices.map(d => [d.device, d]));
+    renderStatus(STATUS);
+  } catch {}
+}
+function connect() {
+  const es = new EventSource("api/stream");
+  es.onopen = () => { LIVE = true; renderLive(); resync(); };
+  es.onerror = () => { LIVE = false; renderLive(); };
+  es.addEventListener("inspection", ev => {
+    const r = JSON.parse(ev.data); upsert(r); renderFeed(r.id); refreshLine();
+    if (r.status === "pending") { PENDING.unshift(r); renderQueue(); }
+  });
+  es.addEventListener("review", ev => { const r = JSON.parse(ev.data); upsert(r); renderFeed(); renderQueue(); });
+  es.addEventListener("alert", ev => { const a = JSON.parse(ev.data); ALERTS = [a, ...ALERTS.filter(x => x.id !== a.id)]; renderAlerts(); });
+  es.addEventListener("ack", ev => { const a = ALERTS.find(x => x.id === JSON.parse(ev.data).id); if (a) a.acked = Date.now(); renderAlerts(); });
+  es.addEventListener("sim", ev => renderScenarioState(JSON.parse(ev.data)));
+}
+async function resync() {
+  const [rows, alerts] = await Promise.all([api("api/inspections?limit=150"), api("api/alerts")]);
+  FEED = rows; ALERTS = alerts;
+  renderFeed(); renderAlerts(); loadLine(); loadPending();
+}
+function renderAll() {
+  if (META) $("#sub").textContent = t("sub", META.line.product, META.stations.length);
+  renderStatus(STATUS); renderLine(); renderFilters(); renderFeed(); renderAlerts(); renderScenarios(); renderQueue(); renderHow(); renderDetail(); renderLive();
+}
+
+if (location.pathname !== "/") $("#platform-back").hidden = false;     // mounted inside the platform
+(async function init() {
+  const saved = store.get("aps-lang", null);
+  const l0 = location.hash === "#zh" ? "zh" : (saved || ((navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"));
+  META = await api("api/meta");
+  await pollStatus();
+  applyLang(l0);
+  await resync();
+  setInterval(pollStatus, 2000);
+  connect();
+})();
+</script>
+</body>
+</html>

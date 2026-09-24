@@ -1,0 +1,372 @@
+{
+ "value": [
+  {
+   "ManufacturingOrder": "10004401",
+   "Material": "HSG-7731",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 110,
+   "SoldToParty": "C-1003",
+   "Priority": 1,
+   "DueDay": 1,
+   "DueTime": "21:00"
+  },
+  {
+   "ManufacturingOrder": "10004402",
+   "Material": "HSG-7731",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 140,
+   "SoldToParty": "C-1001",
+   "Priority": 2,
+   "DueDay": 1,
+   "DueTime": "14:00"
+  },
+  {
+   "ManufacturingOrder": "10004403",
+   "Material": "CVR-1100",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 90,
+   "SoldToParty": "C-1001",
+   "Priority": 2,
+   "DueDay": 1,
+   "DueTime": "14:00",
+   "MaterialAvailDay": 1,
+   "MaterialAvailTime": "14:00"
+  },
+  {
+   "ManufacturingOrder": "10004404",
+   "Material": "HSG-7731",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 140,
+   "SoldToParty": "C-1002",
+   "Priority": 1,
+   "DueDay": 2,
+   "DueTime": "21:00"
+  },
+  {
+   "ManufacturingOrder": "10004405",
+   "Material": "VLV-2200",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 150,
+   "SoldToParty": "C-1004",
+   "Priority": 2,
+   "DueDay": 1,
+   "DueTime": "21:00"
+  },
+  {
+   "ManufacturingOrder": "10004406",
+   "Material": "HSG-7731",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 140,
+   "SoldToParty": "C-1005",
+   "Priority": 1,
+   "DueDay": 1,
+   "DueTime": "14:00"
+  },
+  {
+   "ManufacturingOrder": "10004407",
+   "Material": "HSG-7731",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 160,
+   "SoldToParty": "C-1002",
+   "Priority": 1,
+   "DueDay": 1,
+   "DueTime": "21:00"
+  },
+  {
+   "ManufacturingOrder": "10004408",
+   "Material": "HSG-7735",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 130,
+   "SoldToParty": "C-1002",
+   "Priority": 1,
+   "DueDay": 2,
+   "DueTime": "21:00"
+  },
+  {
+   "ManufacturingOrder": "10004409",
+   "Material": "VLV-2200",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 80,
+   "SoldToParty": "C-1004",
+   "Priority": 2,
+   "DueDay": 1,
+   "DueTime": "14:00"
+  },
+  {
+   "ManufacturingOrder": "10004410",
+   "Material": "CVR-1100",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 220,
+   "SoldToParty": "C-1005",
+   "Priority": 1,
+   "DueDay": 2,
+   "DueTime": "21:00"
+  },
+  {
+   "ManufacturingOrder": "10004411",
+   "Material": "VLV-2200",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 100,
+   "SoldToParty": "C-1005",
+   "Priority": 1,
+   "DueDay": 3,
+   "DueTime": "14:00"
+  },
+  {
+   "ManufacturingOrder": "10004412",
+   "Material": "CVR-1100",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 230,
+   "SoldToParty": "C-1005",
+   "Priority": 1,
+   "DueDay": 2,
+   "DueTime": "21:00"
+  },
+  {
+   "ManufacturingOrder": "10004413",
+   "Material": "HSG-7735",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 100,
+   "SoldToParty": "C-1005",
+   "Priority": 1,
+   "DueDay": 2,
+   "DueTime": "14:00"
+  },
+  {
+   "ManufacturingOrder": "10004414",
+   "Material": "VLV-2200",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 140,
+   "SoldToParty": "C-1001",
+   "Priority": 2,
+   "DueDay": 2,
+   "DueTime": "14:00"
+  },
+  {
+   "ManufacturingOrder": "10004415",
+   "Material": "HSG-7731",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 130,
+   "SoldToParty": "C-1004",
+   "Priority": 2,
+   "DueDay": 2,
+   "DueTime": "21:00",
+   "MaterialAvailDay": 0,
+   "MaterialAvailTime": "14:00"
+  },
+  {
+   "ManufacturingOrder": "10004416",
+   "Material": "VLV-2200",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 90,
+   "SoldToParty": "C-1003",
+   "Priority": 1,
+   "DueDay": 2,
+   "DueTime": "21:00"
+  },
+  {
+   "ManufacturingOrder": "10004417",
+   "Material": "CVR-1100",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 100,
+   "SoldToParty": "C-1001",
+   "Priority": 2,
+   "DueDay": 3,
+   "DueTime": "21:00"
+  },
+  {
+   "ManufacturingOrder": "10004418",
+   "Material": "HSG-7731",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 180,
+   "SoldToParty": "C-1002",
+   "Priority": 1,
+   "DueDay": 2,
+   "DueTime": "14:00"
+  },
+  {
+   "ManufacturingOrder": "10004419",
+   "Material": "VLV-2200",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 190,
+   "SoldToParty": "C-1003",
+   "Priority": 1,
+   "DueDay": 4,
+   "DueTime": "21:00"
+  },
+  {
+   "ManufacturingOrder": "10004420",
+   "Material": "CVR-1100",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 210,
+   "SoldToParty": "C-1005",
+   "Priority": 1,
+   "DueDay": 4,
+   "DueTime": "14:00"
+  },
+  {
+   "ManufacturingOrder": "10004421",
+   "Material": "HSG-7735",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 80,
+   "SoldToParty": "C-1005",
+   "Priority": 1,
+   "DueDay": 3,
+   "DueTime": "14:00"
+  },
+  {
+   "ManufacturingOrder": "10004422",
+   "Material": "HSG-7731",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 140,
+   "SoldToParty": "C-1005",
+   "Priority": 1,
+   "DueDay": 3,
+   "DueTime": "21:00"
+  },
+  {
+   "ManufacturingOrder": "10004423",
+   "Material": "HSG-7731",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 70,
+   "SoldToParty": "C-1004",
+   "Priority": 2,
+   "DueDay": 4,
+   "DueTime": "14:00"
+  },
+  {
+   "ManufacturingOrder": "10004424",
+   "Material": "HSG-7731",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 70,
+   "SoldToParty": "C-1005",
+   "Priority": 1,
+   "DueDay": 3,
+   "DueTime": "14:00"
+  },
+  {
+   "ManufacturingOrder": "10004425",
+   "Material": "CVR-1100",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 210,
+   "SoldToParty": "C-1002",
+   "Priority": 1,
+   "DueDay": 3,
+   "DueTime": "21:00"
+  },
+  {
+   "ManufacturingOrder": "10004426",
+   "Material": "HSG-7731",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 70,
+   "SoldToParty": "C-1002",
+   "Priority": 1,
+   "DueDay": 4,
+   "DueTime": "14:00"
+  },
+  {
+   "ManufacturingOrder": "10004427",
+   "Material": "VLV-2200",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 110,
+   "SoldToParty": "C-1005",
+   "Priority": 1,
+   "DueDay": 3,
+   "DueTime": "14:00"
+  },
+  {
+   "ManufacturingOrder": "10004428",
+   "Material": "VLV-2200",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 70,
+   "SoldToParty": "C-1002",
+   "Priority": 1,
+   "DueDay": 4,
+   "DueTime": "21:00",
+   "MaterialAvailDay": 0,
+   "MaterialAvailTime": "14:00"
+  },
+  {
+   "ManufacturingOrder": "10004429",
+   "Material": "HSG-7731",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 60,
+   "SoldToParty": "C-1004",
+   "Priority": 2,
+   "DueDay": 4,
+   "DueTime": "14:00"
+  },
+  {
+   "ManufacturingOrder": "10004430",
+   "Material": "CVR-1100",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 170,
+   "SoldToParty": "C-1005",
+   "Priority": 1,
+   "DueDay": 4,
+   "DueTime": "21:00"
+  },
+  {
+   "ManufacturingOrder": "10004431",
+   "Material": "HSG-7735",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 50,
+   "SoldToParty": "C-1004",
+   "Priority": 2,
+   "DueDay": 4,
+   "DueTime": "21:00"
+  },
+  {
+   "ManufacturingOrder": "10004432",
+   "Material": "HSG-7731",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 100,
+   "SoldToParty": "C-1002",
+   "Priority": 1,
+   "DueDay": 4,
+   "DueTime": "21:00",
+   "MaterialAvailDay": 1,
+   "MaterialAvailTime": "10:00"
+  },
+  {
+   "ManufacturingOrder": "10004433",
+   "Material": "HSG-7731",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 150,
+   "SoldToParty": "C-1004",
+   "Priority": 2,
+   "DueDay": 4,
+   "DueTime": "21:00"
+  },
+  {
+   "ManufacturingOrder": "10004434",
+   "Material": "HSG-7731",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 160,
+   "SoldToParty": "C-1003",
+   "Priority": 1,
+   "DueDay": 4,
+   "DueTime": "14:00"
+  },
+  {
+   "ManufacturingOrder": "10004435",
+   "Material": "VLV-2200",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 200,
+   "SoldToParty": "C-1004",
+   "Priority": 2,
+   "DueDay": 4,
+   "DueTime": "21:00"
+  },
+  {
+   "ManufacturingOrder": "10004436",
+   "Material": "HSG-7735",
+   "ProductionPlant": "1000",
+   "TotalQuantity": 60,
+   "SoldToParty": "C-1003",
+   "Priority": 1,
+   "DueDay": 4,
+   "DueTime": "14:00"
+  }
+ ]
+}

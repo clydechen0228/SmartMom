@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>APS Workbench Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f3f6f5; --panel: #ffffff; --sunk: #e9eeed; --ink: #17201f; --ink-2: #394644; --muted: #5d6b69;
+  --line: #d3dcda; --line-strong: #aebcb9; --accent: #0e6b70; --accent-ink: #0a575b; --accent-soft: #dff0ef;
+  --ok: #2a78d6; --ok-soft: #dde9f8; --risk: #a86d00; --risk-soft: #fbefd6; --late: #b8372a; --late-soft: #fbe5e2;
+  --good: #16794a; --good-soft: #def2e6; --laya: #4b3aa8; --laya-soft: #ebe8f8;
+  --sans: "IBM Plex Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #101514; --panel: #161c1b; --sunk: #1c2423; --ink: #e3eae8; --ink-2: #c0cbc9; --muted: #8fa09d;
+    --line: #28312f; --line-strong: #3b4745; --accent: #4fb3b8; --accent-ink: #7fcacd; --accent-soft: #15302f;
+    --ok: #4b92e8; --ok-soft: #1a2c44; --risk: #e3a640; --risk-soft: #33280f; --late: #ef7b6d; --late-soft: #3a1c19;
+    --good: #52c285; --good-soft: #15301f; --laya: #a397f0; --laya-soft: #262147;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #101514; --panel: #161c1b; --sunk: #1c2423; --ink: #e3eae8; --ink-2: #c0cbc9; --muted: #8fa09d;
+  --line: #28312f; --line-strong: #3b4745; --accent: #4fb3b8; --accent-ink: #7fcacd; --accent-soft: #15302f;
+  --ok: #4b92e8; --ok-soft: #1a2c44; --risk: #e3a640; --risk-soft: #33280f; --late: #ef7b6d; --late-soft: #3a1c19;
+  --good: #52c285; --good-soft: #15301f; --laya: #a397f0; --laya-soft: #262147;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 var(--sans); padding-inline: 16px; }
+html:not([data-lang]) [lang="zh"], html[data-lang="en"] [lang="zh"], html[data-lang="zh"] [lang="en"] { display: none !important; }
+html[data-lang="zh"] body { line-height: 1.75; }
+.num, table { font-variant-numeric: tabular-nums; }
+
+header.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); margin-inline: -16px; padding: 10px 16px;
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: center; gap: 10px; margin-right: auto; font-weight: 600; }
+.mark { width: 26px; height: 26px; border-radius: 6px; background: var(--accent); display: grid; align-content: center; gap: 3px; padding: 5px; }
+.mark i { display: block; height: 3px; background: #fff; border-radius: 1px; }
+.mark i:nth-child(1) { width: 60%; } .mark i:nth-child(2) { width: 90%; margin-left: 10%; } .mark i:nth-child(3) { width: 50%; margin-left: 20%; }
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: var(--panel); color: var(--ink); padding: 5px 12px; font: 500 13px var(--sans); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.seg button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 40px; padding-block: 28px 64px; }
+@media (max-width: 860px) { .wrap { grid-template-columns: minmax(0, 1fr); gap: 16px; } nav.toc { position: static !important; } }
+nav.toc { position: sticky; top: 72px; align-self: start; font-size: 13.5px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+nav.toc a { display: block; padding: 4px 10px; border-left: 2px solid var(--line); color: var(--ink-2); text-decoration: none; }
+nav.toc a:hover { border-left-color: var(--accent); color: var(--accent-ink); }
+@media (max-width: 860px) { nav.toc ol { display: flex; flex-wrap: wrap; gap: 6px; } nav.toc a { border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; } }
+
+main { min-width: 0; display: grid; gap: 44px; }
+h1 { font-size: clamp(28px, 4vw, 38px); line-height: 1.15; margin: 0 0 10px; letter-spacing: -.015em; text-wrap: balance; }
+h2 { font-size: 22px; margin: 0 0 6px; letter-spacing: -.01em; text-wrap: balance; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+h3 { font-size: 15px; margin: 18px 0 6px; }
+p { margin: 0 0 10px; max-width: 68ch; }
+.lede { font-size: 17px; color: var(--ink-2); max-width: 64ch; }
+.eyebrow { font: 600 11.5px var(--sans); letter-spacing: .09em; text-transform: uppercase; color: var(--accent-ink); margin-bottom: 8px; }
+.where { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+code, .mono { font-family: var(--mono); font-size: .88em; }
+code { background: var(--sunk); border: 1px solid var(--line); padding: 1px 5px; border-radius: 5px; }
+
+/* the workbench's own vocabulary */
+.btn { display: inline-block; border: 1px solid var(--line-strong); background: var(--panel); border-radius: 7px; padding: 1px 9px; font: 500 .9em var(--sans); white-space: nowrap; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.panel-name { font: 600 .8em var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-bottom: 1px dashed var(--line-strong); }
+.who { display: inline-block; font: 600 11px var(--sans); letter-spacing: .04em; border-radius: 999px; padding: 1px 9px; vertical-align: 2px; }
+.who.laya { color: var(--laya); background: var(--laya-soft); }
+.who.rules { color: var(--risk); background: var(--risk-soft); }
+.who.solver { color: var(--ok); background: var(--ok-soft); }
+
+.hero { display: grid; gap: 18px; }
+.start { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; font-size: 13.5px; color: var(--ink-2); }
+.start b { color: var(--ink); }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 700px) { .split { grid-template-columns: minmax(0, 1fr); } }
+
+.try { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.try ol { margin: 6px 0 0; padding-left: 22px; display: grid; gap: 8px; }
+.say { font-family: var(--mono); font-size: 13px; background: var(--sunk); border-radius: 6px; padding: 1px 6px; }
+
+.examples { display: grid; gap: 8px; margin: 10px 0 4px; }
+.ex { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 12px; align-items: start; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+@media (max-width: 640px) { .ex { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
+.ex .q { font-family: var(--mono); font-size: 13px; color: var(--ink); }
+.ex .a { font-size: 13.5px; color: var(--ink-2); }
+.ex .a::before { content: "→ "; color: var(--accent); font-weight: 700; }
+
+.steps { display: grid; gap: 8px; margin: 10px 0; }
+.step { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 12px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.step.hl { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+@media (max-width: 640px) { .step { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
+.step .k { font-weight: 600; font-size: 14px; }
+.step .v { font-size: 13.5px; color: var(--ink-2); }
+
+.callout { border-radius: 10px; padding: 10px 14px; font-size: 13.5px; max-width: 72ch; }
+.callout.trust { background: var(--laya-soft); color: var(--ink); }
+.callout.trust b { color: var(--laya); }
+.callout.warn { background: var(--risk-soft); }
+
+/* flow diagram */
+.flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 14px 0 6px; }
+@media (max-width: 760px) { .flow { grid-template-columns: minmax(0, 1fr); } .flow .node::after { display: none; } }
+.node { position: relative; background: var(--panel); border: 1px solid var(--line); padding: 12px 14px; margin-right: 18px; border-radius: 10px; }
+@media (max-width: 760px) { .node { margin: 0 0 10px; } }
+.node::after { content: ""; position: absolute; right: -15px; top: 50%; width: 10px; height: 10px; border-top: 2px solid var(--line-strong); border-right: 2px solid var(--line-strong); transform: translateY(-50%) rotate(45deg); }
+.node:last-child::after { display: none; }
+.node .t { font-weight: 600; font-size: 14px; margin: 6px 0 4px; }
+.node .d { font-size: 12.5px; color: var(--ink-2); }
+.gate { font-size: 13px; color: var(--ink-2); max-width: 76ch; }
+
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; background: var(--sunk); padding: 8px 12px; white-space: nowrap; }
+td { padding: 8px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+td.r { white-space: nowrap; font-weight: 600; }
+.meter { display: inline-block; width: 70px; height: 7px; background: var(--line); border-radius: 4px; overflow: hidden; vertical-align: 1px; margin-right: 6px; }
+.meter i { display: block; height: 100%; background: var(--accent); }
+
+.pill { display: inline-block; font: 600 11.5px var(--sans); border-radius: 999px; padding: 1px 8px; }
+.pill.late { color: var(--late); background: var(--late-soft); }
+.pill.risk { color: var(--risk); background: var(--risk-soft); }
+.flag { color: var(--late); font-weight: 700; }
+footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span><span lang="en">APS Workbench Guide</span><span lang="zh">APS 工作台使用指南</span></span></div>
+  <div class="seg" role="group" aria-label="Language / 语言">
+    <button id="l-en" type="button" aria-pressed="true">EN</button><button id="l-zh" type="button" aria-pressed="false">中文</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="toc" aria-label="Contents">
+    <ol>
+      <li><a href="#tour"><span lang="en">3-minute tour</span><span lang="zh">三分钟上手</span></a></li>
+      <li><a href="#ask"><span lang="en">Ask the assistant</span><span lang="zh">计划助手</span></a></li>
+      <li><a href="#scenarios"><span lang="en">What-if scenarios</span><span lang="zh">假设场景</span></a></li>
+      <li><a href="#why"><span lang="en">Why late &amp; load</span><span lang="zh">延误原因与负荷</span></a></li>
+      <li><a href="#inbox"><span lang="en">Disruption inbox</span><span lang="zh">异常收件箱</span></a></li>
+      <li><a href="#reject"><span lang="en">Rejecting a proposal</span><span lang="zh">驳回方案</span></a></li>
+      <li><a href="#notes"><span lang="en">Shift notes</span><span lang="zh">交接班记录</span></a></li>
+      <li><a href="#priority"><span lang="en">Priorities</span><span lang="zh">优先级</span></a></li>
+      <li><a href="#labels"><span lang="en">Training labels</span><span lang="zh">训练标签</span></a></li>
+      <li><a href="#trust"><span lang="en">How far to trust it</span><span lang="zh">可信程度</span></a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <section class="hero">
+      <div>
+        <div class="eyebrow"><span lang="en">Plant 1 · Lines L1 and L3 · for planners</span><span lang="zh">一号工厂 · L1 与 L3 产线 · 面向计划员</span></div>
+        <h1><span lang="en">What's new in the APS workbench</span><span lang="zh">APS 工作台新功能</span></h1>
+        <p class="lede"><span lang="en">Ask questions in plain language, compare what-if scenarios before touching the plan, see why an order is late, and let the workbench turn rejections and shift notes into next steps. Nothing changes the approved plan until you approve a proposal.</span><span lang="zh">用自然语言提问，在改动排程前比较假设场景，查看订单延误的原因，并让工作台把驳回意见和交接班记录转化为下一步操作。在您批准方案之前，已批准的排程不会被改动。</span></p>
+      </div>
+      <div class="start">
+        <span><span lang="en">Start from the project root:</span><span lang="zh">在项目根目录启动：</span> <code>./run.sh start</code>, <span lang="en">then open</span><span lang="zh">然后打开</span> <b class="mono">http://127.0.0.1:8100/aps/</b></span>
+        <span><span lang="en">planning alone:</span><span lang="zh">单独运行排程：</span> <code>./run.sh start aps</code> → <b class="mono">:8095</b> · <code>./run.sh help</code> <span lang="en">lists every command</span><span lang="zh">列出全部命令</span></span>
+        <span><span lang="en">The first plan takes about a minute. The</span><span lang="zh">首次排程约需一分钟。右上角</span> <span class="btn">EN</span> <span class="btn">中文</span> <span lang="en">switch sets the language.</span><span lang="zh">按钮切换语言。</span></span>
+      </div>
+      <div class="flow" aria-label="Who does what">
+        <div class="node"><span class="who laya">Laya</span><div class="t"><span lang="en">Reads the language</span><span lang="zh">理解语言</span></div><div class="d"><span lang="en">What a message is about, what you want, why you rejected, a machine's condition. In English, 中文 and Deutsch.</span><span lang="zh">消息内容、您的意图、驳回原因、设备状态。支持英文、中文和德文。</span></div></div>
+        <div class="node"><span class="who rules"><span lang="en">Rules</span><span lang="zh">规则</span></span><div class="t"><span lang="en">Find the facts</span><span lang="zh">提取事实</span></div><div class="d"><span lang="en">Machines, orders, hours, dates, quantities; whether the sender is sure; what a delay costs the customer.</span><span lang="zh">设备、订单、小时、日期、数量；发件人是否确定；延误对客户的影响。</span></div></div>
+        <div class="node"><span class="who solver">CP-SAT</span><div class="t"><span lang="en">Decides the schedule</span><span lang="zh">决定排程</span></div><div class="d"><span lang="en">On-time delivery first, then as few changes as possible. Every result is checked for feasibility.</span><span lang="zh">准时交付优先，其次尽量少改动。每个结果都经过可行性校验。</span></div></div>
+        <div class="node"><span class="who" style="color:var(--good);background:var(--good-soft)"><span lang="en">You</span><span lang="zh">您</span></span><div class="t"><span lang="en">Approve</span><span lang="zh">审批</span></div><div class="d"><span lang="en">Proposals and scenarios show before and after. Only your approval creates a new schedule version.</span><span lang="zh">方案和场景都显示前后对比。只有您的批准才会生成新的排程版本。</span></div></div>
+      </div>
+    </section>
+
+    <section id="tour">
+      <div class="eyebrow"><span lang="en">Start here</span><span lang="zh">从这里开始</span></div>
+      <h2><span lang="en">A 3-minute tour</span><span lang="zh">三分钟上手</span></h2>
+      <div class="try">
+        <ol>
+          <li><span lang="en">In the command bar, ask</span><span lang="zh">在计划助手中输入</span> <span class="say"><span lang="en">What if LKT-04 goes down for 8 hours?</span><span lang="zh">如果 LKT-04 停机 8 小时会怎样？</span></span> <span lang="en">and press</span><span lang="zh">并点击</span> <span class="btn primary"><span lang="en">Ask</span><span lang="zh">提问</span></span>.</li>
+          <li><span lang="en">When the scenario appears, click</span><span lang="zh">场景出现后，点击</span> <span class="btn"><span lang="en">View</span><span lang="zh">查看</span></span> <span lang="en">to see it on the Gantt, then</span><span lang="zh">在甘特图中查看，然后点击</span> <span class="btn primary"><span lang="en">Make proposal</span><span lang="zh">转为方案</span></span>.</li>
+          <li><span lang="en">Enter your name, type</span><span lang="zh">输入姓名，在驳回框中写</span> <span class="say"><span lang="en">Too many changes</span><span lang="zh">改动太多了</span></span> <span lang="en">in the box under the buttons and click</span><span lang="zh">，然后点击</span> <span class="btn"><span lang="en">Reject</span><span lang="zh">驳回</span></span>.</li>
+          <li><span lang="en">In</span><span lang="zh">在</span> <span class="panel-name"><span lang="en">After the rejection</span><span lang="zh">驳回之后</span></span><span lang="en">, click</span><span lang="zh">中点击</span> <span class="btn primary"><span lang="en">Re-run moving only the disrupted machine and order</span><span lang="zh">重新求解，只调整受影响的设备和订单</span></span>.</li>
+          <li><span lang="en">In</span><span lang="zh">在</span> <span class="panel-name"><span lang="en">Shift notes</span><span lang="zh">交接班记录</span></span><span lang="en">, click the note</span><span lang="zh">中点击记录</span> <span class="say">CNC-03 液压系统故障，已停机。</span> <span lang="en">— CNC-03 gets a</span><span lang="zh">— CNC-03 在甘特图上出现</span> <span class="flag">⚠</span> <span lang="en">on the Gantt.</span><span lang="zh">标记。</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="ask">
+      <div class="eyebrow"><span lang="en">Top of the page</span><span lang="zh">页面顶部</span></div>
+      <h2><span lang="en">Ask the planner assistant</span><span lang="zh">计划助手</span> <span class="who laya">Laya</span></h2>
+      <p class="where"><span lang="en">Type in any language, or click one of the example chips under the box, then press</span><span lang="zh">用任意语言输入，或点击输入框下方的示例，然后点击</span> <span class="btn primary"><span lang="en">Ask</span><span lang="zh">提问</span></span>.</p>
+      <div class="examples">
+        <div class="ex"><span class="q"><span lang="en">What if LKT-04 goes down for 8 hours?</span><span lang="zh">如果 CNC-02 停机 4 小时会怎样？</span></span><span class="a"><span lang="en">Solves a what-if scenario. The live plan does not change.</span><span lang="zh">求解一个假设场景，当前排程不变。</span></span></div>
+        <div class="ex"><span class="q"><span lang="en">Why is order 10004403 late?</span><span lang="zh">订单 10004407 为什么有延误风险？</span></span><span class="a"><span lang="en">Shows the delay split into causes, biggest first.</span><span lang="zh">按影响大小列出延误原因。</span></span></div>
+        <div class="ex"><span class="q"><span lang="en">CNC-01 just broke down, repair takes 3 hours.</span><span lang="zh">客户取消了订单 10004414</span></span><span class="a"><span lang="en">Opens the event form, filled in, for you to create a proposal.</span><span lang="zh">打开已预填的事件表单，由您生成方案。</span></span></div>
+      </div>
+      <p class="gate"><span lang="en">If Laya is not sure what you want, it shows three buttons —</span><span lang="zh">如果 Laya 不确定您的意图，会显示三个按钮——</span> <span class="btn"><span lang="en">What-if</span><span lang="zh">假设分析</span></span> <span class="btn"><span lang="en">Report</span><span lang="zh">上报</span></span> <span class="btn"><span lang="en">Why</span><span lang="zh">原因</span></span> <span lang="en">— and you pick.</span><span lang="zh">——由您选择。</span></p>
+    </section>
+
+    <section id="scenarios">
+      <div class="eyebrow"><span lang="en">Right column</span><span lang="zh">右侧栏</span></div>
+      <h2><span lang="en">Compare what-if scenarios</span><span lang="zh">比较假设场景</span> <span class="who solver">CP-SAT</span></h2>
+      <p class="where"><span lang="en">Panel</span><span lang="zh">面板</span> <span class="panel-name"><span lang="en">What-if scenarios</span><span lang="zh">假设场景</span></span> · <span lang="en">up to six side by side, each with its change in on-time delivery, late orders and weighted lateness against the current plan.</span><span lang="zh">最多六个并列，分别显示相对当前排程的准时交付率、延误订单数和加权延误变化。</span></p>
+      <div class="steps">
+        <div class="step"><span class="k"><span class="btn"><span lang="en">View</span><span lang="zh">查看</span></span></span><span class="v"><span lang="en">Shows the scenario on the Gantt, the orders table and the load heatmap. The buttons above the Gantt (Current · Proposal · S1, S2 …) switch views too.</span><span lang="zh">在甘特图、订单表和负荷热力图中显示该场景。甘特图上方的按钮（当前 · 方案 · S1、S2……）也可切换。</span></span></div>
+        <div class="step"><span class="k"><span class="btn primary"><span lang="en">Make proposal</span><span lang="zh">转为方案</span></span></span><span class="v"><span lang="en">Turns it into the proposal you approve or reject. Disabled when the plan changed after the scenario ran — run it again.</span><span lang="zh">将其转为待审批的方案。若场景运行后排程已变化，此按钮不可用——请重新运行。</span></span></div>
+        <div class="step"><span class="k"><span class="btn"><span lang="en">Discard</span><span lang="zh">删除</span></span></span><span class="v"><span lang="en">Removes it. Advancing the clock clears all scenarios.</span><span lang="zh">删除该场景。推进时钟会清空所有场景。</span></span></div>
+      </div>
+      <p class="gate"><span lang="en">Every event form — in the inbox reading and in</span><span lang="zh">所有事件表单——收件箱识别结果和</span> <span class="panel-name"><span lang="en">Enter an event</span><span lang="zh">手动录入事件</span></span> <span lang="en">— has</span><span lang="zh">——都有</span> <span class="btn"><span lang="en">Run as what-if</span><span lang="zh">作为假设运行</span></span> <span lang="en">next to</span><span lang="zh">按钮，位于</span> <span class="btn primary"><span lang="en">Create proposal</span><span lang="zh">生成方案</span></span><span lang="zh">旁边</span>.</p>
+    </section>
+
+    <section id="why">
+      <div class="eyebrow"><span lang="en">Left column</span><span lang="zh">左侧栏</span></div>
+      <h2><span lang="en">See why orders are late, and where the load is</span><span lang="zh">查看延误原因与负荷</span></h2>
+      <div class="split">
+        <div>
+          <h3><span lang="en">The Why column</span><span lang="zh">“原因”列</span></h3>
+          <p><span lang="en">Every</span><span lang="zh">每个</span> <span class="pill late"><span lang="en">✕ late</span><span lang="zh">✕ 延误</span></span> <span lang="en">or</span><span lang="zh">或</span> <span class="pill risk"><span lang="en">▲ at risk</span><span lang="zh">▲ 有风险</span></span> <span lang="en">order shows its biggest cause, read off the schedule itself: material not yet available, a machine busy with other orders, unmanned nights, downtime, a quality hold or setups.</span><span lang="zh">订单都会显示其主要原因，直接取自排程：物料未到、设备被其他订单占用、夜间无人、停机、质量冻结或换型。</span></p>
+          <p><span lang="en">Click an order to see all causes ranked, in hours.</span><span lang="zh">点击订单可查看全部原因及小时数排序。</span></p>
+        </div>
+        <div>
+          <h3><span lang="en">Load by work centre and day</span><span lang="zh">各工作中心每日负荷</span></h3>
+          <p><span lang="en">The heatmap shows the share of shift time each work centre is busy. Darker means more loaded. It follows the view you pick: current plan, proposal or a scenario.</span><span lang="zh">热力图显示各工作中心每天班次时间的占用比例，颜色越深负荷越高。随所选视图变化：当前排程、方案或场景。</span></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="inbox">
+      <div class="eyebrow"><span lang="en">Right column</span><span lang="zh">右侧栏</span></div>
+      <h2><span lang="en">Read the disruption inbox</span><span lang="zh">异常收件箱</span> <span class="who laya">Laya</span> <span class="who rules"><span lang="en">Rules</span><span lang="zh">规则</span></span></h2>
+      <p class="where"><span lang="en">Click a message, or paste your own and press</span><span lang="zh">点击消息，或粘贴您自己的内容并点击</span> <span class="btn"><span lang="en">Read with Laya</span><span lang="zh">用 Laya 识别</span></span>. <span class="btn"><span lang="en">Triage all with Laya</span><span lang="zh">用 Laya 全部分拣</span></span> <span lang="en">reads every message and sorts them: flagged ones first, then by urgency.</span><span lang="zh">识别全部消息并排序：被标记的在前，其余按紧急度排列。</span></p>
+      <h3><span lang="en">What the reading shows</span><span lang="zh">识别结果包含</span></h3>
+      <div class="steps">
+        <div class="step"><span class="k"><span lang="en">Two readings</span><span lang="zh">两次识别</span></span><span class="v"><span lang="en">Laya reads the event kind twice, in two different wordings, and shows whether they agree.</span><span lang="zh">Laya 用两种不同措辞识别事件类型，并显示两者是否一致。</span></span></div>
+        <div class="step"><span class="k"><span lang="en">Guard</span><span lang="zh">防护</span></span><span class="v"><span lang="en">“guard: clean” or “guard: prompt injection”. A flagged message never applies itself; check the sender.</span><span lang="zh">“防护：正常”或“防护：提示注入”。被标记的消息不会自动应用，请核实发件人。</span></span></div>
+        <div class="step"><span class="k"><span lang="en">Cue words</span><span lang="zh">信号词</span></span><span class="v"><span lang="en">e.g. “customer's line would stop → priority 3”, with the words that triggered it.</span><span lang="zh">例如“客户会停线 → 优先级 3”，并显示触发的词语。</span></span></div>
+        <div class="step"><span class="k"><span lang="en">Why you confirm</span><span lang="zh">为何需确认</span></span><span class="v"><span lang="en">Readings disagree · below the confidence gate · facts missing · the sender is unsure · flagged by the guard. With none of these, the event is safe to apply.</span><span lang="zh">识别不一致 · 低于置信度阈值 · 缺少信息 · 发件人不确定 · 被防护模型标记。若都没有，事件可直接应用。</span></span></div>
+      </div>
+      <p class="callout warn"><span lang="en">If the sender sounds unsure — “might”, “not confirmed”, “可能”, “eventuell” — the main button becomes</span><span lang="zh">若发件人语气不确定——“might”“not confirmed”“可能”“eventuell”——主按钮会变为</span> <span class="btn primary"><span lang="en">Run as what-if</span><span lang="zh">作为假设运行</span></span><span lang="en">: see the effect first, act when it is confirmed.</span><span lang="zh">：先看影响，确认后再执行。</span></p>
+    </section>
+
+    <section id="reject">
+      <div class="eyebrow"><span lang="en">Proposal panel</span><span lang="zh">方案面板</span></div>
+      <h2><span lang="en">Reject a proposal with a comment</span><span lang="zh">驳回方案并填写原因</span> <span class="who laya">Laya</span></h2>
+      <p class="where"><span lang="en">Enter your name, type why in the box under the buttons (optional), and click</span><span lang="zh">输入姓名，在按钮下方的框中写明原因（可选），然后点击</span> <span class="btn"><span lang="en">Reject</span><span lang="zh">驳回</span></span>. <span lang="en">Laya reads the reason, and</span><span lang="zh">Laya 会识别原因，</span> <span class="panel-name"><span lang="en">After the rejection</span><span lang="zh">驳回之后</span></span> <span lang="en">highlights the matching next step:</span><span lang="zh">面板会突出对应的下一步：</span></p>
+      <div class="steps">
+        <div class="step hl"><span class="k"><span lang="en">Too many changes</span><span lang="zh">改动太多</span></span><span class="v"><span class="btn"><span lang="en">Re-run moving only the disrupted machine and order</span><span lang="zh">重新求解，只调整受影响的设备和订单</span></span><br><span lang="en">Everything else keeps its machine and sequence. Much faster (1.2 s vs 18 s in our test), same on-time result.</span><span lang="zh">其他工序保持原设备和顺序。速度更快（测试中 1.2 秒对 18 秒），准时结果相同。</span></span></div>
+        <div class="step"><span class="k"><span lang="en">A customer promise breaks</span><span lang="zh">违背客户承诺</span></span><span class="v"><span lang="en">Tick the orders to protect (those the proposal made late are pre-ticked, or the order named in your comment), then</span><span lang="zh">勾选要保护的订单（方案导致延误的订单或意见中提到的订单已预选），然后点击</span> <span class="btn"><span lang="en">Re-run protecting these orders</span><span lang="zh">重新求解并保护这些订单</span></span><span lang="en">. They get priority 3.</span><span lang="zh">。这些订单将获得优先级 3。</span></span></div>
+        <div class="step"><span class="k"><span lang="en">People or tools missing</span><span lang="zh">人员或工装不足</span></span><span class="v"><span class="btn"><span lang="en">Block the machine while people or tools are missing</span><span lang="zh">在缺人或缺工装期间封锁该设备</span></span> <span lang="en">opens a maintenance form for that machine; fill in when and how long.</span><span lang="zh">打开该设备的保养表单，填写开始时间和时长。</span></span></div>
+        <div class="step"><span class="k"><span lang="en">The event was wrong</span><span lang="zh">事件有误</span></span><span class="v"><span class="btn"><span lang="en">Correct the event</span><span lang="zh">修正该事件</span></span> <span lang="en">opens the original event to fix and resubmit.</span><span lang="zh">打开原事件，修正后重新提交。</span></span></div>
+      </div>
+      <p class="callout trust"><span lang="en">All four steps stay on screen, because <b>Laya's reason is sometimes wrong</b>. When it is unsure, nothing is highlighted and you pick. The</span><span lang="zh">四个选项始终显示，因为 <b>Laya 的判断有时会出错</b>。不确定时不会突出任何选项，由您选择。</span> <span class="panel-name"><span lang="en">Versions and events</span><span lang="zh">版本与事件</span></span> <span lang="en">panel counts the reasons over time.</span><span lang="zh">面板会统计历次驳回原因。</span></p>
+    </section>
+
+    <section id="notes">
+      <div class="eyebrow"><span lang="en">Right column</span><span lang="zh">右侧栏</span></div>
+      <h2><span lang="en">Shift notes</span><span lang="zh">交接班记录</span> <span class="who laya">Laya</span></h2>
+      <p class="where"><span lang="en">In</span><span lang="zh">在</span> <span class="panel-name"><span lang="en">Shift notes</span><span lang="zh">交接班记录</span></span><span lang="en">, click a sample or type an operator's note and press</span><span lang="zh">中点击示例或输入操作工记录，然后点击</span> <span class="btn"><span lang="en">Read with Laya</span><span lang="zh">用 Laya 识别</span></span>.</p>
+      <p><span lang="en">If Laya reads a likely breakdown, the note shows</span><span lang="zh">若 Laya 判断可能故障，记录会显示</span> <span class="flag"><span lang="en">⚠ likely breakdown</span><span lang="zh">⚠ 可能故障</span></span><span lang="en">, the machine gets a</span><span lang="zh">，该设备在甘特图上出现</span> <span class="flag">⚠</span> <span lang="en">on the Gantt, and</span><span lang="zh">标记，并可点击</span> <span class="btn"><span lang="en">Report machine down</span><span lang="zh">上报设备停机</span></span> <span lang="en">opens a machine-down event — fill in the hours.</span><span lang="zh">打开停机事件——填写小时数即可。</span></p>
+      <p><span lang="en">Under each note,</span><span lang="zh">每条记录下方有</span> <span class="panel-name"><span lang="en">Actually:</span><span lang="zh">实际情况：</span></span> <span class="btn"><span lang="en">OK</span><span lang="zh">正常</span></span> <span class="btn"><span lang="en">Watch</span><span lang="zh">需关注</span></span> <span class="btn"><span lang="en">Stop</span><span lang="zh">停机</span></span> <span lang="en">records what the machine's condition really was. Laya learns from it (see Training labels).</span><span lang="zh">按钮，用于记录设备的真实状态，Laya 会从中学习（见“训练标签”）。</span></p>
+      <p class="callout warn"><span lang="en">It catches breakdowns but mostly misses early warnings (“vibration still within limits”). <b>A note without a flag does not mean the machine is fine.</b></span><span lang="zh">它能发现故障，但大多识别不出早期征兆（如“振动仍在范围内”）。<b>没有标记不代表设备正常。</b></span></p>
+    </section>
+
+    <section id="labels">
+      <div class="eyebrow"><span lang="en">Happens as you work</span><span lang="zh">在工作中自动完成</span></div>
+      <h2><span lang="en">Training labels</span><span lang="zh">训练标签</span> <span class="who laya">Laya</span></h2>
+      <p><span lang="en">Every decision you take on something Laya read is saved as an example Laya can later be trained on. Nothing extra to do:</span><span lang="zh">您对 Laya 识别结果做出的每个决定都会保存为日后训练 Laya 的样本，无需额外操作：</span></p>
+      <div class="steps">
+        <div class="step"><span class="k"><span lang="en">Inbox</span><span lang="zh">收件箱</span></span><span class="v"><span lang="en">the event you create or run as a what-if says what the message really was; dismissing it counts as “no action” (a weak label)</span><span lang="zh">您生成或作为假设运行的事件表明消息的真实含义；忽略消息计为“无需处理”（弱标签）</span></span></div>
+        <div class="step"><span class="k"><span lang="en">Command bar</span><span lang="zh">计划助手</span></span><span class="v"><span lang="en">the intent you pick when Laya is unsure</span><span lang="zh">Laya 不确定时您选择的意图</span></span></div>
+        <div class="step"><span class="k"><span lang="en">Rejections</span><span lang="zh">驳回</span></span><span class="v"><span lang="en">the next step you click after rejecting</span><span lang="zh">驳回后您点击的下一步</span></span></div>
+        <div class="step"><span class="k"><span lang="en">Shift notes</span><span lang="zh">交接班记录</span></span><span class="v"><span lang="en">Actually: OK / Watch / Stop, or Report machine down</span><span lang="zh">实际情况：正常 / 需关注 / 停机，或上报设备停机</span></span></div>
+      </div>
+      <p class="gate"><span lang="en">The</span><span lang="zh">在</span> <span class="panel-name"><span lang="en">Versions and events</span><span lang="zh">版本与事件</span></span> <span lang="en">panel shows how many labels exist and how often Laya was right. The labels stay on the plant's server. Engineers turn them into a better Laya with <code>laya_train</code>, and every training run appears at <b class="mono">http://127.0.0.1:8100/training/</b>. A trained model reaches planning only after it beats the current one on messages it never saw.</span><span lang="zh">面板显示标签数量及 Laya 的正确率。标签保存在工厂服务器上。工程师用 <code>laya_train</code> 训练出更好的 Laya，每次训练记录可在 <b class="mono">http://127.0.0.1:8100/training/</b> 查看。训练后的模型只有在从未见过的消息上优于当前模型，才会用于排程。</span></p>
+    </section>
+
+    <section id="priority">
+      <div class="eyebrow"><span lang="en">Enter an event</span><span lang="zh">手动录入事件</span></div>
+      <h2><span lang="en">Priorities</span><span lang="zh">优先级</span> <span class="who rules"><span lang="en">Rules</span><span lang="zh">规则</span></span></h2>
+      <p><span lang="en">Priority 3 counts most in the on-time objective, 1 least.</span><span lang="zh">优先级 3 在准时交付目标中权重最高，1 最低。</span></p>
+      <div class="steps">
+        <div class="step"><span class="k"><span lang="en">Priority changed</span><span lang="zh">优先级变更</span></span><span class="v"><span lang="en">A new event kind: pick the order and a priority from 1 to 3.</span><span lang="zh">新的事件类型：选择订单和 1–3 的优先级。</span></span></div>
+        <div class="step"><span class="k"><span lang="en">Priority (1–3)</span><span lang="zh">优先级（1–3）</span></span><span class="v"><span lang="en">An optional field on rush orders, due-date changes, quantity changes, late material and quality holds — changed in the same repair.</span><span lang="zh">插单、交期变更、数量变更、物料延迟和质量冻结上的可选字段——在同一次修复中生效。</span></span></div>
+        <div class="step"><span class="k"><span lang="en">From the message</span><span lang="zh">来自消息内容</span></span><span class="v"><span lang="en">“Their line stops”, “penalty”, “停线”, “Vertragsstrafe” → priority 3 is filled in. “No rush”, “不急”, “keine Eile” → a rush order gets priority 1. You can always change it.</span><span lang="zh">“Their line stops”“penalty”“停线”“Vertragsstrafe” → 自动填入优先级 3。“No rush”“不急”“keine Eile” → 插单优先级为 1。您随时可以修改。</span></span></div>
+      </div>
+      <p class="gate"><span lang="en">Raising a priority cannot fix an order that is late for another reason — for example, material that arrives late.</span><span lang="zh">提高优先级无法解决其他原因造成的延误——例如物料晚到。</span></p>
+    </section>
+
+    <section id="trust">
+      <div class="eyebrow"><span lang="en">Measured on messages written for testing</span><span lang="zh">在专门编写的测试消息上实测</span></div>
+      <h2><span lang="en">How far to trust it</span><span lang="zh">可信程度</span></h2>
+      <p><span lang="en">Each job was measured on new messages in English, 中文 and Deutsch before it was built. Where Laya read poorly, rules do the job instead.</span><span lang="zh">每项功能在构建前都用新的英文、中文和德文消息实测过。Laya 识别不佳的地方改由规则完成。</span></p>
+      <div class="tbl">
+        <table>
+          <thead><tr><th><span lang="en">Job</span><span lang="zh">任务</span></th><th><span lang="en">Read by</span><span lang="zh">识别方</span></th><th><span lang="en">Result</span><span lang="zh">结果</span></th><th><span lang="en">So</span><span lang="zh">因此</span></th></tr></thead>
+          <tbody>
+            <tr><td><span lang="en">Inbox: events that applied themselves</span><span lang="zh">收件箱：自动应用的事件</span></td><td><span class="who laya">Laya</span></td><td class="r"><span class="meter"><i style="width:100%"></i></span>6 / 6 <span lang="en">right</span><span lang="zh">正确</span></td><td><span lang="en">0 wrong events applied; 12 of 18 went to the planner, prefilled</span><span lang="zh">无错误事件自动应用；18 条中 12 条带预填转交计划员</span></td></tr>
+            <tr><td><span lang="en">Inbox: injections flagged</span><span lang="zh">收件箱：注入攻击被标记</span></td><td><span class="who laya">Laya</span></td><td class="r"><span class="meter"><i style="width:100%"></i></span>2 / 2</td><td><span lang="en">Also flags some genuine messages — they go to you</span><span lang="zh">也会误标部分正常消息——转交您处理</span></td></tr>
+            <tr><td><span lang="en">Command intents</span><span lang="zh">命令意图</span></td><td><span class="who laya">Laya</span></td><td class="r"><span class="meter"><i style="width:87.5%"></i></span>7 / 8</td><td><span lang="en">Unsure → you pick</span><span lang="zh">不确定时由您选择</span></td></tr>
+            <tr><td><span lang="en">Rejection reasons</span><span lang="zh">驳回原因</span></td><td><span class="who laya">Laya</span></td><td class="r"><span class="meter"><i style="width:75%"></i></span>9 / 12</td><td><span lang="en">2 of 8 confident readings wrong → only a suggestion</span><span lang="zh">8 个高置信度识别中 2 个错误 → 仅作建议</span></td></tr>
+            <tr><td><span lang="en">Shift notes: breakdowns</span><span lang="zh">交接班记录：故障</span></td><td><span class="who laya">Laya</span></td><td class="r"><span class="meter"><i style="width:100%"></i></span>4 / 4</td><td><span lang="en">No healthy machine flagged</span><span lang="zh">无正常设备被误标</span></td></tr>
+            <tr><td><span lang="en">Shift notes: early warnings</span><span lang="zh">交接班记录：早期征兆</span></td><td><span class="who laya">Laya</span></td><td class="r"><span class="meter"><i style="width:25%"></i></span>1 / 4</td><td><span lang="en">Don't rely on it for early warnings</span><span lang="zh">不要依赖它发现早期征兆</span></td></tr>
+            <tr><td><span lang="en">Sender unsure</span><span lang="zh">发件人不确定</span></td><td><span class="who rules"><span lang="en">Rules</span><span lang="zh">规则</span></span></td><td class="r"><span class="meter"><i style="width:100%"></i></span>20 / 20</td><td><span lang="en">Laya could not read this; rules could</span><span lang="zh">Laya 无法识别，规则可以</span></td></tr>
+            <tr><td><span lang="en">What a delay costs the customer</span><span lang="zh">延误对客户的影响</span></td><td><span class="who rules"><span lang="en">Rules</span><span lang="zh">规则</span></span></td><td class="r"><span class="meter"><i style="width:95%"></i></span>19 / 20</td><td><span lang="en">A missed cue just leaves the priority unchanged</span><span lang="zh">漏识别时优先级保持不变</span></td></tr>
+            <tr><td><span lang="en">Repairs, 13 event types</span><span lang="zh">修复，13 种事件</span></td><td><span class="who solver">CP-SAT</span></td><td class="r"><span class="meter"><i style="width:100%"></i></span>0 <span lang="en">violations</span><span lang="zh">违规</span></td><td><span lang="en">0.5–30 s each; every result checked independently</span><span lang="zh">每次 0.5–30 秒；每个结果都经独立校验</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="gate" style="margin-top:10px"><span lang="en">Full numbers: <code>demos/aps/README.md</code> and the Plant APS design document, section 13.</span><span lang="zh">完整数据见 <code>demos/aps/README.md</code> 以及《工厂 APS 设计》第 13 节。</span></p>
+    </section>
+
+    <footer><span lang="en">Plant APS demo · Laya reads text, rules find facts, CP-SAT schedules, the planner approves.</span><span lang="zh">工厂 APS 演示 · Laya 理解文本，规则提取事实，CP-SAT 排程，计划员审批。</span></footer>
+  </main>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  function get() { try { return localStorage.getItem("aps-guide-lang"); } catch (e) { return null; } }
+  function set(v) { try { localStorage.setItem("aps-guide-lang", v); } catch (e) {} }
+  function apply(l) {
+    root.dataset.lang = l; root.lang = l === "zh" ? "zh-CN" : "en";
+    document.getElementById("l-en").setAttribute("aria-pressed", String(l === "en"));
+    document.getElementById("l-zh").setAttribute("aria-pressed", String(l === "zh"));
+  }
+  var initial = location.hash === "#zh" ? "zh" : (get() || ((navigator.language || "").toLowerCase().indexOf("zh") === 0 ? "zh" : "en"));
+  apply(initial);
+  document.getElementById("l-en").onclick = function () { apply("en"); set("en"); };
+  document.getElementById("l-zh").onclick = function () { apply("zh"); set("zh"); };
+})();
+</script>
+</body>
+</html>

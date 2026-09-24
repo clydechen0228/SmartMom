@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Plant APS Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+:root {
+  --ground: #f4f6f5; --surface: #ffffff; --sunk: #eceff0;
+  --ink: #1a1f24; --ink-2: #3b444c; --muted: #5f6a73;
+  --line: #d8dee0; --line-strong: #b4bec3;
+  --accent: #0e6b70; --accent-ink: #0b5a5e; --accent-soft: #e2f0f0;
+  --good: #0a7d0a; --good-soft: #e3f3e3; --warn: #9a5b00; --warn-soft: #fbf0dc;
+  --bad: #c0392b; --bad-soft: #fbe6e3; --hold: #4a3aa7; --hold-soft: #ebe8f8;
+  --bar: #2a78d6; --bar-soft: #d6e6f8; --code: #eef1f1; --series-2: #eb6834;
+  --shadow: 0 1px 2px rgba(20,30,35,.06), 0 8px 24px rgba(20,30,35,.06);
+  --display: "IBM Plex Sans Condensed", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Arial Narrow", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground: #111517; --surface: #171b1e; --sunk: #1d2226;
+    --ink: #e5e9eb; --ink-2: #c2cacf; --muted: #93a0a8;
+    --line: #2a3136; --line-strong: #3d474e;
+    --accent: #4fb3b8; --accent-ink: #7cc9cd; --accent-soft: #15302f;
+    --good: #4cc34c; --good-soft: #16301a; --warn: #e9a93a; --warn-soft: #33280f;
+    --bad: #f07b6e; --bad-soft: #3a1c19; --hold: #9085e9; --hold-soft: #262147;
+    --bar: #3987e5; --bar-soft: #1c2f47; --code: #1f2529; --series-2: #d95926;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #111517; --surface: #171b1e; --sunk: #1d2226;
+  --ink: #e5e9eb; --ink-2: #c2cacf; --muted: #93a0a8;
+  --line: #2a3136; --line-strong: #3d474e;
+  --accent: #4fb3b8; --accent-ink: #7cc9cd; --accent-soft: #15302f;
+  --good: #4cc34c; --good-soft: #16301a; --warn: #e9a93a; --warn-soft: #33280f;
+  --bad: #f07b6e; --bad-soft: #3a1c19; --hold: #9085e9; --hold-soft: #262147;
+  --bar: #3987e5; --bar-soft: #1c2f47; --code: #1f2529; --series-2: #d95926;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+}
+
+/* language switch: one language visible at a time */
+:root:not([data-lang="zh"]) [lang="zh"] { display: none !important; }
+:root[data-lang="zh"] [lang="en"] { display: none !important; }
+:root[data-lang="zh"] body { font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", var(--body); line-height: 1.75; }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.62 var(--body); -webkit-font-smoothing: antialiased; }
+a { color: var(--accent-ink); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+code, .mono { font-family: var(--mono); font-size: .86em; }
+code { background: var(--code); padding: .08em .35em; border-radius: 4px; }
+
+.topbar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-in { max-width: 1260px; margin: 0 auto; padding-inline: 20px; padding-block: 10px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.topbar .name { font: 600 14px var(--display); letter-spacing: .04em; margin-right: auto; }
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+.seg button { background: none; border: 0; padding: 6px 12px; font: 500 13px var(--body); color: var(--ink-2); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.iconbtn { background: none; border: 1px solid var(--line-strong); border-radius: 8px; padding: 6px 10px; font: 500 13px var(--body); color: var(--ink-2); cursor: pointer; }
+
+.shell { max-width: 1260px; margin: 0 auto; padding-inline: 20px; padding-block: 0 80px; display: grid; grid-template-columns: 228px minmax(0, 1fr); gap: 48px; }
+@media (max-width: 980px) { .shell { grid-template-columns: minmax(0, 1fr); gap: 0; padding-inline: 16px; } .topbar-in { padding-inline: 16px; } }
+.rail { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 54px); align-self: start; max-height: calc(100vh - 60px); overflow-y: auto; padding-block: 24px; }
+.rail ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.rail a { display: grid; grid-template-columns: 26px 1fr; padding: 4px 8px; border-radius: 6px; color: var(--ink-2); text-decoration: none; font-size: 13.5px; line-height: 1.35; }
+.rail a span.k { color: var(--muted); font-family: var(--mono); font-size: 12px; padding-top: 1px; }
+.rail a:hover { background: var(--sunk); }
+.rail a.on { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+.rail summary { display: none; }
+@media (max-width: 980px) {
+  .rail { position: static; max-height: none; padding-block: 14px 0; }
+  .rail details { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 10px 12px; }
+  .rail summary { display: block; cursor: pointer; font-weight: 600; font-size: 14px; }
+  .rail details[open] ol { margin-top: 8px; }
+}
+
+main { min-width: 0; padding-block: 24px 0; }
+.masthead { padding-block: 24px 30px; border-bottom: 1px solid var(--line); }
+.eyebrow { font: 600 12px/1.3 var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--accent-ink); }
+h1 { font: 700 clamp(32px, 5vw, 48px)/1.08 var(--display); letter-spacing: -.01em; margin: 12px 0 14px; text-wrap: balance; }
+.lede { font-size: 18px; line-height: 1.6; color: var(--ink-2); max-width: 66ch; margin: 0; }
+.doc-control { display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 18px; font-size: 13px; color: var(--muted); }
+.doc-control b { color: var(--ink); font-weight: 600; }
+.badge { display: inline-block; font: 600 11px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; padding: 4px 7px; border-radius: 4px; border: 1px solid currentColor; color: var(--warn); }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 24px; }
+@media (max-width: 760px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.tile .v { font: 600 22px/1.2 var(--display); }
+.tile .k { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.45; }
+
+section { padding-block: 40px 8px; scroll-margin-top: 64px; }
+section + section { border-top: 1px solid var(--line); }
+h2 { font: 650 27px/1.2 var(--display); margin: 0 0 6px; display: flex; gap: 12px; align-items: baseline; text-wrap: balance; }
+h2 .n { font: 500 15px var(--mono); color: var(--accent-ink); min-width: 2.2ch; }
+h3 { font: 600 19px/1.3 var(--display); margin: 28px 0 8px; }
+p { margin: 10px 0; max-width: 72ch; }
+.point { font-size: 17.5px; max-width: 70ch; margin-top: 8px; }
+ul { max-width: 72ch; padding-left: 22px; margin: 10px 0; }
+li { margin: 4px 0; }
+li::marker { color: var(--muted); }
+
+.tbl { overflow-x: auto; margin: 16px 0 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+th { text-align: left; font: 600 12px/1.3 var(--display); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--sunk); padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 500; }
+.tbl.wide table { min-width: 740px; }
+.note { font-size: 13px; color: var(--muted); margin: 6px 0 0; max-width: 80ch; }
+
+.pill { display: inline-flex; align-items: center; gap: 5px; font: 600 12px/1 var(--body); padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.ok { color: var(--good); background: var(--good-soft); }
+.pill.risk { color: var(--warn); background: var(--warn-soft); }
+.pill.late { color: var(--bad); background: var(--bad-soft); }
+.pill.demo { color: var(--accent-ink); background: var(--accent-soft); }
+.pill.sim { color: var(--hold); background: var(--hold-soft); }
+
+figure { margin: 22px 0 8px; }
+.fig { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; overflow-x: auto; }
+.fig svg { display: block; width: 100%; height: auto; min-width: 660px; }
+figcaption { font-size: 13.5px; color: var(--muted); margin-top: 8px; max-width: 80ch; }
+figcaption b { color: var(--ink-2); }
+
+.d-box { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.2; }
+.d-soft { fill: var(--sunk); stroke: var(--line); stroke-width: 1; }
+.d-acc { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.4; }
+.d-hold { fill: var(--hold-soft); stroke: var(--hold); stroke-width: 1.2; }
+.d-warn { fill: var(--warn-soft); stroke: var(--warn); stroke-width: 1.2; }
+.d-zone { fill: none; stroke: var(--line-strong); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.d-t { fill: var(--ink); font: 600 14px var(--display); }
+.d-t.sm { font-size: 12.5px; }
+.d-s { fill: var(--muted); font: 400 11.5px var(--body); }
+.d-cap { fill: var(--muted); font: 600 11px var(--display); letter-spacing: .08em; }
+.d-acc-t { fill: var(--accent-ink); }
+.d-arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+.d-arrow.acc { stroke: var(--accent); }
+.d-arrow.dash { stroke-dasharray: 4 4; }
+.d-mark { fill: var(--muted); } .d-mark.acc { fill: var(--accent); }
+.g-row { fill: var(--sunk); }
+.g-ok { fill: var(--bar); }
+.g-risk { fill: var(--warn); }
+.g-late { fill: var(--bad); }
+.g-setup { fill: var(--line-strong); }
+.g-down { fill: url(#hatch); stroke: var(--bad); stroke-width: 1; }
+.g-frozen { fill: var(--accent-soft); }
+.g-now { stroke: var(--ink); stroke-width: 1.5; }
+.g-lab { fill: #fff; font: 600 10.5px var(--mono); }
+.hatch-line { stroke: var(--bad); stroke-width: 1.2; }
+
+.callout { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 14px 16px; margin: 16px 0; }
+.callout h4 { margin: 0 0 4px; font: 600 15px var(--display); }
+.callout p { margin: 4px 0; font-size: 14.5px; }
+.callout.acc { border-color: var(--accent); background: var(--accent-soft); }
+.callout.acc h4 { color: var(--accent-ink); }
+pre.code { background: var(--code); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 13px/1.6 var(--mono); margin: 14px 0; }
+.formula { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin: 14px 0; font: 15px/1.9 var(--mono); overflow-x: auto; }
+.formula .lvl { color: var(--accent-ink); font-weight: 600; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 860px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.c-grid { stroke: var(--line); stroke-width: 1; }
+.c-axis { fill: var(--muted); font: 400 11.5px var(--mono); }
+.c-lab { fill: var(--ink-2); font: 500 12.5px var(--body); }
+.c-val { fill: var(--ink); font: 600 12px var(--mono); }
+.c-title { fill: var(--ink); font: 600 13px var(--display); }
+.c-s1 { fill: var(--bar); } .c-s2 { fill: var(--series-2); }
+.c-good { fill: var(--good); } .c-bad { fill: var(--bad); }
+.c-ref { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 3; }
+.c-hit { fill: transparent; }
+.chart-box { position: relative; }
+.tip { position: absolute; pointer-events: none; z-index: 5; background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 10px; font-size: 12.5px; box-shadow: var(--shadow); max-width: 280px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--ink-2); margin: 0 0 8px; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
+.fig.chart svg { min-width: 560px; }
+footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-in">
+    <span class="name"><span lang="en">Plant APS · design</span><span lang="zh">工厂 APS · 设计文档</span></span>
+    <div class="seg" role="group" aria-label="Language / 语言">
+      <button type="button" id="lang-en" aria-pressed="true">English</button>
+      <button type="button" id="lang-zh" aria-pressed="false">中文</button>
+    </div>
+    <button type="button" class="iconbtn" id="theme" aria-label="Switch theme">◐</button>
+  </div>
+</div>
+
+<div class="shell">
+  <nav class="rail" aria-label="Contents">
+    <details id="tocd" open>
+      <summary><span lang="en">Contents</span><span lang="zh">目录</span></summary>
+      <ol id="toc">
+        <li><a href="#goals"><span class="k">1</span><span><span lang="en">Goals and scope</span><span lang="zh">目标与范围</span></span></a></li>
+        <li><a href="#levels"><span class="k">2</span><span><span lang="en">Planning levels</span><span lang="zh">计划层级</span></span></a></li>
+        <li><a href="#context"><span class="k">3</span><span><span lang="en">System context</span><span lang="zh">系统上下文</span></span></a></li>
+        <li><a href="#model"><span class="k">4</span><span><span lang="en">Planning data model</span><span lang="zh">计划数据模型</span></span></a></li>
+        <li><a href="#solver"><span class="k">5</span><span><span lang="en">Scheduling model</span><span lang="zh">排程模型</span></span></a></li>
+        <li><a href="#events"><span class="k">6</span><span><span lang="en">Event-driven rescheduling</span><span lang="zh">事件驱动重排</span></span></a></li>
+        <li><a href="#ai"><span class="k">7</span><span><span lang="en">Laya and LLM roles</span><span lang="zh">Laya 与大模型分工</span></span></a></li>
+        <li><a href="#sap"><span class="k">8</span><span><span lang="en">SAP and MES integration</span><span lang="zh">SAP 与 MES 集成</span></span></a></li>
+        <li><a href="#ui"><span class="k">9</span><span><span lang="en">Planner workbench</span><span lang="zh">计划员工作台</span></span></a></li>
+        <li><a href="#kpi"><span class="k">10</span><span><span lang="en">KPIs</span><span lang="zh">关键指标</span></span></a></li>
+        <li><a href="#deploy"><span class="k">11</span><span><span lang="en">Deployment and security</span><span lang="zh">部署与安全</span></span></a></li>
+        <li><a href="#demo"><span class="k">12</span><span><span lang="en">Demo scope and acceptance</span><span lang="zh">演示范围与验收</span></span></a></li>
+        <li><a href="#results"><span class="k">13</span><span><span lang="en">Measured results</span><span lang="zh">实测结果</span></span></a></li>
+        <li><a href="#risks"><span class="k">14</span><span><span lang="en">Open decisions and risks</span><span lang="zh">待决事项与风险</span></span></a></li>
+      </ol>
+    </details>
+  </nav>
+
+  <main>
+    <header class="masthead">
+      <div class="eyebrow"><span lang="en">Advanced planning and scheduling · Plant 1, all lines</span><span lang="zh">高级计划与排程 · 一号工厂 · 全部产线</span></div>
+      <h1><span lang="en">Plant APS Design</span><span lang="zh">工厂 APS 设计</span></h1>
+      <p class="lede" lang="en">A finite-capacity scheduler for every line in the plant that puts on-time delivery first. SAP S/4HANA stays the system of record for orders, the custom MES executes the schedule, and the smart-factory platform feeds live machine, quality and maintenance status. A constraint solver builds the schedule; Laya turns written disruptions into typed events; the planner approves what is published.</p>
+      <p class="lede" lang="zh">面向全厂所有产线的有限产能排程系统，以准时交付为第一目标。SAP S/4HANA 仍是订单的主数据系统，定制 MES 负责执行排程，智能工厂平台实时提供设备、质量和维护状态。排程由约束求解器生成；Laya 把文字形式的异常转成结构化事件；发布前由计划员审批。</p>
+      <div class="doc-control">
+        <span><span class="badge"><span lang="en">Draft 0.2 · measured</span><span lang="zh">草案 0.2 · 已实测</span></span></span>
+        <span><span lang="en">Date</span><span lang="zh">日期</span> <b>2026-09-23</b></span>
+        <span><span lang="en">Extends</span><span lang="zh">基于</span> <b><span lang="en">Smart Factory Edge Platform design</span><span lang="zh">智能工厂边缘平台设计</span></b></span>
+        <span><span lang="en">Section 13 holds the numbers measured on the working demo</span><span lang="zh">第 13 节为演示系统的实测数据</span></span>
+      </div>
+      <div class="tiles">
+        <div class="tile"><div class="v"><span lang="en">On-time first</span><span lang="zh">准时交付优先</span></div><div class="k"><span lang="en">Weighted tardiness is minimised before setups or stability</span><span lang="zh">先最小化加权延误，再考虑换型与稳定性</span></div></div>
+        <div class="tile"><div class="v"><span lang="en">Whole plant</span><span lang="zh">覆盖全厂</span></div><div class="k"><span lang="en">Machining and assembly lines, 5 work centres, 8 machines in the demo</span><span lang="zh">演示含机加与装配产线，5 个工作中心、8 台设备</span></div></div>
+        <div class="tile"><div class="v">SAP · MES</div><div class="k"><span lang="en">Orders from SAP; dispatch to the custom MES; dates back to SAP</span><span lang="zh">订单来自 SAP；派工到定制 MES；日期回写 SAP</span></div></div>
+        <div class="tile"><div class="v"><span lang="en">Planner approves</span><span lang="zh">计划员审批</span></div><div class="k"><span lang="en">The solver proposes; nothing reaches the floor unapproved</span><span lang="zh">求解器给出方案；未经审批不下发车间</span></div></div>
+      </div>
+    </header>
+
+    <!-- 1 goals -->
+    <section id="goals">
+      <h2><span class="n">1</span><span lang="en">Goals and scope</span><span lang="zh">目标与范围</span></h2>
+      <p class="point" lang="en">The APS schedules every order through every line of Plant 1 against real capacity, and keeps that schedule right when machines stop, material is late or quality holds a lot.</p>
+      <p class="point" lang="zh">APS 按真实产能为一号工厂所有产线的全部订单排程，并在设备停机、物料延迟或质量冻结时及时修正排程。</p>
+      <div class="tbl">
+        <table>
+          <thead><tr><th><span lang="en">Goal</span><span lang="zh">目标</span></th><th><span lang="en">Proposed target</span><span lang="zh">建议指标</span></th></tr></thead>
+          <tbody>
+            <tr><td><span lang="en">On-time delivery (OTD)</span><span lang="zh">准时交付率 (OTD)</span></td><td><span lang="en">Maximise; baseline to be measured against today's manual plan</span><span lang="zh">尽可能提高；以当前人工计划为基线实测</span></td></tr>
+            <tr><td><span lang="en">Reschedule after a disruption</span><span lang="zh">异常后重排</span></td><td><span lang="en">Proposal ready in under 30 s; published after planner approval</span><span lang="zh">30 秒内给出方案；计划员审批后发布</span></td></tr>
+            <tr><td><span lang="en">Schedule stability</span><span lang="zh">排程稳定性</span></td><td><span lang="en">Nothing inside the frozen window moves; outside it, as few operations as possible</span><span lang="zh">冻结窗口内不变动；窗口外尽量少调整</span></td></tr>
+            <tr><td><span lang="en">Traceability</span><span lang="zh">可追溯</span></td><td><span lang="en">Every published schedule keeps its inputs, events, objective values and approver</span><span lang="zh">每次发布的排程都保留输入、事件、目标值和审批人</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="two">
+        <div class="callout"><h4><span lang="en">In scope</span><span lang="zh">范围内</span></h4>
+          <p lang="en">Detailed scheduling of production orders across all lines; event-driven rescheduling; what-if scenarios; dispatch lists to the MES; scheduled dates back to SAP.</p>
+          <p lang="zh">全产线生产订单的详细排程；事件驱动重排；假设场景分析；向 MES 下发派工单；排程日期回写 SAP。</p></div>
+        <div class="callout"><h4><span lang="en">Not in scope</span><span lang="zh">范围外</span></h4>
+          <p lang="en">MRP and purchasing stay in SAP. The APS never releases or changes orders in SAP on its own, and never controls a machine.</p>
+          <p lang="zh">MRP 与采购仍在 SAP 中完成。APS 不会自行下达或修改 SAP 订单，也不直接控制设备。</p></div>
+      </div>
+    </section>
+
+    <!-- 2 levels -->
+    <section id="levels">
+      <h2><span class="n">2</span><span lang="en">Planning levels</span><span lang="zh">计划层级</span></h2>
+      <p class="point" lang="en">Three levels share one data model and one solver, and differ in horizon, detail and how often they run.</p>
+      <p class="point" lang="zh">三个层级共用同一数据模型和求解器，区别在于时间范围、粒度和运行频率。</p>
+      <figure>
+        <div class="fig">
+          <svg viewBox="0 0 1000 200" role="img" aria-label="Planning levels / 计划层级">
+            <text x="20" y="22" class="d-cap"><tspan lang="en">HORIZON →</tspan><tspan lang="zh">时间范围 →</tspan></text>
+            <rect x="20" y="36" width="960" height="42" rx="8" class="d-soft"/>
+            <text x="36" y="62" class="d-t sm"><tspan lang="en">Master plan · 4–8 weeks · daily</tspan><tspan lang="zh">主计划 · 4–8 周 · 每日</tspan></text>
+            <text x="560" y="62" class="d-s"><tspan lang="en">capacity per work centre per week, rough-cut</tspan><tspan lang="zh">按周、按工作中心的粗能力平衡</tspan></text>
+            <rect x="20" y="88" width="560" height="42" rx="8" class="d-acc"/>
+            <text x="36" y="114" class="d-t sm d-acc-t"><tspan lang="en">Detailed schedule · 5 days · each shift</tspan><tspan lang="zh">详细排程 · 5 天 · 每班</tspan></text>
+            <text x="600" y="114" class="d-s"><tspan lang="en">operation sequence per machine, setups, shifts</tspan><tspan lang="zh">每台设备的工序顺序、换型、班次</tspan></text>
+            <rect x="20" y="140" width="200" height="42" rx="8" class="d-warn"/>
+            <text x="36" y="166" class="d-t sm"><tspan lang="en">Repair · hours · on event</tspan><tspan lang="zh">修复重排 · 小时级 · 事件触发</tspan></text>
+            <text x="240" y="166" class="d-s"><tspan lang="en">minimal change after a disruption, frozen window respected</tspan><tspan lang="zh">异常后最小改动，遵守冻结窗口</tspan></text>
+          </svg>
+        </div>
+        <figcaption><b><span lang="en">Figure 1.</span><span lang="zh">图 1.</span></b> <span lang="en">The demo implements the detailed schedule and repair levels; the master plan is designed but built later.</span><span lang="zh">演示实现详细排程与修复重排两个层级；主计划已完成设计，后续实现。</span></figcaption>
+      </figure>
+    </section>
+
+    <!-- 3 context -->
+    <section id="context">
+      <h2><span class="n">3</span><span lang="en">System context</span><span lang="zh">系统上下文</span></h2>
+      <p class="point" lang="en">SAP owns orders, the MES owns execution, the platform owns live shop-floor state, and the APS owns the schedule. Each system is the single source of truth for one thing.</p>
+      <p class="point" lang="zh">SAP 负责订单，MES 负责执行，智能工厂平台负责车间实时状态，APS 负责排程。每类数据只有一个权威来源。</p>
+      <figure>
+        <div class="fig">
+          <svg viewBox="0 0 1000 400" role="img" aria-label="APS system context / APS 系统上下文">
+            <defs>
+              <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="d-mark"/></marker>
+              <marker id="ara" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="d-mark acc"/></marker>
+              <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" class="hatch-line"/></pattern>
+            </defs>
+            <rect x="20" y="40" width="210" height="120" rx="10" class="d-box"/>
+            <text x="36" y="66" class="d-t">SAP S/4HANA</text>
+            <text x="36" y="88" class="d-s"><tspan lang="en">sales orders, due dates</tspan><tspan lang="zh">销售订单、交期</tspan></text>
+            <text x="36" y="106" class="d-s"><tspan lang="en">planned / production orders</tspan><tspan lang="zh">计划订单 / 生产订单</tspan></text>
+            <text x="36" y="124" class="d-s"><tspan lang="en">routings, work centres</tspan><tspan lang="zh">工艺路线、工作中心</tspan></text>
+            <text x="36" y="142" class="d-s"><tspan lang="en">material availability (MRP)</tspan><tspan lang="zh">物料可用性 (MRP)</tspan></text>
+
+            <rect x="330" y="30" width="340" height="250" rx="12" class="d-acc"/>
+            <text x="350" y="56" class="d-t d-acc-t"><tspan lang="en">APS service · plant hub</tspan><tspan lang="zh">APS 服务 · 工厂中心</tspan></text>
+            <rect x="350" y="70" width="140" height="44" rx="8" class="d-box"/><text x="362" y="97" class="d-t sm"><tspan lang="en">Connectors</tspan><tspan lang="zh">接口适配器</tspan></text>
+            <rect x="510" y="70" width="140" height="44" rx="8" class="d-box"/><text x="522" y="97" class="d-t sm"><tspan lang="en">Planning model</tspan><tspan lang="zh">计划模型</tspan></text>
+            <rect x="350" y="126" width="140" height="44" rx="8" class="d-box"/><text x="362" y="153" class="d-t sm"><tspan lang="en">Event inbox</tspan><tspan lang="zh">事件收件箱</tspan></text>
+            <rect x="510" y="126" width="140" height="44" rx="8" class="d-box"/><text x="522" y="146" class="d-t sm"><tspan lang="en">CP-SAT solver</tspan><tspan lang="zh">CP-SAT 求解器</tspan></text><text x="522" y="162" class="d-s"><tspan lang="en">full · repair</tspan><tspan lang="zh">全量 · 修复</tspan></text>
+            <rect x="350" y="182" width="140" height="44" rx="8" class="d-hold"/><text x="362" y="202" class="d-t sm">Laya</text><text x="362" y="218" class="d-s"><tspan lang="en">text → typed event</tspan><tspan lang="zh">文本 → 结构化事件</tspan></text>
+            <rect x="510" y="182" width="140" height="44" rx="8" class="d-box"/><text x="522" y="209" class="d-t sm"><tspan lang="en">Schedule store</tspan><tspan lang="zh">排程版本库</tspan></text>
+            <rect x="350" y="236" width="300" height="34" rx="8" class="d-soft"/><text x="362" y="258" class="d-t sm"><tspan lang="en">Planner workbench (EN / 中文)</tspan><tspan lang="zh">计划员工作台（EN / 中文）</tspan></text>
+
+            <rect x="770" y="40" width="210" height="120" rx="10" class="d-box"/>
+            <text x="786" y="66" class="d-t"><tspan lang="en">Custom MES</tspan><tspan lang="zh">定制 MES</tspan></text>
+            <text x="786" y="88" class="d-s"><tspan lang="en">dispatch lists per machine</tspan><tspan lang="zh">按设备的派工单</tspan></text>
+            <text x="786" y="106" class="d-s"><tspan lang="en">start / finish confirmations</tspan><tspan lang="zh">开工 / 完工报工</tspan></text>
+            <text x="786" y="124" class="d-s"><tspan lang="en">machine states, WIP</tspan><tspan lang="zh">设备状态、在制品</tspan></text>
+
+            <rect x="330" y="320" width="340" height="62" rx="10" class="d-box"/>
+            <text x="346" y="344" class="d-t"><tspan lang="en">Smart-factory platform</tspan><tspan lang="zh">智能工厂平台</tspan></text>
+            <text x="346" y="364" class="d-s"><tspan lang="en">quality holds, line stops, machine health (MQTT)</tspan><tspan lang="zh">质量冻结、停线、设备健康 (MQTT)</tspan></text>
+
+            <rect x="20" y="230" width="210" height="62" rx="10" class="d-soft"/>
+            <text x="36" y="254" class="d-t"><tspan lang="en">Planners</tspan><tspan lang="zh">计划员</tspan></text>
+            <text x="36" y="274" class="d-s"><tspan lang="en">approve, what-if, override</tspan><tspan lang="zh">审批、假设分析、人工调整</tspan></text>
+            <rect x="770" y="230" width="210" height="62" rx="10" class="d-soft"/>
+            <text x="786" y="254" class="d-t"><tspan lang="en">Written disruptions</tspan><tspan lang="zh">文字异常</tspan></text>
+            <text x="786" y="274" class="d-s"><tspan lang="en">supplier email, maintenance, notes</tspan><tspan lang="zh">供应商邮件、维修单、交接班</tspan></text>
+
+            <path d="M230 90 H326" class="d-arrow" marker-end="url(#ar)"/>
+            <text x="240" y="82" class="d-s"><tspan lang="en">orders, masters</tspan><tspan lang="zh">订单、主数据</tspan></text>
+            <path d="M326 130 H250 V150 H232" class="d-arrow dash" marker-end="url(#ar)"/>
+            <text x="240" y="176" class="d-s"><tspan lang="en">scheduled dates</tspan><tspan lang="zh">排程日期</tspan></text>
+            <path d="M670 80 H766" class="d-arrow acc" marker-end="url(#ara)"/>
+            <text x="684" y="72" class="d-s"><tspan lang="en">dispatch lists</tspan><tspan lang="zh">派工单</tspan></text>
+            <path d="M766 130 H674" class="d-arrow" marker-end="url(#ar)"/>
+            <text x="684" y="148" class="d-s"><tspan lang="en">actuals, states</tspan><tspan lang="zh">实绩、状态</tspan></text>
+            <path d="M500 320 V284" class="d-arrow" marker-end="url(#ar)"/>
+            <path d="M770 262 H700 V200 H674" class="d-arrow" marker-end="url(#ar)"/>
+            <path d="M230 262 H300 V253 H346" class="d-arrow" marker-end="url(#ar)" marker-start="url(#ar)"/>
+          </svg>
+        </div>
+        <figcaption><b><span lang="en">Figure 2.</span><span lang="zh">图 2.</span></b> <span lang="en">The APS runs on the plant hub of the smart-factory platform. Dashed: written back only after planner approval.</span><span lang="zh">APS 部署在智能工厂平台的工厂中心。虚线：仅在计划员审批后回写。</span></figcaption>
+      </figure>
+      <div class="tbl">
+        <table>
+          <thead><tr><th><span lang="en">Data</span><span lang="zh">数据</span></th><th><span lang="en">System of record</span><span lang="zh">权威系统</span></th><th><span lang="en">APS reads or writes</span><span lang="zh">APS 读 / 写</span></th></tr></thead>
+          <tbody>
+            <tr><td><span lang="en">Orders, quantities, due dates, priorities</span><span lang="zh">订单、数量、交期、优先级</span></td><td>SAP</td><td><span lang="en">Reads</span><span lang="zh">读取</span></td></tr>
+            <tr><td><span lang="en">Routings, work centres, standard times</span><span lang="zh">工艺路线、工作中心、标准工时</span></td><td>SAP</td><td><span lang="en">Reads</span><span lang="zh">读取</span></td></tr>
+            <tr><td><span lang="en">Operation sequence and start times</span><span lang="zh">工序顺序与开工时间</span></td><td>APS</td><td><span lang="en">Owns; dates written back to SAP after approval</span><span lang="zh">APS 负责；审批后回写 SAP</span></td></tr>
+            <tr><td><span lang="en">Actual starts, finishes, quantities</span><span lang="zh">实际开工、完工、数量</span></td><td>MES</td><td><span lang="en">Reads</span><span lang="zh">读取</span></td></tr>
+            <tr><td><span lang="en">Machine health, quality holds, line stops</span><span lang="zh">设备健康、质量冻结、停线</span></td><td><span lang="en">Smart-factory platform</span><span lang="zh">智能工厂平台</span></td><td><span lang="en">Reads (events)</span><span lang="zh">读取（事件）</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4 data model -->
+    <section id="model">
+      <h2><span class="n">4</span><span lang="en">Planning data model</span><span lang="zh">计划数据模型</span></h2>
+      <p class="point" lang="en">Every APS entity maps to an SAP object, so imports are mechanical and write-back is unambiguous.</p>
+      <p class="point" lang="zh">每个 APS 实体都对应一个 SAP 对象，导入是机械映射，回写没有歧义。</p>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th><span lang="en">APS entity</span><span lang="zh">APS 实体</span></th><th><span lang="en">SAP source</span><span lang="zh">SAP 来源</span></th><th><span lang="en">Key fields</span><span lang="zh">关键字段</span></th></tr></thead>
+          <tbody>
+            <tr><td><span lang="en">Order</span><span lang="zh">订单</span></td><td><span lang="en">Production order (or planned order), linked sales order item</span><span lang="zh">生产订单（或计划订单）及关联的销售订单行</span></td><td><span lang="en">order no., material, quantity, due date, priority, release date</span><span lang="zh">订单号、物料、数量、交期、优先级、可开工日期</span></td></tr>
+            <tr><td><span lang="en">Operation</span><span lang="zh">工序</span></td><td><span lang="en">Routing operation</span><span lang="zh">工艺路线工序</span></td><td><span lang="en">sequence, work centre, setup time, time per unit</span><span lang="zh">工序号、工作中心、准备时间、单件工时</span></td></tr>
+            <tr><td><span lang="en">Work centre</span><span lang="zh">工作中心</span></td><td><span lang="en">Work centre and its capacity</span><span lang="zh">工作中心及其能力</span></td><td><span lang="en">machines (resources), shift calendar</span><span lang="zh">设备（资源）、班次日历</span></td></tr>
+            <tr><td><span lang="en">Machine</span><span lang="zh">设备</span></td><td><span lang="en">Individual capacity or equipment record</span><span lang="zh">单独能力或设备主数据</span></td><td><span lang="en">speed factor, availability, setup family</span><span lang="zh">速度系数、可用性、换型族</span></td></tr>
+            <tr><td><span lang="en">Setup matrix</span><span lang="zh">换型矩阵</span></td><td><span lang="en">Not standard in SAP: maintained in the APS</span><span lang="zh">SAP 无标准对象：在 APS 中维护</span></td><td><span lang="en">minutes between product families per machine</span><span lang="zh">每台设备不同产品族之间的切换分钟数</span></td></tr>
+            <tr><td><span lang="en">Event</span><span lang="zh">事件</span></td><td><span lang="en">MES, platform, or text classified by Laya</span><span lang="zh">MES、智能平台，或经 Laya 分类的文本</span></td><td><span lang="en">type, target (machine / order / material), window, confidence</span><span lang="zh">类型、对象（设备 / 订单 / 物料）、时间窗、置信度</span></td></tr>
+            <tr><td><span lang="en">Schedule version</span><span lang="zh">排程版本</span></td><td><span lang="en">APS only</span><span lang="zh">仅 APS</span></td><td><span lang="en">assignments, objective values, events applied, approver</span><span lang="zh">分配结果、目标值、已应用事件、审批人</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 5 solver -->
+    <section id="solver">
+      <h2><span class="n">5</span><span lang="en">Scheduling model</span><span lang="zh">排程模型</span></h2>
+      <p class="point" lang="en">A flexible job shop solved with Google OR-Tools CP-SAT. On-time delivery is optimised first and locked in before anything else is considered.</p>
+      <p class="point" lang="zh">采用柔性作业车间模型，由 Google OR-Tools CP-SAT 求解。先优化准时交付并锁定结果，再考虑其他目标。</p>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th><span lang="en">Constraint</span><span lang="zh">约束</span></th><th><span lang="en">How it is modelled</span><span lang="zh">建模方式</span></th></tr></thead>
+          <tbody>
+            <tr><td><span lang="en">Routing order</span><span lang="zh">工序先后</span></td><td><span lang="en">Each operation starts after the previous one of the same order ends</span><span lang="zh">同一订单的后道工序在前道结束后才能开始</span></td></tr>
+            <tr><td><span lang="en">Machine choice</span><span lang="zh">设备选择</span></td><td><span lang="en">Optional intervals: exactly one eligible machine per operation; duration scales with that machine's speed</span><span lang="zh">可选区间：每道工序恰好选一台合格设备；时长按设备速度折算</span></td></tr>
+            <tr><td><span lang="en">One job at a time</span><span lang="zh">设备独占</span></td><td><span lang="en">No overlap on each machine</span><span lang="zh">每台设备上的区间互不重叠</span></td></tr>
+            <tr><td><span lang="en">Shifts and downtime</span><span lang="zh">班次与停机</span></td><td><span lang="en">Fixed blocked intervals on the machine; operations cannot span them</span><span lang="zh">设备上的固定不可用区间；工序不能跨越</span></td></tr>
+            <tr><td><span lang="en">Sequence-dependent setups</span><span lang="zh">顺序相关换型</span></td><td><span lang="en">Circuit per machine: a family change between consecutive operations inserts the setup matrix time</span><span lang="zh">每台设备建立回路约束：相邻工序产品族变化时插入换型时间</span></td></tr>
+            <tr><td><span lang="en">Material and release</span><span lang="zh">物料与可开工时间</span></td><td><span lang="en">First operation starts no earlier than the material-available date</span><span lang="zh">首道工序不早于物料到货日期</span></td></tr>
+            <tr><td><span lang="en">Frozen window</span><span lang="zh">冻结窗口</span></td><td><span lang="en">Operations started or due to start within the window (default 2 h) are fixed</span><span lang="zh">已开工或在窗口内（默认 2 小时）开工的工序保持固定</span></td></tr>
+            <tr><td><span lang="en">Quality hold</span><span lang="zh">质量冻结</span></td><td><span lang="en">The order's remaining operations wait until the hold's expected release</span><span lang="zh">该订单后续工序等待至冻结预计解除时间</span></td></tr>
+            <tr><td><span lang="en">Repair neighbourhood</span><span lang="zh">修复邻域</span></td><td><span lang="en">In a repair, operations outside the disrupted work centre or order, and outside orders the disruption would make late, keep their machine and their order on it</span><span lang="zh">修复时，受影响工作中心/订单之外、且不会因异常而延误的订单工序，保持原设备及原顺序</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="formula" aria-label="Objective">
+        <div><span class="lvl">1.</span> minimise &nbsp;Σ<sub>o</sub> w<sub>o</sub> · max(0, C<sub>o</sub> − d<sub>o</sub>)</div>
+        <div><span class="lvl">2.</span> minimise &nbsp;Σ setup minutes &nbsp;&nbsp;<span style="color:var(--muted)">s.t. level 1 ≤ best found</span></div>
+        <div style="color:var(--muted)"><span lang="en">Repair: level 1, then</span><span lang="zh">修复：先第 1 级，再</span></div>
+        <div><span class="lvl">2′.</span> minimise &nbsp;Σ |start − previous start| &nbsp;&nbsp;<span style="color:var(--muted)">s.t. level 1 ≤ best found</span></div>
+      </div>
+      <p lang="en"><code>C<sub>o</sub></code> is the order's completion time, <code>d<sub>o</sub></code> its due date and <code>w<sub>o</sub></code> its priority weight from SAP. Each level is solved and its value locked before the next, so a setup saving can never cost a late order.</p>
+      <p lang="zh"><code>C<sub>o</sub></code> 为订单完工时间，<code>d<sub>o</sub></code> 为交期，<code>w<sub>o</sub></code> 为来自 SAP 的优先级权重。逐级求解并锁定上一级结果，因此节省换型永远不会以订单延误为代价。</p>
+      <div class="callout"><h4><span lang="en">Changed while building the demo</span><span lang="zh">实现过程中的调整</span></h4>
+        <p lang="en">Draft 0.1 re-optimised the whole plan on every event within 15 s. Measured, that was too slow: the setup sequencing makes a 150-operation plan hard, and repairs often stopped at poor solutions. Restricting a repair to its neighbourhood, and pruning sequence choices the neighbourhood already fixes, made repairs reach a proven optimum for on-time delivery in 1–30 s. Repairs therefore run for up to 30 s, and setups are optimised only by a full plan.</p>
+        <p lang="zh">草案 0.1 在每个事件后于 15 秒内重新优化全部排程。实测过慢：换型顺序使 150 道工序的问题很难求解，修复常停在较差的解。将修复限定在邻域内，并剪除邻域已确定的顺序选择后，修复可在 1–30 秒内证明准时交付级的最优解。因此修复时限改为 30 秒，换型只在全量排程中优化。</p></div>
+      <div class="tbl">
+        <table>
+          <thead><tr><th><span lang="en">Solve mode</span><span lang="zh">求解模式</span></th><th><span lang="en">When</span><span lang="zh">触发时机</span></th><th><span lang="en">Time limit</span><span lang="zh">时间上限</span></th></tr></thead>
+          <tbody>
+            <tr><td><span lang="en">Full</span><span lang="zh">全量</span></td><td><span lang="en">Each shift, or on planner request</span><span lang="zh">每班一次，或计划员手动触发</span></td><td><span lang="en">60 s: on-time level first, the remaining time on setups</span><span lang="zh">60 秒：先求准时交付级，剩余时间优化换型</span></td></tr>
+            <tr><td><span lang="en">Repair</span><span lang="zh">修复</span></td><td><span lang="en">On each event</span><span lang="zh">每个事件触发</span></td><td><span lang="en">30 s on the neighbourhood, warm-started from a sequence-keeping heuristic; setups respected, not re-optimised</span><span lang="zh">30 秒，仅在邻域内求解，以保持原顺序的启发式解热启动；遵守换型但不重新优化</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 6 events -->
+    <section id="events">
+      <h2><span class="n">6</span><span lang="en">Event-driven rescheduling</span><span lang="zh">事件驱动重排</span></h2>
+      <p class="point" lang="en">Every disruption becomes a typed event that changes the model, and every change goes to the planner as a proposal with its before-and-after on-time delivery.</p>
+      <p class="point" lang="zh">每个异常都转为结构化事件并修改模型；每次变更都以方案形式提交计划员，附带变更前后的准时交付对比。</p>
+      <figure>
+        <div class="fig">
+          <svg viewBox="0 0 1000 170" role="img" aria-label="Event flow / 事件流程">
+            <rect x="10" y="40" width="150" height="80" rx="9" class="d-box"/><text x="24" y="66" class="d-t sm"><tspan lang="en">Event arrives</tspan><tspan lang="zh">事件到达</tspan></text><text x="24" y="86" class="d-s"><tspan lang="en">MES, platform,</tspan><tspan lang="zh">MES、平台、</tspan></text><text x="24" y="102" class="d-s"><tspan lang="en">SAP, or text</tspan><tspan lang="zh">SAP 或文本</tspan></text>
+            <rect x="190" y="40" width="150" height="80" rx="9" class="d-hold"/><text x="204" y="66" class="d-t sm"><tspan lang="en">Classify</tspan><tspan lang="zh">分类</tspan></text><text x="204" y="86" class="d-s"><tspan lang="en">text → Laya;</tspan><tspan lang="zh">文本 → Laya；</tspan></text><text x="204" y="102" class="d-s"><tspan lang="en">&lt; gate → planner</tspan><tspan lang="zh">低于阈值 → 计划员</tspan></text>
+            <rect x="370" y="40" width="150" height="80" rx="9" class="d-box"/><text x="384" y="66" class="d-t sm"><tspan lang="en">Apply to model</tspan><tspan lang="zh">写入模型</tspan></text><text x="384" y="86" class="d-s"><tspan lang="en">downtime, release,</tspan><tspan lang="zh">停机、到货、</tspan></text><text x="384" y="102" class="d-s"><tspan lang="en">new order, hold</tspan><tspan lang="zh">新订单、冻结</tspan></text>
+            <rect x="550" y="40" width="150" height="80" rx="9" class="d-acc"/><text x="564" y="66" class="d-t sm d-acc-t"><tspan lang="en">Repair solve</tspan><tspan lang="zh">修复求解</tspan></text><text x="564" y="86" class="d-s"><tspan lang="en">frozen window,</tspan><tspan lang="zh">冻结窗口、</tspan></text><text x="564" y="102" class="d-s"><tspan lang="en">stability, 15 s</tspan><tspan lang="zh">稳定性、15 秒</tspan></text>
+            <rect x="730" y="40" width="120" height="80" rx="9" class="d-box"/><text x="744" y="66" class="d-t sm"><tspan lang="en">Planner</tspan><tspan lang="zh">计划员</tspan></text><text x="744" y="86" class="d-s"><tspan lang="en">compare OTD,</tspan><tspan lang="zh">对比 OTD，</tspan></text><text x="744" y="102" class="d-s"><tspan lang="en">approve</tspan><tspan lang="zh">审批</tspan></text>
+            <rect x="880" y="40" width="110" height="80" rx="9" class="d-box"/><text x="894" y="66" class="d-t sm"><tspan lang="en">Publish</tspan><tspan lang="zh">发布</tspan></text><text x="894" y="86" class="d-s"><tspan lang="en">MES dispatch,</tspan><tspan lang="zh">MES 派工、</tspan></text><text x="894" y="102" class="d-s"><tspan lang="en">SAP dates</tspan><tspan lang="zh">SAP 日期</tspan></text>
+            <path d="M160 80 H186" class="d-arrow" marker-end="url(#ar)"/><path d="M340 80 H366" class="d-arrow" marker-end="url(#ar)"/><path d="M520 80 H546" class="d-arrow" marker-end="url(#ar)"/><path d="M700 80 H726" class="d-arrow acc" marker-end="url(#ara)"/><path d="M850 80 H876" class="d-arrow" marker-end="url(#ar)"/>
+            <path d="M790 120 V150 H625 V124" class="d-arrow dash" marker-end="url(#ar)"/>
+            <text x="640" y="162" class="d-s"><tspan lang="en">reject → planner adjusts and re-solves</tspan><tspan lang="zh">驳回 → 计划员调整后重新求解</tspan></text>
+          </svg>
+        </div>
+      </figure>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th><span lang="en">Event</span><span lang="zh">事件</span></th><th><span lang="en">Source</span><span lang="zh">来源</span></th><th><span lang="en">Effect on the model</span><span lang="zh">对模型的影响</span></th></tr></thead>
+          <tbody>
+            <tr><td><span lang="en">Machine down</span><span lang="zh">设备停机</span></td><td><span lang="en">MES state, platform line stop, maintenance request</span><span lang="zh">MES 状态、平台停线、维修单</span></td><td><span lang="en">Blocked interval until estimated repair</span><span lang="zh">在预计修复前设为不可用</span></td></tr>
+            <tr><td><span lang="en">Machine degrading</span><span lang="zh">设备劣化</span></td><td><span lang="en">Platform health index</span><span lang="zh">平台健康指数</span></td><td><span lang="en">Speed factor reduced, or a maintenance window inserted</span><span lang="zh">降低速度系数，或插入维护窗口</span></td></tr>
+            <tr><td><span lang="en">Material late</span><span lang="zh">物料延迟</span></td><td><span lang="en">SAP purchase order date, supplier email</span><span lang="zh">SAP 采购订单日期、供应商邮件</span></td><td><span lang="en">Later release date for affected orders</span><span lang="zh">受影响订单的可开工时间推后</span></td></tr>
+            <tr><td><span lang="en">Rush order</span><span lang="zh">插单</span></td><td><span lang="en">SAP, customer email</span><span lang="zh">SAP、客户邮件</span></td><td><span lang="en">New order with high weight</span><span lang="zh">新增高权重订单</span></td></tr>
+            <tr><td><span lang="en">Quality hold</span><span lang="zh">质量冻结</span></td><td><span lang="en">Platform inspection result</span><span lang="zh">平台检验结果</span></td><td><span lang="en">Order waits until expected release</span><span lang="zh">订单等待至预计解除</span></td></tr>
+            <tr><td><span lang="en">Rework or scrap</span><span lang="zh">返工或报废</span></td><td><span lang="en">Platform disposition</span><span lang="zh">平台处置结果</span></td><td><span lang="en">Rework adds an operation; scrap adds a replacement order</span><span lang="zh">返工增加工序；报废新增补单</span></td></tr>
+            <tr><td><span lang="en">Operation finished</span><span lang="zh">工序完工</span></td><td><span lang="en">MES confirmation</span><span lang="zh">MES 报工</span></td><td><span lang="en">Actual times replace planned; no re-solve unless late</span><span lang="zh">以实绩替换计划；未延误则不重排</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 7 ai -->
+    <section id="ai">
+      <h2><span class="n">7</span><span lang="en">Laya and LLM roles</span><span lang="zh">Laya 与大模型分工</span></h2>
+      <p class="point" lang="en">The solver decides the schedule. Laya reads what people write: disruptions, commands, rejection comments and shift notes. Rules find the facts and the cues Laya cannot read. The schedule explains itself: delay causes are computed, not generated. An LLM is kept for free-form requests the rules cannot parse. The same rule as the quality platform: models read, rules and solvers decide, people approve.</p>
+      <p class="point" lang="zh">排程由求解器决定。Laya 理解人写的文字：异常、命令、驳回意见和交接班记录。规则提取事实以及 Laya 无法识别的信号。排程自己给出解释：延误原因由计算得出，而非生成。大模型留给规则无法解析的自由请求。与质量平台同一原则：模型负责理解，规则与求解器负责决策，人负责审批。</p>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th><span lang="en">Job</span><span lang="zh">任务</span></th><th><span lang="en">Who</span><span lang="zh">负责方</span></th><th><span lang="en">Why</span><span lang="zh">原因</span></th></tr></thead>
+          <tbody>
+            <tr><td><span lang="en">Build and repair the schedule</span><span lang="zh">生成与修复排程</span></td><td><span lang="en">CP-SAT solver</span><span lang="zh">CP-SAT 求解器</span></td><td><span lang="en">Guarantees feasibility; proves how good the plan is</span><span lang="zh">保证可行；可证明方案质量</span></td></tr>
+            <tr><td><span lang="en">Classify a written disruption; read a planner's intent</span><span lang="zh">识别文字异常；理解计划员意图</span></td><td>Laya</td><td><span lang="en">Typed choices with calibrated confidence, any language, runs on CPU; two wordings must agree</span><span lang="zh">带校准置信度的结构化选项，支持多语言，CPU 即可运行；两种措辞须一致</span></td></tr>
+            <tr><td><span lang="en">Why a proposal was rejected; breakdowns in shift notes</span><span lang="zh">驳回原因；交接班记录中的故障</span></td><td><span lang="en">Laya, as a suggestion</span><span lang="zh">Laya，仅作建议</span></td><td><span lang="en">Measured good enough to suggest a next step, not to act alone</span><span lang="zh">实测足以建议下一步，但不足以单独执行</span></td></tr>
+            <tr><td><span lang="en">Urgency; is the sender sure; what a delay costs the customer</span><span lang="zh">紧急度；发件人是否确定；延误对客户的影响</span></td><td><span lang="en">Rules: word lists in three languages</span><span lang="zh">规则：三种语言的词表</span></td><td><span lang="en">Laya measured unreliable on these; the cues are a few words</span><span lang="zh">Laya 实测不可靠；这些信号由少数词语承载</span></td></tr>
+            <tr><td><span lang="en">Find the order, machine and date in the text</span><span lang="zh">从文本中提取订单、设备和日期</span></td><td><span lang="en">Rules: ID patterns and a master-data lookup</span><span lang="zh">规则：编号格式与主数据匹配</span></td><td><span lang="en">IDs have fixed formats; Laya classifies, it does not extract</span><span lang="zh">编号格式固定；Laya 负责分类，不负责抽取</span></td></tr>
+            <tr><td><span lang="en">Unsure or incomplete event</span><span lang="zh">不确定或信息不全的事件</span></td><td><span lang="en">Planner</span><span lang="zh">计划员</span></td><td><span lang="en">Below the confidence gate, a person confirms before the model changes</span><span lang="zh">低于置信阈值时，由人确认后才修改模型</span></td></tr>
+            <tr><td><span lang="en">“Why is order 10004403 late?”</span><span lang="zh">“订单 10004403 为什么延误？”</span></td><td><span lang="en">Schedule analysis (<code>explain.py</code>)</span><span lang="zh">排程分析（<code>explain.py</code>）</span></td><td><span lang="en">Causes computed from the schedule, ranked in hours; an LLM could phrase them, but nothing is generated in the demo</span><span lang="zh">原因直接从排程计算并按小时排序；大模型可用于表述，但演示中不生成内容</span></td></tr>
+            <tr><td><span lang="en">What-if in plain words</span><span lang="zh">自然语言的假设分析</span></td><td><span lang="en">Laya reads the intent, rules the facts, the solver runs it</span><span lang="zh">Laya 识别意图，规则提取事实，求解器计算</span></td><td><span lang="en">Nothing changes until the planner promotes the scenario; an LLM is the next step for requests the rules cannot parse</span><span lang="zh">在计划员转为方案前不会改动；规则无法解析的请求，下一步可交由大模型</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout acc">
+        <h4><span lang="en">Laya questions for the disruption inbox</span><span lang="zh">异常收件箱的 Laya 问题</span></h4>
+        <p lang="en">Choice questions only, as measured on the quality platform, all answered in one forward pass: the <b>event kind</b> read twice with different wording (one flat list of ten, and area first, then the kind within the area), and for the planner's command bar the <b>intent</b> (what-if, report, why). <code>guard_questions()</code> screen the text for prompt injection first. An event applies itself only when both readings agree, both clear 50%, the guard is quiet, the rules found every fact and the sender is sure; otherwise the planner confirms Laya's prefilled reading. Measured: either reading alone made 2–3 confident errors on 18 messages, on different messages; requiring agreement left none. Laya never produces the numbers: rules extract machines, orders, hours, start times, date shifts and quantities, and check them against master data.</p>
+        <p lang="zh">沿用质量平台的实测结论，只使用选择题，一次前向计算全部回答：以两种不同措辞识别<b>事件类型</b>（一组十个选项的平铺列表，以及先判断领域、再判断领域内类型），以及计划助手命令的<b>意图</b>（假设分析、上报、原因）。先用 <code>guard_questions()</code> 检查提示注入。只有两次识别一致、均高于 50%、防护无告警、规则提取到全部信息且发件人确定时，事件才会自动应用；否则由计划员确认 Laya 预填的结果。实测：在 18 条消息上，任一识别单独使用会产生 2–3 条高置信度错误，且出错的消息不同；要求一致后为零。数字从不由 Laya 给出：设备、订单、小时数、开始时间、交期调整和数量由规则提取并与主数据核对。</p>
+        <h4><span lang="en">Two more jobs for Laya, and three cues it does not read</span><span lang="zh">Laya 的另两项任务，以及它不负责的三类信号</span></h4>
+        <p lang="en"><b>Rejected proposals:</b> Laya reads the planner's comment (too many changes, a customer promise, people or tools missing, the event was wrong) and the workbench offers the matching next step: re-run with only the disrupted machine and order free, re-run protecting orders, block a machine, or correct the event. All four stay on screen, because two of eight confident readings on held-out comments were wrong. <b>Shift notes:</b> Laya reads the machine's condition; a likely breakdown marks the machine on the Gantt. <b>Rules instead of Laya</b> read whether the sender is unsure, what a delay costs the customer, and urgency: measured on 32 new messages, Laya could not separate these, while a short word list in three languages could.</p>
+        <p lang="zh"><b>被驳回的方案：</b>Laya 识别计划员的驳回意见（改动太多、违背客户承诺、人员或工装不足、事件有误），工作台给出对应的下一步：只放开受影响设备和订单重新求解、保护指定订单重新求解、封锁设备或修正事件。四个选项始终显示，因为在保留测试集上 8 个高置信度识别中有 2 个错误。<b>交接班记录：</b>Laya 识别设备状态；可能故障的设备会在甘特图上标出。<b>由规则而非 Laya</b> 判断发件人是否确定、延误对客户的影响以及紧急度：在 32 条新消息上实测，Laya 无法区分这些信号，而三种语言的简短词表可以。</p>
+      </div>
+    </section>
+
+    <!-- 8 sap mes -->
+    <section id="sap">
+      <h2><span class="n">8</span><span lang="en">SAP and MES integration</span><span lang="zh">SAP 与 MES 集成</span></h2>
+      <p class="point" lang="en">SAP is read through its standard interfaces and written only after approval; the custom MES receives dispatch lists and sends back actuals through a small, versioned API.</p>
+      <p class="point" lang="zh">通过标准接口读取 SAP，仅在审批后回写；定制 MES 通过一套小而有版本的接口接收派工单并回传实绩。</p>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th><span lang="en">Direction</span><span lang="zh">方向</span></th><th><span lang="en">Content</span><span lang="zh">内容</span></th><th><span lang="en">Interface options</span><span lang="zh">接口方式</span></th><th><span lang="en">Frequency</span><span lang="zh">频率</span></th></tr></thead>
+          <tbody>
+            <tr><td>SAP → APS</td><td><span lang="en">Production and planned orders, sales-order due dates</span><span lang="zh">生产订单、计划订单、销售订单交期</span></td><td><span lang="en">S/4HANA OData APIs, or IDoc LOIPRO</span><span lang="zh">S/4HANA OData 接口，或 IDoc LOIPRO</span></td><td><span lang="en">Every 15 min + on change</span><span lang="zh">每 15 分钟 + 变更触发</span></td></tr>
+            <tr><td>SAP → APS</td><td><span lang="en">Routings, work centres, capacities</span><span lang="zh">工艺路线、工作中心、能力</span></td><td><span lang="en">OData, or IDoc LOIROU / LOIWCS</span><span lang="zh">OData，或 IDoc LOIROU / LOIWCS</span></td><td><span lang="en">Daily + on change</span><span lang="zh">每日 + 变更触发</span></td></tr>
+            <tr><td>SAP → APS</td><td><span lang="en">Material availability dates from MRP and purchase orders</span><span lang="zh">来自 MRP 与采购订单的物料可用日期</span></td><td><span lang="en">OData or a CDS view extract</span><span lang="zh">OData 或 CDS 视图抽取</span></td><td><span lang="en">Hourly</span><span lang="zh">每小时</span></td></tr>
+            <tr><td>APS → SAP</td><td><span lang="en">Scheduled start and finish per order</span><span lang="zh">每个订单的排程开始与完成日期</span></td><td><span lang="en">Production order update API, after approval</span><span lang="zh">生产订单更新接口，审批后执行</span></td><td><span lang="en">On publish</span><span lang="zh">发布时</span></td></tr>
+            <tr><td>APS → MES</td><td><span lang="en">Dispatch list per machine: sequence, planned start, setup</span><span lang="zh">按设备的派工单：顺序、计划开工、换型</span></td><td><span lang="en">REST <code>PUT /dispatch/{machine}</code>, versioned</span><span lang="zh">REST <code>PUT /dispatch/{machine}</code>，带版本</span></td><td><span lang="en">On publish</span><span lang="zh">发布时</span></td></tr>
+            <tr><td>MES → APS</td><td><span lang="en">Start, finish, quantity, machine state</span><span lang="zh">开工、完工、数量、设备状态</span></td><td><span lang="en">MQTT events or REST webhooks</span><span lang="zh">MQTT 事件或 REST 回调</span></td><td><span lang="en">Real time</span><span lang="zh">实时</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note"><span lang="en">Exact SAP APIs, IDoc types and authorisation depend on the S/4HANA release and the plant's configuration; to confirm with the SAP team. The demo uses SAP-shaped JSON files in place of live calls.</span><span lang="zh">具体 SAP 接口、IDoc 类型与权限取决于 S/4HANA 版本与工厂配置，需与 SAP 团队确认。演示使用 SAP 格式的 JSON 文件代替实时调用。</span></p>
+    </section>
+
+    <!-- 9 ui -->
+    <section id="ui">
+      <h2><span class="n">9</span><span lang="en">Planner workbench</span><span lang="zh">计划员工作台</span></h2>
+      <p class="point" lang="en">One screen: a Gantt chart per machine, orders coloured by delivery risk, the disruption inbox, and a before-and-after comparison for every proposal. English and Chinese, switchable per user.</p>
+      <p class="point" lang="zh">一个页面包含：按设备的甘特图、按交付风险着色的订单、异常收件箱，以及每个方案的前后对比。支持中英文，按用户切换。</p>
+      <figure>
+        <div class="fig">
+          <svg viewBox="0 0 1000 300" role="img" aria-label="Gantt illustration / 甘特图示意">
+            <text x="20" y="20" class="d-cap"><tspan lang="en">ILLUSTRATION · NOT DATA</tspan><tspan lang="zh">示意图 · 非实际数据</tspan></text>
+            <g class="d-s"><text x="20" y="58">CNC-01</text><text x="20" y="96">CNC-02</text><text x="20" y="134">CMM-01</text><text x="20" y="172">ASM-03</text><text x="20" y="210">ASM-05</text><text x="20" y="248">LKT-04</text></g>
+            <g><rect x="90" y="40" width="890" height="28" class="g-row"/><rect x="90" y="78" width="890" height="28" class="g-row"/><rect x="90" y="116" width="890" height="28" class="g-row"/><rect x="90" y="154" width="890" height="28" class="g-row"/><rect x="90" y="192" width="890" height="28" class="g-row"/><rect x="90" y="230" width="890" height="28" class="g-row"/></g>
+            <rect x="90" y="34" width="110" height="230" class="g-frozen"/>
+            <text x="96" y="282" class="d-s"><tspan lang="en">frozen window</tspan><tspan lang="zh">冻结窗口</tspan></text>
+            <g>
+              <rect x="94" y="44" width="80" height="20" rx="3" class="g-ok"/><text x="100" y="58" class="g-lab">4401</text>
+              <rect x="176" y="44" width="10" height="20" class="g-setup"/>
+              <rect x="188" y="44" width="120" height="20" rx="3" class="g-ok"/><text x="194" y="58" class="g-lab">4407</text>
+              <rect x="312" y="44" width="130" height="20" rx="3" class="g-risk"/><text x="318" y="58" class="g-lab">4411</text>
+              <rect x="94" y="82" width="60" height="20" rx="3" class="g-ok"/><text x="100" y="96" class="g-lab">4402</text>
+              <rect x="160" y="80" width="200" height="24" class="g-down"/>
+              <rect x="366" y="82" width="140" height="20" rx="3" class="g-late"/><text x="372" y="96" class="g-lab">4415</text>
+              <rect x="190" y="120" width="70" height="20" rx="3" class="g-ok"/><text x="196" y="134" class="g-lab">4401</text>
+              <rect x="330" y="120" width="70" height="20" rx="3" class="g-ok"/><text x="336" y="134" class="g-lab">4407</text>
+              <rect x="280" y="158" width="150" height="20" rx="3" class="g-ok"/><text x="286" y="172" class="g-lab">4401</text>
+              <rect x="440" y="196" width="160" height="20" rx="3" class="g-risk"/><text x="446" y="210" class="g-lab">4407</text>
+              <rect x="460" y="234" width="80" height="20" rx="3" class="g-ok"/><text x="466" y="248" class="g-lab">4401</text>
+              <rect x="620" y="234" width="80" height="20" rx="3" class="g-risk"/><text x="626" y="248" class="g-lab">4407</text>
+            </g>
+            <line x1="150" x2="150" y1="30" y2="266" class="g-now"/>
+            <text x="154" y="30" class="d-s"><tspan lang="en">now</tspan><tspan lang="zh">当前</tspan></text>
+            <g class="d-s">
+              <rect x="560" y="276" width="12" height="12" class="g-ok"/><text x="578" y="286"><tspan lang="en">on time</tspan><tspan lang="zh">准时</tspan></text>
+              <rect x="650" y="276" width="12" height="12" class="g-risk"/><text x="668" y="286"><tspan lang="en">at risk (&lt; 4 h slack)</tspan><tspan lang="zh">有风险（余量 &lt; 4 小时）</tspan></text>
+              <rect x="810" y="276" width="12" height="12" class="g-late"/><text x="828" y="286"><tspan lang="en">late</tspan><tspan lang="zh">延误</tspan></text>
+              <rect x="880" y="276" width="12" height="12" class="g-down"/><text x="898" y="286"><tspan lang="en">down</tspan><tspan lang="zh">停机</tspan></text>
+            </g>
+          </svg>
+        </div>
+        <figcaption><b><span lang="en">Figure 3.</span><span lang="zh">图 3.</span></b> <span lang="en">Workbench Gantt, illustrative. Grey slivers are setups; the hatched block is a downtime event pushing order 4415 late.</span><span lang="zh">工作台甘特图（示意）。灰色细块为换型；斜线块为停机事件，导致订单 4415 延误。</span></figcaption>
+      </figure>
+      <ul lang="en">
+        <li><b>Orders list:</b> due date, planned finish, slack, status pill (on time, at risk, late), SAP order number.</li>
+        <li><b>Disruption inbox:</b> incoming messages with Laya's two readings, urgency (from rules), guard result and the reason a message needs the planner; one click triages the whole inbox by urgency.</li>
+        <li><b>Command bar:</b> “What if LKT-04 goes down for 8 hours?” runs a scenario; “Why is 10004403 late?” shows the ranked causes.</li>
+        <li><b>What-if scenarios:</b> up to six side by side with KPI deltas; view one on the Gantt, promote it to the proposal, or discard it.</li>
+        <li><b>Why late and load:</b> the main cause of every late or at-risk order, and a heatmap of load by work centre and day.</li>
+        <li><b>Shift notes and training labels:</b> operators' notes read for likely breakdowns; every planner decision on a Laya reading (event submitted, intent picked, next step after a rejection, <i>Actually: OK / Watch / Stop</i> on a note) is saved as a training label, and the workbench shows how many exist and how often Laya was right.</li>
+        <li><b>Proposal panel:</b> OTD, weighted tardiness, late orders and setup hours before and after; operations moved; approve or reject.</li>
+        <li><b>Publish:</b> shows the MES dispatch lists and SAP date updates that will be sent.</li>
+      </ul>
+      <ul lang="zh">
+        <li><b>订单列表：</b>交期、计划完工、余量、状态（准时、有风险、延误）、SAP 订单号。</li>
+        <li><b>异常收件箱：</b>显示 Laya 的两次识别、紧急度（由规则判断）、防护结果以及需计划员确认的原因；一键按紧急度分拣全部消息。</li>
+        <li><b>计划助手：</b>“如果 CNC-02 停机 4 小时会怎样？”运行假设场景；“订单 10004407 为什么有延误风险？”显示排序后的原因。</li>
+        <li><b>假设场景：</b>最多六个并列，显示指标变化；可在甘特图中查看、转为方案或删除。</li>
+        <li><b>延误原因与负荷：</b>每个延误或有风险订单的主要原因，以及按工作中心和日期的负荷热力图。</li>
+        <li><b>交接班记录与训练标签：</b>识别操作工记录中可能的故障；计划员对 Laya 识别结果的每个决定（提交的事件、选择的意图、驳回后的下一步、交接班记录上的“实际情况：正常 / 需关注 / 停机”）都保存为训练标签，工作台显示标签数量及 Laya 的正确率。</li>
+        <li><b>方案面板：</b>变更前后的 OTD、加权延误、延误订单数、换型工时；被调整的工序；批准或驳回。</li>
+        <li><b>发布：</b>预览将发送的 MES 派工单与 SAP 日期更新。</li>
+      </ul>
+    </section>
+
+    <!-- 10 kpi -->
+    <section id="kpi">
+      <h2><span class="n">10</span><span lang="en">KPIs</span><span lang="zh">关键指标</span></h2>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th><span lang="en">KPI</span><span lang="zh">指标</span></th><th><span lang="en">Definition</span><span lang="zh">定义</span></th><th><span lang="en">Role</span><span lang="zh">作用</span></th></tr></thead>
+          <tbody>
+            <tr><td><span lang="en">On-time delivery (OTD)</span><span lang="zh">准时交付率 (OTD)</span></td><td><span lang="en">Share of orders whose planned finish is at or before the due date</span><span lang="zh">计划完工不晚于交期的订单占比</span></td><td><span lang="en">Headline; objective level 1</span><span lang="zh">核心指标；第一级目标</span></td></tr>
+            <tr><td><span lang="en">Weighted tardiness</span><span lang="zh">加权延误</span></td><td><span lang="en">Σ priority × hours late</span><span lang="zh">Σ 优先级 × 延误小时</span></td><td><span lang="en">What the solver minimises</span><span lang="zh">求解器最小化的量</span></td></tr>
+            <tr><td><span lang="en">Late orders</span><span lang="zh">延误订单数</span></td><td><span lang="en">Orders planned to finish after their due date</span><span lang="zh">计划完工晚于交期的订单数</span></td><td><span lang="en">Planner attention list</span><span lang="zh">计划员关注清单</span></td></tr>
+            <tr><td><span lang="en">Setup hours</span><span lang="zh">换型工时</span></td><td><span lang="en">Sum of sequence-dependent setups</span><span lang="zh">顺序相关换型时间总和</span></td><td><span lang="en">Objective level 2</span><span lang="zh">第二级目标</span></td></tr>
+            <tr><td><span lang="en">Utilisation per work centre</span><span lang="zh">工作中心利用率</span></td><td><span lang="en">Busy time ÷ available time in the horizon</span><span lang="zh">时间范围内占用时间 ÷ 可用时间</span></td><td><span lang="en">Shows the bottleneck</span><span lang="zh">识别瓶颈</span></td></tr>
+            <tr><td><span lang="en">Schedule stability</span><span lang="zh">排程稳定性</span></td><td><span lang="en">Operations moved by more than 30 min in a repair</span><span lang="zh">一次修复中移动超过 30 分钟的工序数</span></td><td><span lang="en">Keeps the floor calm</span><span lang="zh">保持车间稳定</span></td></tr>
+            <tr><td><span lang="en">Solve time</span><span lang="zh">求解时间</span></td><td><span lang="en">Seconds from event to proposal</span><span lang="zh">从事件到方案的秒数</span></td><td><span lang="en">Responsiveness</span><span lang="zh">响应速度</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 11 deploy -->
+    <section id="deploy">
+      <h2><span class="n">11</span><span lang="en">Deployment and security</span><span lang="zh">部署与安全</span></h2>
+      <p class="point" lang="en">The APS is one more service on the plant hub, behind the same zones, sign-in and audit log as the rest of the platform.</p>
+      <p class="point" lang="zh">APS 作为工厂中心上的一个服务，沿用平台的网络分区、统一登录与审计日志。</p>
+      <ul lang="en">
+        <li><b>Runs on:</b> the plant hub; the solver needs CPU cores, not a GPU. Laya reuses the edge or hub model service.</li>
+        <li><b>SAP access:</b> a technical user with read rights on orders and masters, and write rights limited to scheduled dates on production orders.</li>
+        <li><b>Roles:</b> planner (propose, approve, publish), supervisor (view, comment), administrator. Every publish records who approved it.</li>
+        <li><b>If the APS is down:</b> the MES keeps the last published dispatch lists; the floor continues on them.</li>
+      </ul>
+      <ul lang="zh">
+        <li><b>运行位置：</b>工厂中心；求解器需要 CPU 核心，不需要 GPU。Laya 复用边缘或中心的模型服务。</li>
+        <li><b>SAP 访问：</b>技术用户，对订单与主数据只读；写权限仅限生产订单的排程日期。</li>
+        <li><b>角色：</b>计划员（生成方案、审批、发布）、主管（查看、评论）、管理员。每次发布都记录审批人。</li>
+        <li><b>APS 故障时：</b>MES 保留最近一次发布的派工单，车间按其继续生产。</li>
+      </ul>
+    </section>
+
+    <!-- 12 demo -->
+    <section id="demo">
+      <h2><span class="n">12</span><span lang="en">Demo scope and acceptance</span><span lang="zh">演示范围与验收</span></h2>
+      <p class="point" lang="en">The working demo implements this design on a simulated Plant 1 with two lines, in the same repository as the quality demo.</p>
+      <p class="point" lang="zh">演示在模拟的一号工厂（两条产线）上实现本设计，与质量演示位于同一代码仓库。</p>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th><span lang="en">Area</span><span lang="zh">内容</span></th><th><span lang="en">In the demo</span><span lang="zh">演示实现</span></th><th><span lang="en">Real or simulated</span><span lang="zh">真实 / 模拟</span></th></tr></thead>
+          <tbody>
+            <tr><td><span lang="en">Plant</span><span lang="zh">工厂</span></td><td><span lang="en">Machining line L1 (CNC-01, CNC-02, CNC-03, CMM-01) and assembly-test line L3 (ASM-03, ASM-05, LKT-04, AOI-01); 4 products, 2 shifts</span><span lang="zh">机加产线 L1（CNC-01、CNC-02、CNC-03、CMM-01）与装配测试产线 L3（ASM-03、ASM-05、LKT-04、AOI-01）；4 种产品，两班制</span></td><td><span class="pill sim"><span lang="en">Simulated</span><span lang="zh">模拟</span></span></td></tr>
+            <tr><td><span lang="en">SAP</span><span lang="zh">SAP</span></td><td><span lang="en">Orders, routings and work centres as SAP-shaped JSON; write-back payload shown, not sent</span><span lang="zh">订单、工艺路线、工作中心为 SAP 格式 JSON；回写报文仅展示，不发送</span></td><td><span class="pill sim"><span lang="en">Simulated</span><span lang="zh">模拟</span></span></td></tr>
+            <tr><td><span lang="en">MES</span><span lang="zh">MES</span></td><td><span lang="en">Dispatch endpoint and confirmation events on a mock</span><span lang="zh">派工接口与报工事件使用模拟服务</span></td><td><span class="pill sim"><span lang="en">Simulated</span><span lang="zh">模拟</span></span></td></tr>
+            <tr><td><span lang="en">Solver</span><span lang="zh">求解器</span></td><td><span lang="en">CP-SAT, full and repair modes, lexicographic objective, setups, shifts, frozen window</span><span lang="zh">CP-SAT，全量与修复模式，分级目标、换型、班次、冻结窗口</span></td><td><span class="pill demo"><span lang="en">Real</span><span lang="zh">真实</span></span></td></tr>
+            <tr><td><span lang="en">Disruption inbox</span><span lang="zh">异常收件箱</span></td><td><span lang="en">18 emails and notes in English, Chinese and German plus 2 injections, read by Laya; planner commands</span><span lang="zh">英文、中文、德文 18 条邮件与留言及 2 条注入攻击，由 Laya 识别；计划助手命令</span></td><td><span class="pill demo"><span lang="en">Real model</span><span lang="zh">真实模型</span></span></td></tr>
+            <tr><td><span lang="en">Workbench</span><span lang="zh">工作台</span></td><td><span lang="en">Gantt, orders with why-late, load heatmap, inbox, command bar, what-if scenarios, proposal compare, publish preview; English / 中文</span><span lang="zh">甘特图、含延误原因的订单、负荷热力图、收件箱、计划助手、假设场景、方案对比、发布预览；English / 中文</span></td><td><span class="pill demo"><span lang="en">Real</span><span lang="zh">真实</span></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th><span lang="en">Acceptance check</span><span lang="zh">验收项</span></th><th><span lang="en">Pass when</span><span lang="zh">通过标准</span></th><th><span lang="en">Result</span><span lang="zh">结果</span></th></tr></thead>
+          <tbody>
+            <tr><td><span lang="en">Feasibility</span><span lang="zh">可行性</span></td><td><span lang="en">An independent checker finds no overlap, routing, shift, release or frozen-window violation in any schedule</span><span lang="zh">独立校验程序在任何排程中都未发现重叠、工序顺序、班次、到货或冻结窗口违规</span></td><td><span class="pill ok">✓ <span lang="en">0 violations</span><span lang="zh">0 违规</span></span></td></tr>
+            <tr><td><span lang="en">On-time first</span><span lang="zh">准时优先</span></td><td><span lang="en">Weighted tardiness is never worse than a due-date dispatching rule on the same orders</span><span lang="zh">在同一批订单上，加权延误不劣于按交期派工规则</span></td><td><span class="pill ok">✓ 3.3 h vs 62.4 h</span></td></tr>
+            <tr><td><span lang="en">Repair</span><span lang="zh">修复重排</span></td><td><span lang="en">Each scenario event yields a proposal within the 15 s limit; frozen operations do not move</span><span lang="zh">每个场景事件在 15 秒内给出方案；冻结工序不移动</span></td><td><span class="pill risk">▲ <span lang="en">1–30 s; limit raised to 30 s</span><span lang="zh">1–30 秒；时限调整为 30 秒</span></span></td></tr>
+            <tr><td><span lang="en">Disruption inbox</span><span lang="zh">异常收件箱</span></td><td><span lang="en">No wrong event applies itself; injections are flagged</span><span lang="zh">没有错误事件自动应用；注入攻击被标记</span></td><td><span class="pill ok">✓ <span lang="en">0 confident errors · 6 auto · 2/2 flagged</span><span lang="zh">0 条高置信度错误 · 6 条自动 · 2/2 标记</span></span></td></tr>
+            <tr><td><span lang="en">Bilingual</span><span lang="zh">双语</span></td><td><span lang="en">Every workbench label exists in both languages</span><span lang="zh">工作台所有标签均有中英文</span></td><td><span class="pill ok">✓</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note"><span lang="en">Demo code: <code>demos/aps</code> in the SmartMom repository; 115 offline tests; <code>evaluate.py</code> produced the numbers in section 13. Start it from the repository root with <code>./run.sh start</code> (the whole platform) or <code>./run.sh start aps</code>.</span><span lang="zh">演示代码：SmartMom 仓库中的 <code>demos/aps</code>；115 项离线测试；第 13 节数据由 <code>evaluate.py</code> 生成。在仓库根目录用 <code>./run.sh start</code>（整个平台）或 <code>./run.sh start aps</code> 启动。</span></p>
+    </section>
+
+    <!-- 13 results -->
+    <section id="results">
+      <h2><span class="n">13</span><span lang="en">Measured results</span><span lang="zh">实测结果</span></h2>
+      <p class="point" lang="en">On the demo plant the solver puts 35 of 36 orders on time against 28 for a due-date rule, and every disruption is repaired with zero feasibility violations. Measured on a 2019 Intel laptop CPU with the default limits (60 s full, 30 s repair).</p>
+      <p class="point" lang="zh">在演示工厂上，求解器使 36 个订单中 35 个准时交付，按交期派工规则仅 28 个；所有异常修复均零可行性违规。测试环境为 2019 款 Intel 笔记本 CPU，默认时限（全量 60 秒，修复 30 秒）。</p>
+
+      <figure>
+        <div class="fig chart chart-box" data-chart>
+          <div class="legend"><span><i style="background:var(--series-2)"></i><span lang="en">Due-date rule</span><span lang="zh">按交期规则</span></span><span><i style="background:var(--bar)"></i>CP-SAT</span></div>
+          <svg viewBox="0 0 720 250" role="img" aria-label="Full plan versus due-date rule">
+            <g class="c-grid"><line x1="20" x2="220" y1="200" y2="200"/><line x1="260" x2="460" y1="200" y2="200"/><line x1="500" x2="700" y1="200" y2="200"/></g>
+            <text x="20" y="22" class="c-title"><tspan lang="en">On-time orders (of 36)</tspan><tspan lang="zh">准时订单（共 36）</tspan></text>
+            <text x="260" y="22" class="c-title"><tspan lang="en">Weighted lateness (h)</tspan><tspan lang="zh">加权延误（小时）</tspan></text>
+            <text x="500" y="22" class="c-title"><tspan lang="en">Setup time (h)</tspan><tspan lang="zh">换型时间（小时）</tspan></text>
+            <rect x="60" y="83.3" width="50" height="116.7" rx="3" class="c-s2"/><rect x="130" y="54.2" width="50" height="145.8" rx="3" class="c-s1"/>
+            <text x="85" y="76" class="c-val" text-anchor="middle">28</text><text x="155" y="47" class="c-val" text-anchor="middle">35</text>
+            <rect x="300" y="66.3" width="50" height="133.7" rx="3" class="c-s2"/><rect x="370" y="192.9" width="50" height="7.1" rx="2" class="c-s1"/>
+            <text x="325" y="59" class="c-val" text-anchor="middle">62.4</text><text x="395" y="186" class="c-val" text-anchor="middle">3.3</text>
+            <rect x="540" y="55.5" width="50" height="144.5" rx="3" class="c-s2"/><rect x="610" y="157.5" width="50" height="42.5" rx="3" class="c-s1"/>
+            <text x="565" y="48" class="c-val" text-anchor="middle">28.9</text><text x="635" y="150" class="c-val" text-anchor="middle">8.5</text>
+            <g class="c-axis" text-anchor="middle">
+              <text x="85" y="218"><tspan lang="en">rule</tspan><tspan lang="zh">规则</tspan></text><text x="155" y="218">CP-SAT</text>
+              <text x="325" y="218"><tspan lang="en">rule</tspan><tspan lang="zh">规则</tspan></text><text x="395" y="218">CP-SAT</text>
+              <text x="565" y="218"><tspan lang="en">rule</tspan><tspan lang="zh">规则</tspan></text><text x="635" y="218">CP-SAT</text>
+            </g>
+            <rect x="20" y="30" width="200" height="170" class="c-hit" data-tip="On-time: rule 28/36 (77.8%) · CP-SAT 35/36 (97.2%)"/>
+            <rect x="260" y="30" width="200" height="170" class="c-hit" data-tip="Weighted lateness: rule 62.4 h · CP-SAT 3.3 h (proven optimal)"/>
+            <rect x="500" y="30" width="200" height="170" class="c-hit" data-tip="Setups: rule 28.9 h · CP-SAT 8.5 h"/>
+          </svg>
+        </div>
+        <figcaption><b><span lang="en">Figure 4. Full plan against the due-date rule.</span><span lang="zh">图 4. 全量排程与按交期规则对比。</span></b> <span lang="en">36 orders, 150 operations, one week. The on-time level was proven optimal; setups were then cut to under a third.</span><span lang="zh">36 个订单、150 道工序、一周。准时交付级已证明最优；随后换型时间降至不到三分之一。</span></figcaption>
+      </figure>
+
+      <figure>
+        <div class="fig chart chart-box" data-chart>
+          <svg viewBox="0 0 740 390" role="img" aria-label="Repair time per disruption">
+            <g class="c-grid"><line x1="230" x2="230" y1="20" y2="360"/><line x1="326" x2="326" y1="20" y2="360"/><line x1="422" x2="422" y1="20" y2="360"/><line x1="518" x2="518" y1="20" y2="360"/><line x1="614" x2="614" y1="20" y2="360"/></g>
+            <line x1="614" x2="614" y1="14" y2="360" class="c-ref"/>
+            <g class="c-axis" text-anchor="middle"><text x="230" y="378">0</text><text x="326" y="378">7.5</text><text x="422" y="378">15</text><text x="518" y="378">22.5</text><text x="614" y="378">30 s</text></g>
+            <g class="c-lab" text-anchor="end">
+            <text x="220" y="42"><tspan lang="en">LKT-04 down 6 h</tspan><tspan lang="zh">LKT-04 停机 6 小时</tspan></text>
+            <text x="220" y="76"><tspan lang="en">Rush order 80 in 30 h</tspan><tspan lang="zh">插单 80 件 / 30 小时</tspan></text>
+            <text x="220" y="110"><tspan lang="en">Quality hold 8 h</tspan><tspan lang="zh">质量冻结 8 小时</tspan></text>
+            <text x="220" y="144"><tspan lang="en">CNC-02 30% slower</tspan><tspan lang="zh">CNC-02 降速 30%</tspan></text>
+            <text x="220" y="178"><tspan lang="en">Castings late 24 h</tspan><tspan lang="zh">铸件延迟 24 小时</tspan></text>
+            <text x="220" y="212"><tspan lang="en">CNC-02 down 4 h</tspan><tspan lang="zh">CNC-02 停机 4 小时</tspan></text>
+            <text x="220" y="246"><tspan lang="en">CNC-01 maintenance 3 h</tspan><tspan lang="zh">CNC-01 保养 3 小时</tspan></text>
+            <text x="220" y="280"><tspan lang="en">Order cancelled</tspan><tspan lang="zh">订单取消</tspan></text>
+            <text x="220" y="314"><tspan lang="en">Due 48 h earlier</tspan><tspan lang="zh">交期提前 48 小时</tspan></text>
+            <text x="220" y="348"><tspan lang="en">Quantity 60</tspan><tspan lang="zh">数量改为 60</tspan></text>
+            </g>
+            <rect x="230" y="28" width="327.7" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="62" width="257.3" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="96" width="9.0" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="130" width="385.3" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="164" width="9.0" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="198" width="385.3" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="232" width="98.6" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="266" width="7.7" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="300" width="11.5" height="20" rx="3" class="c-s1"/>
+            <rect x="230" y="334" width="10.2" height="20" rx="3" class="c-s1"/>
+            <g class="c-val">
+            <text x="566" y="43">25.6 s · 35/36</text>
+            <text x="495" y="77">20.1 s · 33/37</text>
+            <text x="247" y="111">0.7 s · 35/36</text>
+            <text x="622" y="145">30.1 s · 35/36</text>
+            <text x="247" y="179">0.7 s · 35/36</text>
+            <text x="622" y="213">30.1 s · 35/36</text>
+            <text x="337" y="247">7.7 s · 35/36</text>
+            <text x="246" y="281">0.6 s · 34/35</text>
+            <text x="250" y="315">0.9 s · 33/36</text>
+            <text x="248" y="349">0.8 s · 35/36</text>
+            </g>
+            <rect x="0" y="24" width="740" height="28" class="c-hit" data-tip="LKT-04 down 6 h · 25.6 s, tardiness optimal · on time 35 → 35 · weighted lateness 3.3 → 3.3 h · 19 ops moved · 0 violations"/>
+            <rect x="0" y="58" width="740" height="28" class="c-hit" data-tip="Rush order 80 in 30 h · 20.1 s, tardiness optimal · on time 35 → 33 · weighted lateness 3.3 → 10.0 h · 51 ops moved · 0 violations"/>
+            <rect x="0" y="92" width="740" height="28" class="c-hit" data-tip="Quality hold 8 h · 0.7 s, tardiness optimal · on time 35 → 35 · weighted lateness 3.3 → 3.3 h · 4 ops moved · 0 violations"/>
+            <rect x="0" y="126" width="740" height="28" class="c-hit" data-tip="CNC-02 30% slower · 30.1 s, tardiness optimal · on time 35 → 35 · weighted lateness 3.3 → 3.3 h · 62 ops moved · 0 violations"/>
+            <rect x="0" y="160" width="740" height="28" class="c-hit" data-tip="Castings late 24 h · 0.7 s, tardiness optimal · on time 35 → 35 · weighted lateness 3.3 → 3.3 h · 0 ops moved · 0 violations"/>
+            <rect x="0" y="194" width="740" height="28" class="c-hit" data-tip="CNC-02 down 4 h · 30.1 s, tardiness optimal · on time 35 → 35 · weighted lateness 3.3 → 3.3 h · 67 ops moved · 0 violations"/>
+            <rect x="0" y="228" width="740" height="28" class="c-hit" data-tip="CNC-01 maintenance 3 h · 7.7 s, tardiness optimal · on time 35 → 35 · weighted lateness 3.3 → 3.3 h · 5 ops moved · 0 violations"/>
+            <rect x="0" y="262" width="740" height="28" class="c-hit" data-tip="Order cancelled · 0.6 s, tardiness optimal · on time 35 → 34 · weighted lateness 3.3 → 3.3 h · 0 ops moved · 0 violations"/>
+            <rect x="0" y="296" width="740" height="28" class="c-hit" data-tip="Due 48 h earlier · 0.9 s, tardiness optimal · on time 35 → 33 · weighted lateness 3.3 → 40.9 h · 30 ops moved · 0 violations"/>
+            <rect x="0" y="330" width="740" height="28" class="c-hit" data-tip="Quantity 60 · 0.8 s, tardiness optimal · on time 35 → 35 · weighted lateness 3.3 → 3.3 h · 0 ops moved · 0 violations"/>
+            </svg>
+        </div>
+        <figcaption><b><span lang="en">Figure 5. Time to a repair proposal.</span><span lang="zh">图 5. 生成修复方案的耗时。</span></b> <span lang="en">Ten events, each repaired from the same approved plan (35 of 36 on time). Label: solve time · orders on time after the repair. Every repair proved the on-time optimum within its neighbourhood and passed the independent check; those at 30 s used the remaining time to reduce moved operations. Only the rush order and the due date moved two days earlier cost on-time orders, and neither can be fully absorbed. CP-SAT runs 8 threads, so repeated runs vary.</span><span lang="zh">十个事件均从同一已批准排程（36 个订单中 35 个准时）出发修复。标注：求解时间 · 修复后准时订单数。所有修复均在邻域内证明了准时交付级最优并通过独立校验；耗时 30 秒的案例用剩余时间减少被移动的工序。只有插单和交期提前两天会减少准时订单，这两者都无法被完全消化。CP-SAT 使用 8 线程，重复运行结果会有差异。</span></figcaption>
+      </figure>
+
+      <figure>
+        <div class="fig chart chart-box" data-chart>
+          <div class="legend">
+            <span><i style="background:var(--good)"></i><span lang="en">applied by itself (all right)</span><span lang="zh">自动应用（全部正确）</span></span>
+            <span><i style="background:var(--bar)"></i><span lang="en">right, planner confirms</span><span lang="zh">正确，计划员确认</span></span>
+            <span><i style="background:var(--bad)"></i><span lang="en">wrong, planner catches</span><span lang="zh">错误，计划员拦截</span></span>
+            <span><span lang="en">left bar reading 1, right bar reading 2 · ⚑ guard flagged</span><span lang="zh">左柱为第一次识别，右柱为第二次 · ⚑ 防护标记</span></span>
+          </div>
+          <svg viewBox="0 0 720 270" role="img" aria-label="Laya two readings on the sample inbox">
+            <g class="c-grid"><line x1="50" x2="710" y1="200" y2="200"/><line x1="50" x2="710" y1="160" y2="160"/><line x1="50" x2="710" y1="80" y2="80"/><line x1="50" x2="710" y1="40" y2="40"/></g>
+            <line x1="50" x2="710" y1="120" y2="120" class="c-ref"/>
+            <g class="c-axis" text-anchor="end"><text x="44" y="204">0</text><text x="44" y="164">.25</text><text x="44" y="124">.50</text><text x="44" y="84">.75</text><text x="44" y="44">1.0</text></g>
+            <text x="708" y="24" class="c-axis" text-anchor="end"><tspan lang="en">dashed line: gate 0.50</tspan><tspan lang="zh">虚线：阈值 0.50</tspan></text>
+            <g class="c-lab" text-anchor="middle" style="font-size:10.5px">
+            <text x="66.5" y="218">m1</text><text x="66.5" y="234">✗</text>
+            <text x="99.5" y="218">m2</text><text x="99.5" y="234">✗</text>
+            <text x="132.5" y="218">m3</text><text x="132.5" y="234">✓</text>
+            <text x="165.5" y="218">m4</text><text x="165.5" y="234">⚑</text>
+            <text x="198.5" y="218">m5</text><text x="198.5" y="234">✓</text>
+            <text x="231.5" y="218">m6</text><text x="231.5" y="234">✓</text>
+            <text x="264.5" y="218">m7</text><text x="264.5" y="234">✗</text>
+            <text x="297.5" y="218">m8</text><text x="297.5" y="234">⚑</text>
+            <text x="330.5" y="218">m9</text><text x="330.5" y="234">✓</text>
+            <text x="363.5" y="218">m10</text><text x="363.5" y="234">✓</text>
+            <text x="396.5" y="218">m11</text><text x="396.5" y="234">⚑</text>
+            <text x="429.5" y="218">m12</text><text x="429.5" y="234">✓</text>
+            <text x="462.5" y="218">m13</text><text x="462.5" y="234">✓</text>
+            <text x="495.5" y="218">m14</text><text x="495.5" y="234">✗</text>
+            <text x="528.5" y="218">m15</text><text x="528.5" y="234">✗</text>
+            <text x="561.5" y="218">m16</text><text x="561.5" y="234">✓</text>
+            <text x="594.5" y="218">m17</text><text x="594.5" y="234">✓</text>
+            <text x="627.5" y="218">m18</text><text x="627.5" y="234">✓</text>
+            <text x="660.5" y="218">x1</text><text x="660.5" y="234">⚑</text>
+            <text x="693.5" y="218">x2</text><text x="693.5" y="234">⚑</text>
+            </g>
+            <rect x="55.5" y="43.7" width="10" height="156.3" rx="2" class="c-bad" fill-opacity="1"/>
+            <rect x="67.5" y="110.1" width="10" height="89.9" rx="2" class="c-bad" fill-opacity="0.55"/>
+            <rect x="88.5" y="113.0" width="10" height="87.0" rx="2" class="c-bad" fill-opacity="1"/>
+            <rect x="100.5" y="66.7" width="10" height="133.3" rx="2" class="c-bad" fill-opacity="0.55"/>
+            <rect x="121.5" y="93.6" width="10" height="106.4" rx="2" class="c-s1" fill-opacity="1"/>
+            <rect x="133.5" y="162.7" width="10" height="37.3" rx="2" class="c-s1" fill-opacity="0.55"/>
+            <rect x="154.5" y="42.6" width="10" height="157.4" rx="2" class="c-s1" fill-opacity="1"/>
+            <rect x="166.5" y="84.0" width="10" height="116.0" rx="2" class="c-s1" fill-opacity="0.55"/>
+            <rect x="187.5" y="51.0" width="10" height="149.0" rx="2" class="c-good" fill-opacity="1"/>
+            <rect x="199.5" y="46.7" width="10" height="153.3" rx="2" class="c-good" fill-opacity="0.55"/>
+            <rect x="220.5" y="84.6" width="10" height="115.4" rx="2" class="c-s1" fill-opacity="1"/>
+            <rect x="232.5" y="152.0" width="10" height="48.0" rx="2" class="c-s1" fill-opacity="0.55"/>
+            <rect x="253.5" y="136.6" width="10" height="63.4" rx="2" class="c-bad" fill-opacity="1"/>
+            <rect x="265.5" y="191.7" width="10" height="8.3" rx="2" class="c-bad" fill-opacity="0.55"/>
+            <rect x="286.5" y="158.4" width="10" height="41.6" rx="2" class="c-bad" fill-opacity="1"/>
+            <rect x="298.5" y="161.8" width="10" height="38.2" rx="2" class="c-bad" fill-opacity="0.55"/>
+            <rect x="319.5" y="40.0" width="10" height="160.0" rx="2" class="c-good" fill-opacity="1"/>
+            <rect x="331.5" y="74.9" width="10" height="125.1" rx="2" class="c-good" fill-opacity="0.55"/>
+            <rect x="352.5" y="41.0" width="10" height="159.0" rx="2" class="c-s1" fill-opacity="1"/>
+            <rect x="364.5" y="181.3" width="10" height="18.7" rx="2" class="c-s1" fill-opacity="0.55"/>
+            <rect x="385.5" y="115.5" width="10" height="84.5" rx="2" class="c-s1" fill-opacity="1"/>
+            <rect x="397.5" y="148.2" width="10" height="51.8" rx="2" class="c-s1" fill-opacity="0.55"/>
+            <rect x="418.5" y="40.0" width="10" height="160.0" rx="2" class="c-good" fill-opacity="1"/>
+            <rect x="430.5" y="69.0" width="10" height="131.0" rx="2" class="c-good" fill-opacity="0.55"/>
+            <rect x="451.5" y="40.0" width="10" height="160.0" rx="2" class="c-good" fill-opacity="1"/>
+            <rect x="463.5" y="40.5" width="10" height="159.5" rx="2" class="c-good" fill-opacity="0.55"/>
+            <rect x="484.5" y="179.2" width="10" height="20.8" rx="2" class="c-bad" fill-opacity="1"/>
+            <rect x="496.5" y="177.8" width="10" height="22.2" rx="2" class="c-bad" fill-opacity="0.55"/>
+            <rect x="517.5" y="40.2" width="10" height="159.8" rx="2" class="c-bad" fill-opacity="1"/>
+            <rect x="529.5" y="82.6" width="10" height="117.4" rx="2" class="c-bad" fill-opacity="0.55"/>
+            <rect x="550.5" y="40.0" width="10" height="160.0" rx="2" class="c-good" fill-opacity="1"/>
+            <rect x="562.5" y="51.7" width="10" height="148.3" rx="2" class="c-good" fill-opacity="0.55"/>
+            <rect x="583.5" y="40.0" width="10" height="160.0" rx="2" class="c-good" fill-opacity="1"/>
+            <rect x="595.5" y="99.4" width="10" height="100.6" rx="2" class="c-good" fill-opacity="0.55"/>
+            <rect x="616.5" y="108.3" width="10" height="91.7" rx="2" class="c-s1" fill-opacity="1"/>
+            <rect x="628.5" y="167.8" width="10" height="32.2" rx="2" class="c-s1" fill-opacity="0.55"/>
+            <rect x="649.5" y="40.0" width="10" height="160.0" rx="2" class="c-s1" fill-opacity="1"/>
+            <rect x="661.5" y="185.9" width="10" height="14.1" rx="2" class="c-s1" fill-opacity="0.55"/>
+            <rect x="682.5" y="130.2" width="10" height="69.8" rx="2" class="c-s1" fill-opacity="1"/>
+            <rect x="694.5" y="134.9" width="10" height="65.1" rx="2" class="c-s1" fill-opacity="0.55"/>
+            <rect x="50.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m1 (en) expected machine_down · reading 1 maintenance 0.98 · reading 2 maintenance 0.56 · planner: missing"/>
+            <rect x="83.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m2 (zh) expected machine_degrading · reading 1 maintenance 0.54 · reading 2 maintenance 0.83 · planner: missing"/>
+            <rect x="116.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m3 (de) expected material_late · reading 1 material_late 0.67 · reading 2 quality_hold 0.23 · planner: disagree"/>
+            <rect x="149.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m4 (en) expected rush_order · reading 1 rush_order 0.98 · reading 2 rush_order 0.72 · guard flagged · planner: flagged"/>
+            <rect x="182.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m5 (zh) expected quality_hold · reading 1 quality_hold 0.93 · reading 2 quality_hold 0.96 · applied by itself"/>
+            <rect x="215.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m6 (de) expected no_action · reading 1 no_action 0.72 · reading 2 machine_down 0.30 · planner: disagree"/>
+            <rect x="248.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m7 (en) expected no_action · reading 1 order_cancel 0.40 · reading 2 quality_hold 0.05 · planner: disagree, below_gate, missing"/>
+            <rect x="281.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m8 (zh) expected no_action · reading 1 quality_hold 0.26 · reading 2 quality_hold 0.24 · guard flagged · planner: flagged, below_gate, missing"/>
+            <rect x="314.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m9 (en) expected maintenance · reading 1 maintenance 1.00 · reading 2 maintenance 0.78 · applied by itself"/>
+            <rect x="347.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m10 (zh) expected maintenance · reading 1 maintenance 0.99 · reading 2 quality_hold 0.12 · planner: disagree"/>
+            <rect x="380.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m11 (de) expected maintenance · reading 1 maintenance 0.53 · reading 2 maintenance 0.32 · guard flagged · planner: flagged, below_gate"/>
+            <rect x="413.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m12 (en) expected order_cancel · reading 1 order_cancel 1.00 · reading 2 order_cancel 0.82 · applied by itself"/>
+            <rect x="446.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m13 (zh) expected order_cancel · reading 1 order_cancel 1.00 · reading 2 order_cancel 1.00 · applied by itself"/>
+            <rect x="479.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m14 (en) expected due_change · reading 1 order_cancel 0.13 · reading 2 quality_hold 0.14 · planner: disagree, below_gate"/>
+            <rect x="512.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m15 (zh) expected due_change · reading 1 material_late 1.00 · reading 2 due_change 0.73 · planner: disagree"/>
+            <rect x="545.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m16 (de) expected quantity_change · reading 1 quantity_change 1.00 · reading 2 quantity_change 0.93 · applied by itself"/>
+            <rect x="578.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m17 (en) expected quantity_change · reading 1 quantity_change 1.00 · reading 2 quantity_change 0.63 · applied by itself"/>
+            <rect x="611.0" y="30" width="33.0" height="210" class="c-hit" data-tip="m18 (en) expected machine_down · reading 1 machine_down 0.57 · reading 2 machine_down 0.20 · planner: below_gate, missing"/>
+            <rect x="644.0" y="30" width="33.0" height="210" class="c-hit" data-tip="x1 (en) expected flagged · reading 1 order_cancel 1.00 · reading 2 quality_hold 0.09 · guard flagged · planner: flagged, disagree, missing"/>
+            <rect x="677.0" y="30" width="33.0" height="210" class="c-hit" data-tip="x2 (en) expected flagged · reading 1 no_action 0.44 · reading 2 no_action 0.41 · guard flagged · planner: flagged, below_gate"/>
+            </svg>
+        </div>
+        <figcaption><b><span lang="en">Figure 6. Laya on the disruption inbox.</span><span lang="zh">图 6. Laya 识别异常收件箱。</span></b> <span lang="en">18 messages in English, Chinese and German plus 2 injections. 12 of 18 read right and both injections flagged. 6 applied by themselves, all correct: <b>no confident errors</b>, against 3 and 2 for either reading alone at the same gate. The guard also flagged 3 genuine messages; they go to the planner with the reading prefilled. 0.6–3.9 s per message on CPU for the four questions (median 1.8 s), plus the guard.</span><span lang="zh">英文、中文、德文 18 条消息及 2 条注入攻击。18 条中 12 条识别正确，2 条注入均被标记。6 条自动应用且全部正确：<b>没有高置信度错误</b>；在相同阈值下，单独使用任一识别分别会产生 3 条和 2 条。防护模型还误标了 3 条正常消息，它们带着预填结果转交计划员。CPU 上四个问题每条 0.6–3.9 秒（中位 1.8 秒），另加防护。</span></figcaption>
+      </figure>
+
+      <div class="tbl">
+        <table>
+          <thead><tr><th><span lang="en">Held-out test</span><span lang="zh">保留测试集</span></th><th><span lang="en">Read by</span><span lang="zh">识别方</span></th><th><span lang="en">Result</span><span lang="zh">结果</span></th></tr></thead>
+          <tbody>
+            <tr><td><span lang="en">12 rejection comments</span><span lang="zh">12 条驳回意见</span></td><td>Laya</td><td><span lang="en">9 right; 8 above the gate, 2 of them wrong: the next step is only suggested</span><span lang="zh">9 条正确；8 条高于阈值，其中 2 条错误：下一步仅作建议</span></td></tr>
+            <tr><td><span lang="en">12 shift notes</span><span lang="zh">12 条交接班记录</span></td><td>Laya</td><td><span lang="en">5 flagged, none healthy: 4 of 4 breakdowns, 1 of 4 early warnings</span><span lang="zh">标记 5 条，无误报：故障 4/4，早期征兆 1/4</span></td></tr>
+            <tr><td><span lang="en">20 messages: sure or not, customer consequence</span><span lang="zh">20 条消息：是否确定、客户影响</span></td><td><span lang="en">Rules</span><span lang="zh">规则</span></td><td><span lang="en">20 of 20 and 19 of 20</span><span lang="zh">20/20 与 19/20</span></td></tr>
+            <tr><td><span lang="en">Re-run with only LKT-04 free vs. normal repair</span><span lang="zh">只放开 LKT-04 重新求解 vs 常规修复</span></td><td>CP-SAT</td><td><span lang="en">Same on-time result, 1.2 s instead of 18 s, 21 vs 18 operations moved</span><span lang="zh">准时结果相同，1.2 秒对 18 秒，移动工序 21 对 18</span></td></tr>
+            <tr><td><span lang="en">50 messages, after fine-tuning the multilingual checkpoint on 41 others (demonstration)</span><span lang="zh">50 条消息，多语言检查点在另外 41 条上微调后（演示）</span></td><td>Laya + <code>laya_train</code></td><td><span lang="en">Accuracy 63.0% → 77.8%, calibration error 0.224 → 0.082, confident but wrong 14 → 3; too little data to deploy</span><span lang="zh">准确率 63.0% → 77.8%，校准误差 0.224 → 0.082，高置信度错误 14 → 3；数据太少，不可部署</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 14 risks -->
+    <section id="risks">
+      <h2><span class="n">14</span><span lang="en">Open decisions and risks</span><span lang="zh">待决事项与风险</span></h2>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th><span lang="en">Item</span><span lang="zh">事项</span></th><th><span lang="en">Why it matters</span><span lang="zh">影响</span></th><th><span lang="en">Proposal</span><span lang="zh">建议</span></th></tr></thead>
+          <tbody>
+            <tr><td><span lang="en">SAP release and interface</span><span lang="zh">SAP 版本与接口</span></td><td><span lang="en">Decides OData vs IDoc, fields and authorisations</span><span lang="zh">决定使用 OData 还是 IDoc、字段与权限</span></td><td><span lang="en">Confirm with the SAP team; OData on S/4HANA preferred</span><span lang="zh">与 SAP 团队确认；S/4HANA 优先 OData</span></td></tr>
+            <tr><td><span lang="en">Custom MES API</span><span lang="zh">定制 MES 接口</span></td><td><span lang="en">Dispatch and confirmations need an agreed contract</span><span lang="zh">派工与报工需要约定接口规范</span></td><td><span lang="en">Adopt the demo's dispatch contract as the starting spec</span><span lang="zh">以演示中的派工接口为初始规范</span></td></tr>
+            <tr><td><span lang="en">Setup matrix data</span><span lang="zh">换型矩阵数据</span></td><td><span lang="en">Not in SAP; setups drive sequencing</span><span lang="zh">SAP 中没有；换型直接影响排序</span></td><td><span lang="en">Start from product families and average times; refine from MES actuals</span><span lang="zh">先按产品族与平均时间建立；再用 MES 实绩修正</span></td></tr>
+            <tr><td><span lang="en">Standard times accuracy</span><span lang="zh">标准工时准确性</span></td><td><span lang="en">A schedule is only as good as its durations</span><span lang="zh">排程质量取决于工时准确性</span></td><td><span lang="en">Compare SAP standards with MES actuals monthly</span><span lang="zh">每月对比 SAP 标准工时与 MES 实绩</span></td></tr>
+            <tr><td><span lang="en">Planner adoption</span><span lang="zh">计划员接受度</span></td><td><span lang="en">An unexplained schedule gets overridden</span><span lang="zh">无法解释的排程会被人工推翻</span></td><td><span lang="en">Show why each order is late; allow pinning operations</span><span lang="zh">说明每个订单延误的原因；允许锁定工序</span></td></tr>
+            <tr><td><span lang="en">Run-to-run variation</span><span lang="zh">求解结果波动</span></td><td><span lang="en">Multi-threaded CP-SAT can stop at different solutions within the same limit</span><span lang="zh">多线程 CP-SAT 在相同时限内可能停在不同的解</span></td><td><span lang="en">Always show the proven status; the planner can re-run or run a full plan</span><span lang="zh">始终显示是否已证明最优；计划员可重跑或执行全量排程</span></td></tr>
+            <tr><td><span lang="en">Problem size at full plant</span><span lang="zh">全厂规模的求解难度</span></td><td><span lang="en">Thousands of operations may not solve optimally in time</span><span lang="zh">数千道工序可能无法在限时内求得最优</span></td><td><span lang="en">Time limits, warm starts, decomposition by line or bottleneck</span><span lang="zh">设置时间上限、热启动、按产线或瓶颈分解</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <footer><span lang="en">Companion to the Smart Factory Edge Platform design. Solver: Google OR-Tools CP-SAT. Text classification: Laya.</span><span lang="zh">本文档是《智能工厂边缘平台设计》的配套文档。求解器：Google OR-Tools CP-SAT。文本分类：Laya。</span></footer>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var root = document.documentElement;
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+  function setLang(l) {
+    root.setAttribute("data-lang", l);
+    root.setAttribute("lang", l === "zh" ? "zh-CN" : "en");
+    document.getElementById("lang-en").setAttribute("aria-pressed", String(l === "en"));
+    document.getElementById("lang-zh").setAttribute("aria-pressed", String(l === "zh"));
+    store("aps-lang", l);
+  }
+  var initial = location.hash === "#zh" ? "zh" : (store("aps-lang") || ((navigator.language || "").toLowerCase().indexOf("zh") === 0 ? "zh" : "en"));
+  setLang(initial);
+  document.getElementById("lang-en").addEventListener("click", function () { setLang("en"); });
+  document.getElementById("lang-zh").addEventListener("click", function () { setLang("zh"); });
+
+  var t = store("aps-theme"); if (t) root.setAttribute("data-theme", t);
+  document.getElementById("theme").addEventListener("click", function () {
+    var cur = root.getAttribute("data-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    var nx = cur === "dark" ? "light" : "dark"; root.setAttribute("data-theme", nx); store("aps-theme", nx);
+  });
+
+  document.querySelectorAll("[data-chart]").forEach(function (box) {
+    var tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; box.appendChild(tip);
+    box.querySelectorAll("[data-tip]").forEach(function (el) {
+      el.setAttribute("tabindex", "0");
+      function show(x, y) { tip.textContent = el.getAttribute("data-tip"); tip.hidden = false;
+        var left = x + 14; if (left + tip.offsetWidth > box.clientWidth - 8) left = x - tip.offsetWidth - 14;
+        tip.style.left = Math.max(8, left) + box.scrollLeft + "px"; tip.style.top = Math.max(8, y - 10) + "px"; }
+      el.addEventListener("pointermove", function (ev) { var r = box.getBoundingClientRect(); show(ev.clientX - r.left, ev.clientY - r.top); });
+      el.addEventListener("pointerleave", function () { tip.hidden = true; });
+      el.addEventListener("focus", function () { var r = box.getBoundingClientRect(), b = el.getBoundingClientRect(); show(b.left - r.left + b.width / 2, b.top - r.top + 20); });
+      el.addEventListener("blur", function () { tip.hidden = true; });
+    });
+  });
+  if (matchMedia("(max-width: 980px)").matches) document.getElementById("tocd").removeAttribute("open");
+  var links = Array.prototype.slice.call(document.querySelectorAll("#toc a")), byId = {};
+  links.forEach(function (a) { byId[a.getAttribute("href").slice(1)] = a; });
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { links.forEach(function (a) { a.classList.remove("on"); }); var a = byId[e.target.id]; if (a) a.classList.add("on"); } });
+    }, { rootMargin: "-20% 0px -70% 0px" });
+    document.querySelectorAll("main section").forEach(function (s) { io.observe(s); });
+  }
+})();
+</script>
+
+</body>
+</html>

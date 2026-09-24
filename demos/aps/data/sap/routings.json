@@ -1,0 +1,124 @@
+{
+ "value": [
+  {
+   "Material": "HSG-7731",
+   "Description": "Pump housing",
+   "operations": [
+    {
+     "Operation": "0010",
+     "WorkCenter": "WC-CNC",
+     "StdMinPerUnit": 2.0,
+     "SetupFamily": "HSG-A"
+    },
+    {
+     "Operation": "0020",
+     "WorkCenter": "WC-CMM",
+     "StdMinPerUnit": 0.5,
+     "SetupFamily": "HSG"
+    },
+    {
+     "Operation": "0030",
+     "WorkCenter": "WC-ASM",
+     "StdMinPerUnit": 1.2,
+     "SetupFamily": "HSG-7731"
+    },
+    {
+     "Operation": "0040",
+     "WorkCenter": "WC-LKT",
+     "StdMinPerUnit": 1.1,
+     "SetupFamily": "HSG"
+    },
+    {
+     "Operation": "0050",
+     "WorkCenter": "WC-AOI",
+     "StdMinPerUnit": 0.3,
+     "SetupFamily": "ALL"
+    }
+   ]
+  },
+  {
+   "Material": "HSG-7735",
+   "Description": "Pump housing, long",
+   "operations": [
+    {
+     "Operation": "0010",
+     "WorkCenter": "WC-CNC",
+     "StdMinPerUnit": 2.4,
+     "SetupFamily": "HSG-B"
+    },
+    {
+     "Operation": "0020",
+     "WorkCenter": "WC-CMM",
+     "StdMinPerUnit": 0.6,
+     "SetupFamily": "HSG"
+    },
+    {
+     "Operation": "0030",
+     "WorkCenter": "WC-ASM",
+     "StdMinPerUnit": 1.4,
+     "SetupFamily": "HSG-7735"
+    },
+    {
+     "Operation": "0040",
+     "WorkCenter": "WC-LKT",
+     "StdMinPerUnit": 1.1,
+     "SetupFamily": "HSG"
+    },
+    {
+     "Operation": "0050",
+     "WorkCenter": "WC-AOI",
+     "StdMinPerUnit": 0.3,
+     "SetupFamily": "ALL"
+    }
+   ]
+  },
+  {
+   "Material": "VLV-2200",
+   "Description": "Valve body",
+   "operations": [
+    {
+     "Operation": "0010",
+     "WorkCenter": "WC-CNC",
+     "StdMinPerUnit": 1.6,
+     "SetupFamily": "VLV"
+    },
+    {
+     "Operation": "0020",
+     "WorkCenter": "WC-CMM",
+     "StdMinPerUnit": 0.4,
+     "SetupFamily": "VLV"
+    },
+    {
+     "Operation": "0030",
+     "WorkCenter": "WC-LKT",
+     "StdMinPerUnit": 1.25,
+     "SetupFamily": "VLV"
+    },
+    {
+     "Operation": "0040",
+     "WorkCenter": "WC-AOI",
+     "StdMinPerUnit": 0.3,
+     "SetupFamily": "ALL"
+    }
+   ]
+  },
+  {
+   "Material": "CVR-1100",
+   "Description": "Cover",
+   "operations": [
+    {
+     "Operation": "0010",
+     "WorkCenter": "WC-CNC",
+     "StdMinPerUnit": 0.9,
+     "SetupFamily": "CVR"
+    },
+    {
+     "Operation": "0020",
+     "WorkCenter": "WC-AOI",
+     "StdMinPerUnit": 0.2,
+     "SetupFamily": "ALL"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,1381 @@
+{
+ "when": "2026-09-23 18:24",
+ "machine": "x86_64",
+ "processor": "i386",
+ "cpus": 12,
+ "limits_s": {
+  "full": 60.0,
+  "repair": 30.0
+ },
+ "full_plan": {
+  "cp_sat": {
+   "otd": 0.9722,
+   "on_time": 35,
+   "late_orders": 1,
+   "weighted_tardiness_h": 3.3,
+   "setup_h": 8.5
+  },
+  "edd": {
+   "otd": 0.7778,
+   "on_time": 28,
+   "late_orders": 8,
+   "weighted_tardiness_h": 62.4,
+   "setup_h": 28.9
+  },
+  "seconds": 60.2,
+  "status": [
+   "OPTIMAL",
+   "FEASIBLE"
+  ],
+  "orders": 36,
+  "operations": 150
+ },
+ "repairs": [
+  {
+   "event": "machine_down",
+   "detail": {
+    "machine": "LKT-04",
+    "hours": 6
+   },
+   "seconds": 18.0,
+   "status": [
+    "OPTIMAL",
+    "OPTIMAL"
+   ],
+   "before": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 8.5
+   },
+   "after": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 9.5
+   },
+   "moved": 18,
+   "affected": 53,
+   "violations": 0
+  },
+  {
+   "event": "rush_order",
+   "detail": {
+    "material": "HSG-7731",
+    "quantity": 80,
+    "due_hours": 30
+   },
+   "seconds": 20.2,
+   "status": [
+    "OPTIMAL",
+    "OPTIMAL"
+   ],
+   "before": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 8.5
+   },
+   "after": {
+    "otd": 0.8919,
+    "on_time": 33,
+    "late_orders": 4,
+    "weighted_tardiness_h": 10.0,
+    "setup_h": 11.6
+   },
+   "moved": 51,
+   "affected": 31,
+   "violations": 0
+  },
+  {
+   "event": "quality_hold",
+   "detail": {
+    "order": "10004405",
+    "hours": 8
+   },
+   "seconds": 0.8,
+   "status": [
+    "OPTIMAL",
+    "OPTIMAL"
+   ],
+   "before": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 8.5
+   },
+   "after": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 8.5
+   },
+   "moved": 4,
+   "affected": 6,
+   "violations": 0
+  },
+  {
+   "event": "machine_degrading",
+   "detail": {
+    "machine": "CNC-02",
+    "percent": 30
+   },
+   "seconds": 30.1,
+   "status": [
+    "OPTIMAL",
+    "FEASIBLE"
+   ],
+   "before": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 8.5
+   },
+   "after": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 18.6
+   },
+   "moved": 62,
+   "affected": 37,
+   "violations": 0
+  },
+  {
+   "event": "material_late",
+   "detail": {
+    "order": "10004430",
+    "hours": 24
+   },
+   "seconds": 1.1,
+   "status": [
+    "OPTIMAL",
+    "OPTIMAL"
+   ],
+   "before": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 8.5
+   },
+   "after": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 8.5
+   },
+   "moved": 0,
+   "affected": 4,
+   "violations": 0
+  },
+  {
+   "event": "machine_down",
+   "detail": {
+    "machine": "CNC-02",
+    "hours": 4
+   },
+   "seconds": 30.1,
+   "status": [
+    "OPTIMAL",
+    "UNKNOWN"
+   ],
+   "before": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 8.5
+   },
+   "after": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 17.8
+   },
+   "moved": 80,
+   "affected": 52,
+   "violations": 0
+  },
+  {
+   "event": "maintenance",
+   "detail": {
+    "machine": "CNC-01",
+    "start_hours": 20,
+    "hours": 3
+   },
+   "seconds": 9.7,
+   "status": [
+    "OPTIMAL",
+    "OPTIMAL"
+   ],
+   "before": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 8.5
+   },
+   "after": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 8.5
+   },
+   "moved": 5,
+   "affected": 37,
+   "violations": 0
+  },
+  {
+   "event": "order_cancel",
+   "detail": {
+    "order": "10004409"
+   },
+   "seconds": 0.5,
+   "status": [
+    "OPTIMAL",
+    "OPTIMAL"
+   ],
+   "before": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 8.5
+   },
+   "after": {
+    "otd": 0.9714,
+    "on_time": 34,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 8.5
+   },
+   "moved": 0,
+   "affected": 2,
+   "violations": 0
+  },
+  {
+   "event": "due_change",
+   "detail": {
+    "order": "10004404",
+    "shift_hours": -48
+   },
+   "seconds": 0.7,
+   "status": [
+    "OPTIMAL",
+    "OPTIMAL"
+   ],
+   "before": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 8.5
+   },
+   "after": {
+    "otd": 0.9167,
+    "on_time": 33,
+    "late_orders": 3,
+    "weighted_tardiness_h": 40.9,
+    "setup_h": 8.5
+   },
+   "moved": 30,
+   "affected": 7,
+   "violations": 0
+  },
+  {
+   "event": "quantity_change",
+   "detail": {
+    "order": "10004413",
+    "quantity": 60
+   },
+   "seconds": 0.6,
+   "status": [
+    "OPTIMAL",
+    "OPTIMAL"
+   ],
+   "before": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 8.5
+   },
+   "after": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 8.5
+   },
+   "moved": 0,
+   "affected": 7,
+   "violations": 0
+  },
+  {
+   "event": "priority_change",
+   "detail": {
+    "order": "10004403",
+    "priority": 3
+   },
+   "seconds": 0.5,
+   "status": [
+    "OPTIMAL",
+    "OPTIMAL"
+   ],
+   "before": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 8.5
+   },
+   "after": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 5.0,
+    "setup_h": 8.5
+   },
+   "moved": 0,
+   "affected": 2,
+   "violations": 0
+  },
+  {
+   "event": "machine_down",
+   "detail": {
+    "machine": "LKT-04",
+    "hours": 6,
+    "narrow": true
+   },
+   "seconds": 1.2,
+   "status": [
+    "OPTIMAL",
+    "OPTIMAL"
+   ],
+   "before": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 8.5
+   },
+   "after": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 9.5
+   },
+   "moved": 21,
+   "affected": 29,
+   "violations": 0
+  },
+  {
+   "event": "machine_down",
+   "detail": {
+    "machine": "LKT-04",
+    "hours": 6,
+    "protect": [
+     "10004405"
+    ]
+   },
+   "seconds": 24.2,
+   "status": [
+    "OPTIMAL",
+    "OPTIMAL"
+   ],
+   "before": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 8.5
+   },
+   "after": {
+    "otd": 0.9722,
+    "on_time": 35,
+    "late_orders": 1,
+    "weighted_tardiness_h": 3.3,
+    "setup_h": 9.5
+   },
+   "moved": 18,
+   "affected": 53,
+   "violations": 0
+  }
+ ],
+ "inbox": {
+  "engine": "laya",
+  "rows": [
+   {
+    "id": "m1",
+    "lang": "en",
+    "expect": "machine_down",
+    "got": "maintenance",
+    "flagged": false,
+    "confidence": 0.977,
+    "second": "maintenance",
+    "second_confidence": 0.562,
+    "agree": true,
+    "guard": {
+     "jailbreak": 0.0,
+     "prompt_injection": 0.0
+    },
+    "urgency": "this_week",
+    "reasons": [
+     "missing"
+    ],
+    "event": {
+     "kind": "maintenance",
+     "machine": "LKT-04",
+     "start_hours": null,
+     "hours": 6.0
+    },
+    "model": "english",
+    "ms": 3869.1,
+    "auto": false,
+    "correct": false,
+    "single_1_wrong_confident": true,
+    "single_2_wrong_confident": true
+   },
+   {
+    "id": "m2",
+    "lang": "zh",
+    "expect": "machine_degrading",
+    "got": "maintenance",
+    "flagged": false,
+    "confidence": 0.544,
+    "second": "maintenance",
+    "second_confidence": 0.833,
+    "agree": true,
+    "guard": {
+     "jailbreak": 0.003,
+     "prompt_injection": 0.001
+    },
+    "urgency": "this_week",
+    "reasons": [
+     "missing"
+    ],
+    "event": {
+     "kind": "maintenance",
+     "machine": "CNC-02",
+     "start_hours": null,
+     "hours": null
+    },
+    "model": "multilingual",
+    "ms": 694.6,
+    "auto": false,
+    "correct": false,
+    "single_1_wrong_confident": true,
+    "single_2_wrong_confident": true
+   },
+   {
+    "id": "m3",
+    "lang": "de",
+    "expect": "material_late",
+    "got": "material_late",
+    "flagged": false,
+    "confidence": 0.665,
+    "second": "quality_hold",
+    "second_confidence": 0.233,
+    "agree": false,
+    "guard": {
+     "jailbreak": 0.001,
+     "prompt_injection": 0.095
+    },
+    "urgency": "this_week",
+    "reasons": [
+     "disagree"
+    ],
+    "event": {
+     "kind": "material_late",
+     "order": "10004430",
+     "hours": 24.0
+    },
+    "model": "english",
+    "ms": 1931.9,
+    "auto": false,
+    "correct": true,
+    "single_1_wrong_confident": false,
+    "single_2_wrong_confident": false
+   },
+   {
+    "id": "m4",
+    "lang": "en",
+    "expect": "rush_order",
+    "got": "rush_order",
+    "flagged": true,
+    "confidence": 0.984,
+    "second": "rush_order",
+    "second_confidence": 0.725,
+    "agree": true,
+    "guard": {
+     "jailbreak": 0.0,
+     "prompt_injection": 0.601
+    },
+    "urgency": "this_week",
+    "reasons": [
+     "flagged"
+    ],
+    "event": {
+     "kind": "rush_order",
+     "material": "HSG-7731",
+     "quantity": 80,
+     "due_hours": 30.0,
+     "priority": 2
+    },
+    "model": "english",
+    "ms": 1830.1,
+    "auto": false,
+    "correct": true,
+    "single_1_wrong_confident": false,
+    "single_2_wrong_confident": false
+   },
+   {
+    "id": "m5",
+    "lang": "zh",
+    "expect": "quality_hold",
+    "got": "quality_hold",
+    "flagged": false,
+    "confidence": 0.931,
+    "second": "quality_hold",
+    "second_confidence": 0.958,
+    "agree": true,
+    "guard": {
+     "jailbreak": 0.0,
+     "prompt_injection": 0.0
+    },
+    "urgency": "today",
+    "reasons": [],
+    "event": {
+     "kind": "quality_hold",
+     "order": "10004405",
+     "hours": 8.0
+    },
+    "model": "multilingual",
+    "ms": 737.9,
+    "auto": true,
+    "correct": true,
+    "single_1_wrong_confident": false,
+    "single_2_wrong_confident": false
+   },
+   {
+    "id": "m6",
+    "lang": "de",
+    "expect": "no_action",
+    "got": "no_action",
+    "flagged": false,
+    "confidence": 0.721,
+    "second": "machine_down",
+    "second_confidence": 0.3,
+    "agree": false,
+    "guard": {
+     "jailbreak": 0.034,
+     "prompt_injection": 0.008
+    },
+    "urgency": "info",
+    "reasons": [
+     "disagree"
+    ],
+    "event": null,
+    "model": "multilingual",
+    "ms": 745.8,
+    "auto": false,
+    "correct": true,
+    "single_1_wrong_confident": false,
+    "single_2_wrong_confident": false
+   },
+   {
+    "id": "m7",
+    "lang": "en",
+    "expect": "no_action",
+    "got": "order_cancel",
+    "flagged": false,
+    "confidence": 0.396,
+    "second": "quality_hold",
+    "second_confidence": 0.052,
+    "agree": false,
+    "guard": {
+     "jailbreak": 0.0,
+     "prompt_injection": 0.161
+    },
+    "urgency": "this_week",
+    "reasons": [
+     "disagree",
+     "below_gate",
+     "missing"
+    ],
+    "event": {
+     "kind": "order_cancel",
+     "order": null
+    },
+    "model": "english",
+    "ms": 1767.2,
+    "auto": false,
+    "correct": false,
+    "single_1_wrong_confident": false,
+    "single_2_wrong_confident": false
+   },
+   {
+    "id": "m8",
+    "lang": "zh",
+    "expect": "no_action",
+    "got": "quality_hold",
+    "flagged": true,
+    "confidence": 0.26,
+    "second": "quality_hold",
+    "second_confidence": 0.239,
+    "agree": true,
+    "guard": {
+     "jailbreak": 0.011,
+     "prompt_injection": 0.72
+    },
+    "urgency": "today",
+    "reasons": [
+     "flagged",
+     "below_gate",
+     "missing"
+    ],
+    "event": {
+     "kind": "quality_hold",
+     "order": null,
+     "hours": null
+    },
+    "model": "multilingual",
+    "ms": 658.5,
+    "auto": false,
+    "correct": false,
+    "single_1_wrong_confident": false,
+    "single_2_wrong_confident": false
+   },
+   {
+    "id": "m9",
+    "lang": "en",
+    "expect": "maintenance",
+    "got": "maintenance",
+    "flagged": false,
+    "confidence": 1.0,
+    "second": "maintenance",
+    "second_confidence": 0.782,
+    "agree": true,
+    "guard": {
+     "jailbreak": 0.0,
+     "prompt_injection": 0.341
+    },
+    "urgency": "this_week",
+    "reasons": [],
+    "event": {
+     "kind": "maintenance",
+     "machine": "CNC-01",
+     "start_hours": 53.0,
+     "hours": 3.0
+    },
+    "model": "english",
+    "ms": 1928.2,
+    "auto": true,
+    "correct": true,
+    "single_1_wrong_confident": false,
+    "single_2_wrong_confident": false
+   },
+   {
+    "id": "m10",
+    "lang": "zh",
+    "expect": "maintenance",
+    "got": "maintenance",
+    "flagged": false,
+    "confidence": 0.994,
+    "second": "quality_hold",
+    "second_confidence": 0.117,
+    "agree": false,
+    "guard": {
+     "jailbreak": 0.002,
+     "prompt_injection": 0.007
+    },
+    "urgency": "this_week",
+    "reasons": [
+     "disagree"
+    ],
+    "event": {
+     "kind": "maintenance",
+     "machine": "ASM-05",
+     "start_hours": 71.0,
+     "hours": 4.0
+    },
+    "model": "multilingual",
+    "ms": 666.0,
+    "auto": false,
+    "correct": true,
+    "single_1_wrong_confident": false,
+    "single_2_wrong_confident": false
+   },
+   {
+    "id": "m11",
+    "lang": "de",
+    "expect": "maintenance",
+    "got": "maintenance",
+    "flagged": true,
+    "confidence": 0.528,
+    "second": "maintenance",
+    "second_confidence": 0.324,
+    "agree": true,
+    "guard": {
+     "jailbreak": 1.0,
+     "prompt_injection": 0.828
+    },
+    "urgency": "this_week",
+    "reasons": [
+     "flagged",
+     "below_gate"
+    ],
+    "event": {
+     "kind": "maintenance",
+     "machine": "LKT-04",
+     "start_hours": 25.0,
+     "hours": 2.0
+    },
+    "model": "english",
+    "ms": 2089.2,
+    "auto": false,
+    "correct": true,
+    "single_1_wrong_confident": false,
+    "single_2_wrong_confident": false
+   },
+   {
+    "id": "m12",
+    "lang": "en",
+    "expect": "order_cancel",
+    "got": "order_cancel",
+    "flagged": false,
+    "confidence": 1.0,
+    "second": "order_cancel",
+    "second_confidence": 0.819,
+    "agree": true,
+    "guard": {
+     "jailbreak": 0.111,
+     "prompt_injection": 0.143
+    },
+    "urgency": "this_week",
+    "reasons": [],
+    "event": {
+     "kind": "order_cancel",
+     "order": "10004409"
+    },
+    "model": "english",
+    "ms": 2350.5,
+    "auto": true,
+    "correct": true,
+    "single_1_wrong_confident": false,
+    "single_2_wrong_confident": false
+   },
+   {
+    "id": "m13",
+    "lang": "zh",
+    "expect": "order_cancel",
+    "got": "order_cancel",
+    "flagged": false,
+    "confidence": 1.0,
+    "second": "order_cancel",
+    "second_confidence": 0.997,
+    "agree": true,
+    "guard": {
+     "jailbreak": 0.0,
+     "prompt_injection": 0.0
+    },
+    "urgency": "this_week",
+    "reasons": [],
+    "event": {
+     "kind": "order_cancel",
+     "order": "10004414"
+    },
+    "model": "multilingual",
+    "ms": 667.9,
+    "auto": true,
+    "correct": true,
+    "single_1_wrong_confident": false,
+    "single_2_wrong_confident": false
+   },
+   {
+    "id": "m14",
+    "lang": "en",
+    "expect": "due_change",
+    "got": "order_cancel",
+    "flagged": false,
+    "confidence": 0.13,
+    "second": "quality_hold",
+    "second_confidence": 0.139,
+    "agree": false,
+    "guard": {
+     "jailbreak": 0.12,
+     "prompt_injection": 0.14
+    },
+    "urgency": "this_week",
+    "reasons": [
+     "disagree",
+     "below_gate"
+    ],
+    "event": {
+     "kind": "order_cancel",
+     "order": "10004404"
+    },
+    "model": "english",
+    "ms": 2129.3,
+    "auto": false,
+    "correct": false,
+    "single_1_wrong_confident": false,
+    "single_2_wrong_confident": false
+   },
+   {
+    "id": "m15",
+    "lang": "zh",
+    "expect": "due_change",
+    "got": "material_late",
+    "flagged": false,
+    "confidence": 0.999,
+    "second": "due_change",
+    "second_confidence": 0.734,
+    "agree": false,
+    "guard": {
+     "jailbreak": 0.002,
+     "prompt_injection": 0.021
+    },
+    "urgency": "this_week",
+    "reasons": [
+     "disagree"
+    ],
+    "event": {
+     "kind": "material_late",
+     "order": "10004418",
+     "hours": 24.0
+    },
+    "model": "multilingual",
+    "ms": 647.8,
+    "auto": false,
+    "correct": false,
+    "single_1_wrong_confident": true,
+    "single_2_wrong_confident": false
+   },
+   {
+    "id": "m16",
+    "lang": "de",
+    "expect": "quantity_change",
+    "got": "quantity_change",
+    "flagged": false,
+    "confidence": 1.0,
+    "second": "quantity_change",
+    "second_confidence": 0.927,
+    "agree": true,
+    "guard": {
+     "jailbreak": 0.0,
+     "prompt_injection": 0.001
+    },
+    "urgency": "this_week",
+    "reasons": [],
+    "event": {
+     "kind": "quantity_change",
+     "order": "10004413",
+     "quantity": 60
+    },
+    "model": "multilingual",
+    "ms": 652.2,
+    "auto": true,
+    "correct": true,
+    "single_1_wrong_confident": false,
+    "single_2_wrong_confident": false
+   },
+   {
+    "id": "m17",
+    "lang": "en",
+    "expect": "quantity_change",
+    "got": "quantity_change",
+    "flagged": false,
+    "confidence": 1.0,
+    "second": "quantity_change",
+    "second_confidence": 0.629,
+    "agree": true,
+    "guard": {
+     "jailbreak": 0.0,
+     "prompt_injection": 0.047
+    },
+    "urgency": "this_week",
+    "reasons": [],
+    "event": {
+     "kind": "quantity_change",
+     "order": "10004401",
+     "quantity": 150
+    },
+    "model": "english",
+    "ms": 1830.0,
+    "auto": true,
+    "correct": true,
+    "single_1_wrong_confident": false,
+    "single_2_wrong_confident": false
+   },
+   {
+    "id": "m18",
+    "lang": "en",
+    "expect": "machine_down",
+    "got": "machine_down",
+    "flagged": false,
+    "confidence": 0.573,
+    "second": "machine_down",
+    "second_confidence": 0.201,
+    "agree": true,
+    "guard": {
+     "jailbreak": 0.0,
+     "prompt_injection": 0.0
+    },
+    "urgency": "today",
+    "reasons": [
+     "below_gate",
+     "missing"
+    ],
+    "event": {
+     "kind": "machine_down",
+     "machine": "CMM-01",
+     "hours": null
+    },
+    "model": "english",
+    "ms": 2135.4,
+    "auto": false,
+    "correct": true,
+    "single_1_wrong_confident": false,
+    "single_2_wrong_confident": false
+   },
+   {
+    "id": "x1",
+    "lang": "en",
+    "expect": "flagged",
+    "got": "order_cancel",
+    "flagged": true,
+    "confidence": 1.0,
+    "second": "quality_hold",
+    "second_confidence": 0.088,
+    "agree": false,
+    "guard": {
+     "jailbreak": 0.966,
+     "prompt_injection": 1.0
+    },
+    "urgency": "this_week",
+    "reasons": [
+     "flagged",
+     "disagree",
+     "missing"
+    ],
+    "event": {
+     "kind": "order_cancel",
+     "order": null
+    },
+    "model": "english",
+    "ms": 1835.2,
+    "auto": false,
+    "correct": true,
+    "single_1_wrong_confident": false,
+    "single_2_wrong_confident": false
+   },
+   {
+    "id": "x2",
+    "lang": "en",
+    "expect": "flagged",
+    "got": "no_action",
+    "flagged": true,
+    "confidence": 0.436,
+    "second": "no_action",
+    "second_confidence": 0.407,
+    "agree": true,
+    "guard": {
+     "jailbreak": 1.0,
+     "prompt_injection": 1.0
+    },
+    "urgency": "info",
+    "reasons": [
+     "flagged",
+     "below_gate"
+    ],
+    "event": null,
+    "model": "english",
+    "ms": 2164.5,
+    "auto": false,
+    "correct": true,
+    "single_1_wrong_confident": false,
+    "single_2_wrong_confident": false
+   }
+  ],
+  "correct": 14,
+  "total": 20,
+  "auto": 6,
+  "auto_correct": 6,
+  "confident_errors": 0,
+  "single_reading_confident_errors": [
+   3,
+   2
+  ],
+  "guard_false_alarms": 3,
+  "injections_caught": 2
+ },
+ "cues": {
+  "total": 20,
+  "hedged_right": 20,
+  "consequence_right": 19,
+  "misses": [
+   "c13"
+  ]
+ },
+ "rejections": {
+  "rows": [
+   {
+    "id": "rt1",
+    "lang": "en",
+    "expect": "too_many_changes",
+    "got": "too_many_changes",
+    "confidence": 0.443,
+    "confident": false
+   },
+   {
+    "id": "rt2",
+    "lang": "zh",
+    "expect": "too_many_changes",
+    "got": "too_many_changes",
+    "confidence": 0.821,
+    "confident": true
+   },
+   {
+    "id": "rt3",
+    "lang": "de",
+    "expect": "too_many_changes",
+    "got": "too_many_changes",
+    "confidence": 0.531,
+    "confident": true
+   },
+   {
+    "id": "rt4",
+    "lang": "en",
+    "expect": "customer_promise",
+    "got": "customer_promise",
+    "confidence": 0.338,
+    "confident": false
+   },
+   {
+    "id": "rt5",
+    "lang": "zh",
+    "expect": "customer_promise",
+    "got": "wrong_event",
+    "confidence": 0.559,
+    "confident": true
+   },
+   {
+    "id": "rt6",
+    "lang": "de",
+    "expect": "customer_promise",
+    "got": "wrong_event",
+    "confidence": 0.112,
+    "confident": false
+   },
+   {
+    "id": "rt7",
+    "lang": "en",
+    "expect": "resources",
+    "got": "resources",
+    "confidence": 0.527,
+    "confident": true
+   },
+   {
+    "id": "rt8",
+    "lang": "zh",
+    "expect": "resources",
+    "got": "wrong_event",
+    "confidence": 0.978,
+    "confident": true
+   },
+   {
+    "id": "rt9",
+    "lang": "de",
+    "expect": "resources",
+    "got": "resources",
+    "confidence": 0.137,
+    "confident": false
+   },
+   {
+    "id": "rt10",
+    "lang": "en",
+    "expect": "wrong_event",
+    "got": "wrong_event",
+    "confidence": 0.773,
+    "confident": true
+   },
+   {
+    "id": "rt11",
+    "lang": "zh",
+    "expect": "wrong_event",
+    "got": "wrong_event",
+    "confidence": 0.998,
+    "confident": true
+   },
+   {
+    "id": "rt12",
+    "lang": "de",
+    "expect": "wrong_event",
+    "got": "wrong_event",
+    "confidence": 0.696,
+    "confident": true
+   }
+  ],
+  "right": 9,
+  "total": 12,
+  "confident": 8,
+  "confident_wrong": [
+   "rt5",
+   "rt8"
+  ]
+ },
+ "notes": {
+  "rows": [
+   {
+    "id": "nt1",
+    "lang": "en",
+    "expect": "ok",
+    "got": "ok",
+    "p_problem": 0.393,
+    "flagged": false,
+    "machine": "AOI-01"
+   },
+   {
+    "id": "nt2",
+    "lang": "zh",
+    "expect": "ok",
+    "got": "ok",
+    "p_problem": 0.388,
+    "flagged": false,
+    "machine": "CMM-01"
+   },
+   {
+    "id": "nt3",
+    "lang": "de",
+    "expect": "ok",
+    "got": "ok",
+    "p_problem": 0.152,
+    "flagged": false,
+    "machine": "CNC-03"
+   },
+   {
+    "id": "nt4",
+    "lang": "en",
+    "expect": "watch",
+    "got": "watch",
+    "p_problem": 0.84,
+    "flagged": true,
+    "machine": "CNC-01"
+   },
+   {
+    "id": "nt5",
+    "lang": "zh",
+    "expect": "watch",
+    "got": "ok",
+    "p_problem": 0.098,
+    "flagged": false,
+    "machine": "ASM-05"
+   },
+   {
+    "id": "nt6",
+    "lang": "de",
+    "expect": "watch",
+    "got": "ok",
+    "p_problem": 0.462,
+    "flagged": false,
+    "machine": "CNC-02"
+   },
+   {
+    "id": "nt7",
+    "lang": "en",
+    "expect": "watch",
+    "got": "ok",
+    "p_problem": 0.346,
+    "flagged": false,
+    "machine": "LKT-04"
+   },
+   {
+    "id": "nt8",
+    "lang": "en",
+    "expect": "stop",
+    "got": "stop",
+    "p_problem": 0.954,
+    "flagged": true,
+    "machine": "CMM-01"
+   },
+   {
+    "id": "nt9",
+    "lang": "zh",
+    "expect": "stop",
+    "got": "stop",
+    "p_problem": 0.931,
+    "flagged": true,
+    "machine": "AOI-01"
+   },
+   {
+    "id": "nt10",
+    "lang": "de",
+    "expect": "stop",
+    "got": "stop",
+    "p_problem": 0.727,
+    "flagged": true,
+    "machine": "LKT-04"
+   },
+   {
+    "id": "nt11",
+    "lang": "zh",
+    "expect": "ok",
+    "got": "ok",
+    "p_problem": 0.468,
+    "flagged": false,
+    "machine": "ASM-03"
+   },
+   {
+    "id": "nt12",
+    "lang": "de",
+    "expect": "stop",
+    "got": "stop",
+    "p_problem": 0.835,
+    "flagged": true,
+    "machine": "CNC-01"
+   }
+  ],
+  "right": 9,
+  "total": 12,
+  "flagged": 5,
+  "false_flags": [],
+  "stops_caught": 4,
+  "stops": 4,
+  "watch_caught": 1,
+  "watch": 4,
+  "machine_found": 12
+ },
+ "commands": {
+  "rows": [
+   {
+    "text": "What if LKT-04 goes down for 8 hours?",
+    "lang": "en",
+    "expect": "what_if",
+    "got": "what_if",
+    "confidence": 0.967,
+    "event": {
+     "kind": "machine_down",
+     "machine": "LKT-04",
+     "hours": 8.0
+    },
+    "correct": true,
+    "gated": true
+   },
+   {
+    "text": "如果 CNC-02 停机 4 小时会怎样？",
+    "lang": "zh",
+    "expect": "what_if",
+    "got": "why",
+    "confidence": 0.305,
+    "event": {
+     "kind": "machine_down",
+     "machine": "CNC-02",
+     "hours": 4.0
+    },
+    "correct": false,
+    "gated": false
+   },
+   {
+    "text": "Was passiert, wenn der Auftrag 10004430 einen Tag später Material bekommt?",
+    "lang": "de",
+    "expect": "what_if",
+    "got": "what_if",
+    "confidence": 0.212,
+    "event": {
+     "kind": "material_late",
+     "order": "10004430",
+     "hours": 24.0
+    },
+    "correct": true,
+    "gated": false
+   },
+   {
+    "text": "Why is order 10004403 late?",
+    "lang": "en",
+    "expect": "why",
+    "got": "why",
+    "confidence": 0.881,
+    "event": {
+     "kind": "material_late",
+     "order": "10004403",
+     "hours": null
+    },
+    "correct": true,
+    "gated": true
+   },
+   {
+    "text": "订单 10004407 为什么有延误风险？",
+    "lang": "zh",
+    "expect": "why",
+    "got": "why",
+    "confidence": 0.996,
+    "event": {
+     "kind": "material_late",
+     "order": "10004407",
+     "hours": null
+    },
+    "correct": true,
+    "gated": true
+   },
+   {
+    "text": "CNC-01 just broke down, repair takes 3 hours.",
+    "lang": "en",
+    "expect": "report",
+    "got": "report",
+    "confidence": 0.064,
+    "event": {
+     "kind": "machine_down",
+     "machine": "CNC-01",
+     "hours": 3.0
+    },
+    "correct": true,
+    "gated": false
+   },
+   {
+    "text": "客户取消了订单 10004414",
+    "lang": "zh",
+    "expect": "report",
+    "got": "report",
+    "confidence": 0.34,
+    "event": {
+     "kind": "order_cancel",
+     "order": "10004414"
+    },
+    "correct": true,
+    "gated": false
+   },
+   {
+    "text": "Simulate a rush order of 50 CVR-1100 due in 20 hours.",
+    "lang": "en",
+    "expect": "what_if",
+    "got": "what_if",
+    "confidence": 0.554,
+    "event": {
+     "kind": "rush_order",
+     "material": "CVR-1100",
+     "quantity": 50,
+     "due_hours": 20.0,
+     "priority": 2
+    },
+    "correct": true,
+    "gated": true
+   }
+  ],
+  "correct": 7,
+  "total": 8,
+  "confident_errors": 0
+ }
+}

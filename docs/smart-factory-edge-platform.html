@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smart Factory Edge Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root {
+  --ground: #f4f6f5;
+  --surface: #ffffff;
+  --sunk: #eceff0;
+  --ink: #1a1f24;
+  --ink-2: #3b444c;
+  --muted: #5f6a73;
+  --line: #d8dee0;
+  --line-strong: #b4bec3;
+  --accent: #0e6b70;
+  --accent-ink: #0b5a5e;
+  --accent-soft: #e2f0f0;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --good: #0a7d0a;
+  --good-soft: #e3f3e3;
+  --warn: #9a5b00;
+  --warn-soft: #fbf0dc;
+  --bad: #c0392b;
+  --bad-soft: #fbe6e3;
+  --hold: #4a3aa7;
+  --hold-soft: #ebe8f8;
+  --code: #eef1f1;
+  --shadow: 0 1px 2px rgba(20, 30, 35, .06), 0 8px 24px rgba(20, 30, 35, .06);
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground: #111517;
+    --surface: #171b1e;
+    --sunk: #1d2226;
+    --ink: #e5e9eb;
+    --ink-2: #c2cacf;
+    --muted: #93a0a8;
+    --line: #2a3136;
+    --line-strong: #3d474e;
+    --accent: #4fb3b8;
+    --accent-ink: #7cc9cd;
+    --accent-soft: #15302f;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --good: #4cc34c;
+    --good-soft: #16301a;
+    --warn: #e9a93a;
+    --warn-soft: #33280f;
+    --bad: #f07b6e;
+    --bad-soft: #3a1c19;
+    --hold: #9085e9;
+    --hold-soft: #262147;
+    --code: #1f2529;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #111517;
+  --surface: #171b1e;
+  --sunk: #1d2226;
+  --ink: #e5e9eb;
+  --ink-2: #c2cacf;
+  --muted: #93a0a8;
+  --line: #2a3136;
+  --line-strong: #3d474e;
+  --accent: #4fb3b8;
+  --accent-ink: #7cc9cd;
+  --accent-soft: #15302f;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --good: #4cc34c;
+  --good-soft: #16301a;
+  --warn: #e9a93a;
+  --warn-soft: #33280f;
+  --bad: #f07b6e;
+  --bad-soft: #3a1c19;
+  --hold: #9085e9;
+  --hold-soft: #262147;
+  --code: #1f2529;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0; background: var(--ground); color: var(--ink);
+  font: 16px/1.62 var(--body); -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent-ink); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+code, .mono { font-family: var(--mono); font-size: .86em; }
+code { background: var(--code); padding: .08em .35em; border-radius: 4px; }
+.num { font-variant-numeric: tabular-nums; }
+
+.shell {
+  max-width: 1260px; margin: 0 auto; padding-inline: 20px; padding-block: 0 80px;
+  display: grid; grid-template-columns: 232px minmax(0, 1fr); gap: 48px;
+}
+@media (max-width: 980px) { .shell { grid-template-columns: minmax(0, 1fr); gap: 0; padding-inline: 16px; } }
+
+/* contents rail */
+.rail { position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; max-height: 100vh; overflow-y: auto; padding-block: 28px; }
+.rail .brand { font: 600 13px/1.3 var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.rail ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; display: grid; gap: 1px; }
+.rail li a {
+  display: grid; grid-template-columns: 26px 1fr; padding: 4px 8px; border-radius: 6px;
+  color: var(--ink-2); text-decoration: none; font-size: 13.5px; line-height: 1.35;
+}
+.rail li a span { color: var(--muted); font-family: var(--mono); font-size: 12px; padding-top: 1px; }
+.rail li a:hover { background: var(--sunk); }
+.rail li a.on { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+.rail li a.on span { color: var(--accent-ink); }
+.rail details summary { display: none; }
+@media (max-width: 980px) {
+  .rail { position: static; max-height: none; padding-block: 14px 0; }
+  .rail .brand { display: none; }
+  .rail details { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 10px 12px; }
+  .rail details summary { display: block; cursor: pointer; font-weight: 600; font-size: 14px; }
+  .rail details[open] ol { margin-top: 8px; }
+}
+
+/* document */
+main { min-width: 0; padding-block: 28px 0; }
+.masthead { padding-block: 26px 30px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+.eyebrow { font: 600 12px/1 var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--accent-ink); }
+h1 {
+  font: 700 clamp(34px, 5vw, 50px)/1.04 var(--display); letter-spacing: -.01em;
+  margin: 12px 0 14px; text-wrap: balance;
+}
+.lede { font-size: 18.5px; line-height: 1.55; color: var(--ink-2); max-width: 64ch; margin: 0; }
+.doc-control {
+  display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 20px; font-size: 13px; color: var(--muted);
+}
+.doc-control b { color: var(--ink); font-weight: 600; }
+.badge {
+  display: inline-block; font: 600 11px/1 var(--display); letter-spacing: .08em; text-transform: uppercase;
+  padding: 4px 7px; border-radius: 4px; border: 1px solid currentColor;
+}
+.badge.draft { color: var(--warn); }
+
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 26px; }
+@media (max-width: 760px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.tile .v { font: 600 30px/1.05 var(--display); letter-spacing: -.01em; }
+.tile .v small { font-size: 16px; color: var(--muted); font-weight: 500; }
+.tile .k { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+
+section { padding-block: 40px 8px; scroll-margin-top: 12px; }
+section + section { border-top: 1px solid var(--line); }
+h2 {
+  font: 650 28px/1.15 var(--display); margin: 0 0 6px; letter-spacing: -.005em; text-wrap: balance;
+  display: flex; gap: 12px; align-items: baseline;
+}
+h2 .n { font: 500 15px var(--mono); color: var(--accent-ink); min-width: 2.2ch; }
+h3 { font: 600 19px/1.3 var(--display); margin: 30px 0 8px; text-wrap: balance; }
+p { margin: 10px 0; max-width: 72ch; }
+.point { font-size: 17.5px; color: var(--ink); max-width: 68ch; margin-top: 8px; }
+ul, ol.plain { max-width: 72ch; padding-left: 22px; margin: 10px 0; }
+li { margin: 4px 0; }
+li::marker { color: var(--muted); }
+
+/* tables */
+.tbl { overflow-x: auto; margin: 16px 0 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.45; }
+th {
+  text-align: left; font: 600 12px/1.3 var(--display); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); background: var(--sunk); padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap;
+}
+td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 500; color: var(--ink); }
+td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
+.tbl.wide table { min-width: 720px; }
+.note { font-size: 13px; color: var(--muted); margin: 6px 0 0; max-width: 80ch; }
+
+/* status pills */
+.pill { display: inline-flex; align-items: center; gap: 5px; font: 600 12px/1 var(--body); padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.pass { color: var(--good); background: var(--good-soft); }
+.pill.rework { color: var(--warn); background: var(--warn-soft); }
+.pill.scrap, .pill.stop { color: var(--bad); background: var(--bad-soft); }
+.pill.hold { color: var(--hold); background: var(--hold-soft); }
+.pill.watch { color: var(--warn); background: var(--warn-soft); }
+.pill.done { color: var(--good); background: var(--good-soft); }
+.pill.next { color: var(--accent-ink); background: var(--accent-soft); }
+.pill.later { color: var(--muted); background: var(--sunk); }
+
+/* figures */
+figure { margin: 22px 0 8px; }
+.fig {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px;
+  overflow-x: auto; position: relative;
+}
+.fig svg { display: block; width: 100%; height: auto; min-width: 640px; }
+.fig.chart svg { min-width: 520px; }
+.two .fig.chart svg { min-width: 340px; }
+figcaption { font-size: 13.5px; color: var(--muted); margin-top: 8px; max-width: 80ch; }
+figcaption b { color: var(--ink-2); font-weight: 600; }
+
+/* diagram vocabulary (SVG) */
+.d-box { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.2; }
+.d-soft { fill: var(--sunk); stroke: var(--line); stroke-width: 1; }
+.d-acc { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.4; }
+.d-hold { fill: var(--hold-soft); stroke: var(--hold); stroke-width: 1.2; }
+.d-warn { fill: var(--warn-soft); stroke: var(--warn); stroke-width: 1.2; }
+.d-zone { fill: none; stroke: var(--line-strong); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.d-t { fill: var(--ink); font: 600 14px var(--display); }
+.d-t.sm { font-size: 12.5px; }
+.d-s { fill: var(--muted); font: 400 11.5px var(--body); }
+.d-cap { fill: var(--muted); font: 600 11px var(--display); letter-spacing: .1em; text-transform: uppercase; }
+.d-acc-t { fill: var(--accent-ink); }
+.d-arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+.d-arrow.acc { stroke: var(--accent); }
+.d-arrow.dash { stroke-dasharray: 4 4; }
+.d-mark { fill: var(--muted); }
+.d-mark.acc { fill: var(--accent); }
+.d-belt { fill: var(--sunk); stroke: var(--line-strong); }
+
+/* charts */
+.c-grid { stroke: var(--line); stroke-width: 1; }
+.c-axis { fill: var(--muted); font: 400 11.5px var(--mono); }
+.c-lab { fill: var(--ink-2); font: 500 12.5px var(--body); }
+.c-val { fill: var(--ink); font: 600 12px var(--mono); }
+.c-s1 { fill: var(--series-1); }
+.c-s2 { fill: var(--series-2); }
+.c-good { fill: var(--good); }
+.c-hold { fill: var(--hold); }
+.c-line { stroke: var(--series-1); stroke-width: 2; fill: none; stroke-linejoin: round; }
+.c-ref { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 3; }
+.c-spec { stroke: var(--bad); stroke-width: 1.2; }
+.c-whisk { stroke: var(--ink-2); stroke-width: 1.5; }
+.c-hit { fill: transparent; cursor: default; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--ink-2); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
+.tip {
+  position: absolute; pointer-events: none; z-index: 5; background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 10px; font-size: 12.5px; line-height: 1.4;
+  box-shadow: var(--shadow); max-width: 260px;
+}
+.tip b { font-family: var(--mono); font-weight: 600; }
+
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 860px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.callout {
+  border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 14px 16px; margin: 16px 0;
+}
+.callout h4 { margin: 0 0 4px; font: 600 15px var(--display); }
+.callout p { margin: 4px 0; font-size: 14.5px; }
+.callout.acc { border-color: var(--accent); background: var(--accent-soft); }
+.callout.acc h4 { color: var(--accent-ink); }
+pre.code {
+  background: var(--code); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px;
+  overflow-x: auto; font: 13px/1.55 var(--mono); margin: 14px 0;
+}
+.theme-btn {
+  position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 10;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); border-radius: 999px;
+  padding: 7px 12px; font: 500 13px var(--body); cursor: pointer; box-shadow: var(--shadow);
+}
+footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav class="rail" aria-label="Contents">
+    <div class="brand">Design document</div>
+    <details id="toc-details" open>
+      <summary>Contents</summary>
+      <ol id="toc">
+        <li><a href="#goals"><span>1</span>Goals and scope</a></li>
+        <li><a href="#principles"><span>2</span>Design principles</a></li>
+        <li><a href="#overview"><span>3</span>System overview</a></li>
+        <li><a href="#layers"><span>4</span>Layered architecture</a></li>
+        <li><a href="#messaging"><span>5</span>Data and messaging</a></li>
+        <li><a href="#edge"><span>6</span>Edge node</a></li>
+        <li><a href="#ai"><span>7</span>AI capabilities</a></li>
+        <li><a href="#llm"><span>8</span>Laya and LLMs</a></li>
+        <li><a href="#policy"><span>9</span>Decision policy</a></li>
+        <li><a href="#hub"><span>10</span>Plant hub</a></li>
+        <li><a href="#lifecycle"><span>11</span>Model lifecycle</a></li>
+        <li><a href="#security"><span>12</span>Security</a></li>
+        <li><a href="#sizing"><span>13</span>Deployment and sizing</a></li>
+        <li><a href="#reliability"><span>14</span>Reliability</a></li>
+        <li><a href="#plan"><span>15</span>Build plan</a></li>
+        <li><a href="#decisions"><span>16</span>Open decisions and risks</a></li>
+      </ol>
+    </details>
+  </nav>
+
+  <main>
+    <header class="masthead">
+      <div class="eyebrow">Architecture design · HSG-7731 pump housing, Line 3 → plant</div>
+      <h1>Smart Factory Edge Platform</h1>
+      <p class="lede">A plant-wide system that inspects every unit, warns before machines degrade and learns from every QA decision. Each production line runs on its own edge node and keeps working when the plant network or cloud is down. Rules judge numbers, AI models read images, signals and text, and people decide whatever the models are unsure of.</p>
+      <div class="doc-control">
+        <span><span class="badge draft">Draft 0.1</span></span>
+        <span>Date <b class="num">2026-09-23</b></span>
+        <span>Builds on <b><a href="https://github.com/clydechen0228/SmartMom/pull/1">Line 3 demo, PR #1</a></b></span>
+        <span>Status of numbers: <b>measured</b> where marked, otherwise proposals</span>
+      </div>
+      <div class="tiles" aria-label="Measured in the Line 3 demo">
+        <div class="tile"><div class="v num">7<small> / 7</small></div><div class="k">fault scenarios give the expected disposition with the real Laya checkpoints</div></div>
+        <div class="tile"><div class="v num">3<small> units</small></div><div class="k">line stop raised before the first out-of-tolerance part (tool-wear scenario)</div></div>
+        <div class="tile"><div class="v num">456<small> ms</small></div><div class="k">Laya per operator note on a laptop CPU, median (p95 575 ms)</div></div>
+        <div class="tile"><div class="v num">69</div><div class="k">offline tests pass, including gateway store-and-forward</div></div>
+      </div>
+    </header>
+
+    <!-- 1 -->
+    <section id="goals">
+      <h2><span class="n">1</span>Goals and scope</h2>
+      <p class="point">The platform grows the Line 3 quality-inspection demo into a plant-wide system built on one shared backbone, with four capabilities: edge data collection, vision defect detection, predictive maintenance and a feedback loop.</p>
+
+      <figure>
+        <div class="fig">
+          <svg viewBox="0 0 1000 300" role="img" aria-labelledby="line3-t">
+            <title id="line3-t">Line 3: five stations, their sensors, and the edge node that serves them</title>
+            <defs>
+              <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="d-mark"/></marker>
+              <marker id="ara" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="d-mark acc"/></marker>
+            </defs>
+            <text x="20" y="24" class="d-cap">Line 3 · unit flow →</text>
+            <rect x="20" y="150" width="960" height="16" rx="8" class="d-belt"/>
+            <g>
+              <rect x="30" y="44" width="170" height="96" rx="10" class="d-box"/>
+              <text x="46" y="70" class="d-t">CNC-02</text><text x="46" y="88" class="d-s">Bore milling</text>
+              <text x="46" y="112" class="d-s">bore gauge · accelerometer</text><text x="46" y="128" class="d-s">SPC on bore Ø</text>
+              <rect x="222" y="44" width="170" height="96" rx="10" class="d-box"/>
+              <text x="238" y="70" class="d-t">CMM-01</text><text x="238" y="88" class="d-s">Coordinate measurement</text>
+              <text x="238" y="112" class="d-s">touch probe</text><text x="238" y="128" class="d-s">flatness · position</text>
+              <rect x="414" y="44" width="170" height="96" rx="10" class="d-box"/>
+              <text x="430" y="70" class="d-t">ASM-03</text><text x="430" y="88" class="d-s">Cover bolting</text>
+              <text x="430" y="112" class="d-s">4-spindle nutrunner</text><text x="430" y="128" class="d-s">4 × torque curves</text>
+              <rect x="606" y="44" width="170" height="96" rx="10" class="d-box"/>
+              <text x="622" y="70" class="d-t">LKT-04</text><text x="622" y="88" class="d-s">Leak test</text>
+              <text x="622" y="112" class="d-s">pressure decay, 2.5 bar</text><text x="622" y="128" class="d-s">leak rate ≤ 2.0 ml/min</text>
+              <rect x="798" y="44" width="170" height="96" rx="10" class="d-box"/>
+              <text x="814" y="70" class="d-t">AOI-01</text><text x="814" y="88" class="d-s">Final vision</text>
+              <text x="814" y="112" class="d-s">12 MP line-scan camera</text><text x="814" y="128" class="d-s">defect score, images</text>
+            </g>
+            <g class="d-s">
+              <text x="46" y="186">HMI note</text><text x="238" y="186">HMI note</text><text x="430" y="186">HMI note</text><text x="622" y="186">HMI note</text><text x="814" y="186">HMI note</text>
+            </g>
+            <g>
+              <path d="M115 194 V238 H400" class="d-arrow dash"/>
+              <path d="M307 194 V222" class="d-arrow dash"/>
+              <path d="M499 194 V222" class="d-arrow dash"/>
+              <path d="M691 194 V222" class="d-arrow dash"/>
+              <path d="M883 194 V238 H600" class="d-arrow dash"/>
+              <rect x="300" y="222" width="400" height="60" rx="10" class="d-acc"/>
+              <text x="320" y="248" class="d-t d-acc-t">Line 3 edge node</text>
+              <text x="320" y="268" class="d-s">OPC UA · MQTT · rules · SPC · Laya · vision · signal models</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption><b>Figure 1.</b> The pilot line. Every station sends one message per unit to the line's edge node; operators can attach a note at any station HMI.</figcaption>
+      </figure>
+
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Goal</th><th>Proposed target</th><th>Today, Line 3 demo</th></tr></thead>
+          <tbody>
+            <tr><td>Every unit has a disposition and a stored reason</td><td>100% of units</td><td><span class="pill pass">✓ Met</span> in the demo</td></tr>
+            <tr><td>Units released without a person</td><td>≥ 90%, zero escaped defects from auto-release</td><td>96% in a simulated run</td></tr>
+            <tr><td>Drift caught before bad parts</td><td>Line stop ≥ 1 unit before the first out-of-tolerance part</td><td>3 units early, tool-wear scenario</td></tr>
+            <tr><td>Line keeps inspecting through an outage</td><td>24 h without plant hub or cloud</td><td>Gateway store-and-forward only</td></tr>
+            <tr><td>Predictive maintenance lead time</td><td>Open: needs failure history</td><td><span class="pill later">Not built</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">Targets are proposals for the team to confirm. Demo figures come from the simulator, not a real line.</p>
+
+      <div class="two">
+        <div class="callout"><h4>In scope</h4><p>Line 3 (five stations) first, then every line in the plant, then further plants on the same images and config model.</p></div>
+        <div class="callout"><h4>Non-goals</h4><p>AI never writes to a PLC or controls a machine. Safety functions stay in safety-rated PLCs. The platform does not replace the MES or ERP. No generated text makes a disposition.</p></div>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section id="principles">
+      <h2><span class="n">2</span>Design principles</h2>
+      <p class="point">Six rules decide every trade-off in this document. When one conflicts with throughput, the rule wins: a held part costs minutes, an escaped defect costs a recall.</p>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Principle</th><th>What it means in practice</th></tr></thead>
+          <tbody>
+            <tr><td>Deterministic where it matters</td><td>Tolerances, reaction plans, SPC and alarm codes are rules, versioned like code. A model can hold a part; it can never release a part the rules failed.</td></tr>
+            <tr><td>Each model reads what it is good at</td><td>Laya reads text people write. Vision models read images. Signal models read vibration and load. None of them judges a measurement against a tolerance.</td></tr>
+            <tr><td>Calibrated gates, not raw scores</td><td>A model acts alone only above a confidence threshold set from measured error rates on this plant's data. Below it, a person decides.</td></tr>
+            <tr><td>Edge first</td><td>Everything a line needs to inspect runs on its edge node. The plant hub and cloud improve the system; neither is required to inspect a unit.</td></tr>
+            <tr><td>Every decision is reconstructable</td><td>Each disposition stores its raw inputs, model versions, answers, rule results and policy trace.</td></tr>
+            <tr><td>People close the loop</td><td>Every held unit is reviewed by a named person, and those reviews are the labels that measure and retune the models.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section id="overview">
+      <h2><span class="n">3</span>System overview</h2>
+      <p class="point">Four tiers: data flows up from devices, decisions are made at the edge, and models flow down from the cloud.</p>
+      <figure>
+        <div class="fig">
+          <svg viewBox="0 0 1000 400" role="img" aria-labelledby="tier-t">
+            <title id="tier-t">Four tiers: devices, edge node, plant hub and optional cloud, with data and model flows</title>
+            <text x="20" y="26" class="d-cap">Devices</text>
+            <text x="262" y="26" class="d-cap">Edge node · one per line</text>
+            <text x="548" y="26" class="d-cap">Plant hub</text>
+            <text x="822" y="26" class="d-cap">Cloud · optional</text>
+            <rect x="248" y="38" width="262" height="340" rx="14" class="d-zone"/>
+            <rect x="534" y="38" width="262" height="340" rx="14" class="d-zone"/>
+            <rect x="810" y="38" width="172" height="340" rx="14" class="d-zone"/>
+            <g>
+              <rect x="20" y="56" width="190" height="56" rx="9" class="d-box"/><text x="36" y="80" class="d-t sm">PLCs and gauges</text><text x="36" y="98" class="d-s">OPC UA tags</text>
+              <rect x="20" y="128" width="190" height="56" rx="9" class="d-box"/><text x="36" y="152" class="d-t sm">Cameras</text><text x="36" y="170" class="d-s">images per unit</text>
+              <rect x="20" y="200" width="190" height="56" rx="9" class="d-box"/><text x="36" y="224" class="d-t sm">Vibration sensors</text><text x="36" y="242" class="d-s">accelerometers, load</text>
+              <rect x="20" y="272" width="190" height="56" rx="9" class="d-box"/><text x="36" y="296" class="d-t sm">Operator HMI</text><text x="36" y="314" class="d-s">notes, any language</text>
+            </g>
+            <g>
+              <rect x="266" y="56" width="226" height="50" rx="9" class="d-box"/><text x="282" y="78" class="d-t sm">Collectors</text><text x="282" y="95" class="d-s">OPC UA, camera, signal</text>
+              <rect x="266" y="124" width="226" height="50" rx="9" class="d-box"/><text x="282" y="146" class="d-t sm">Edge MQTT broker</text><text x="282" y="163" class="d-s">Mosquitto</text>
+              <rect x="266" y="192" width="226" height="62" rx="9" class="d-acc"/><text x="282" y="216" class="d-t sm d-acc-t">Inspection pipeline</text><text x="282" y="234" class="d-s">rules · SPC · Laya · vision</text><text x="282" y="248" class="d-s">signal model · policy gate</text>
+              <rect x="266" y="272" width="226" height="50" rx="9" class="d-box"/><text x="282" y="294" class="d-t sm">Local store</text><text x="282" y="311" class="d-s">7-day buffer, images</text>
+              <rect x="266" y="334" width="226" height="34" rx="9" class="d-soft"/><text x="282" y="356" class="d-s">line-ui · edge agent</text>
+            </g>
+            <g>
+              <rect x="552" y="56" width="226" height="50" rx="9" class="d-box"/><text x="568" y="78" class="d-t sm">Plant MQTT broker</text><text x="568" y="95" class="d-s">bridge from every line</text>
+              <rect x="552" y="124" width="226" height="50" rx="9" class="d-box"/><text x="568" y="146" class="d-t sm">QA review · dashboards</text><text x="568" y="163" class="d-s">held units, alerts</text>
+              <rect x="552" y="192" width="226" height="50" rx="9" class="d-box"/><text x="568" y="214" class="d-t sm">Historian · traceability</text><text x="568" y="231" class="d-s">PostgreSQL, TimescaleDB</text>
+              <rect x="552" y="260" width="226" height="50" rx="9" class="d-box"/><text x="568" y="282" class="d-t sm">MES connector</text><text x="568" y="299" class="d-s">work orders, genealogy</text>
+              <rect x="552" y="322" width="226" height="46" rx="9" class="d-hold"/><text x="568" y="343" class="d-t sm">LLM assistants</text><text x="568" y="359" class="d-s">explain, summarise, draft</text>
+            </g>
+            <g>
+              <rect x="826" y="56" width="140" height="62" rx="9" class="d-box"/><text x="840" y="80" class="d-t sm">Training</text><text x="840" y="98" class="d-s">labels → models</text>
+              <rect x="826" y="136" width="140" height="62" rx="9" class="d-box"/><text x="840" y="160" class="d-t sm">Model registry</text><text x="840" y="178" class="d-s">signed versions</text>
+              <rect x="826" y="216" width="140" height="62" rx="9" class="d-box"/><text x="840" y="240" class="d-t sm">Fleet analytics</text><text x="840" y="258" class="d-s">across plants</text>
+            </g>
+            <g>
+              <path d="M210 84 H262" class="d-arrow" marker-end="url(#ar)"/>
+              <path d="M210 156 H236 V90 H262" class="d-arrow" marker-end="url(#ar)"/>
+              <path d="M210 228 H236 V96" class="d-arrow"/>
+              <path d="M210 300 H236 V228" class="d-arrow"/>
+              <path d="M379 106 V120" class="d-arrow" marker-end="url(#ar)"/>
+              <path d="M379 174 V188" class="d-arrow" marker-end="url(#ar)"/>
+              <path d="M379 254 V268" class="d-arrow" marker-end="url(#ar)"/>
+              <path d="M492 149 H548 V85" class="d-arrow acc" marker-start="url(#ara)" marker-end="url(#ara)"/>
+              <text x="500" y="142" class="d-s">bridge · mTLS</text>
+              <path d="M778 217 H806 V92 H822" class="d-arrow" marker-end="url(#ar)"/>
+              <text x="782" y="210" class="d-s">labels</text>
+              <path d="M826 170 H800 V394 H379 V372" class="d-arrow acc dash" marker-end="url(#ara)"/>
+              <text x="590" y="386" class="d-s">signed models, rules, policy → edge</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption><b>Figure 2.</b> Tiers and flows. The edge makes every per-unit decision; the plant hub shows, records and connects to the MES; the cloud trains and distributes signed models.</figcaption>
+      </figure>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Tier</th><th>Runs</th><th>Needs the tier above to work?</th></tr></thead>
+          <tbody>
+            <tr><td>Devices</td><td>PLC logic, sensors, cameras, operator HMI</td><td>No</td></tr>
+            <tr><td>Edge node</td><td>Collection, rules, SPC, Laya, vision and signal models, local store</td><td>No: buffers 7 days, syncs when the link returns</td></tr>
+            <tr><td>Plant hub</td><td>Dashboards, QA review, historian, MES link, alert routing, LLM assistants</td><td>No for inspection; yes for cloud training</td></tr>
+            <tr><td>Cloud</td><td>Training, evaluation, registry, fleet rollout, cross-plant analytics</td><td>Optional: an on-prem build runs these on the plant hub</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section id="layers">
+      <h2><span class="n">4</span>Layered architecture</h2>
+      <p class="point">Three layers sit under the business capabilities they serve: application, data and technology. Each depends only on the one below, so a database, broker or model runtime can be swapped without redesigning the applications.</p>
+      <figure>
+        <div class="fig">
+          <svg viewBox="0 0 1000 350" role="img" aria-labelledby="layer-t">
+            <title id="layer-t">Layer stack: business capabilities, application, data and technology layers</title>
+            <g>
+              <rect x="20" y="16" width="960" height="70" rx="10" class="d-soft"/>
+              <text x="36" y="40" class="d-cap">Business</text>
+              <rect x="170" y="30" width="190" height="42" rx="8" class="d-box"/><text x="186" y="56" class="d-t sm">Quality inspection</text>
+              <rect x="372" y="30" width="190" height="42" rx="8" class="d-box"/><text x="388" y="56" class="d-t sm">Predictive maintenance</text>
+              <rect x="574" y="30" width="190" height="42" rx="8" class="d-box"/><text x="590" y="56" class="d-t sm">Traceability</text>
+              <rect x="776" y="30" width="190" height="42" rx="8" class="d-box"/><text x="792" y="56" class="d-t sm">Continuous improvement</text>
+            </g>
+            <g>
+              <rect x="20" y="96" width="960" height="76" rx="10" class="d-acc"/>
+              <text x="36" y="120" class="d-cap d-acc-t">Application</text>
+              <rect x="170" y="110" width="258" height="48" rx="8" class="d-box"/><text x="186" y="131" class="d-t sm">Edge decision apps</text><text x="186" y="148" class="d-s">collectors, inspect, model services</text>
+              <rect x="440" y="110" width="258" height="48" rx="8" class="d-box"/><text x="456" y="131" class="d-t sm">Plant work apps</text><text x="456" y="148" class="d-s">QA review, dashboards, MES link</text>
+              <rect x="710" y="110" width="256" height="48" rx="8" class="d-hold"/><text x="726" y="131" class="d-t sm">Assistants and lifecycle</text><text x="726" y="148" class="d-s">LLM drafts, labels, training</text>
+            </g>
+            <g>
+              <rect x="20" y="182" width="960" height="76" rx="10" class="d-soft"/>
+              <text x="36" y="206" class="d-cap">Data</text>
+              <rect x="170" y="196" width="258" height="48" rx="8" class="d-box"/><text x="186" y="217" class="d-t sm">Reference</text><text x="186" y="234" class="d-s">specs, devices, model versions</text>
+              <rect x="440" y="196" width="258" height="48" rx="8" class="d-box"/><text x="456" y="217" class="d-t sm">Operational</text><text x="456" y="234" class="d-s">readings, notes, images, signals</text>
+              <rect x="710" y="196" width="256" height="48" rx="8" class="d-box"/><text x="726" y="217" class="d-t sm">Decision</text><text x="726" y="234" class="d-s">results, reviews, alerts, labels</text>
+            </g>
+            <g>
+              <rect x="20" y="268" width="960" height="70" rx="10" class="d-soft"/>
+              <text x="36" y="292" class="d-cap">Technology</text>
+              <rect x="170" y="282" width="258" height="42" rx="8" class="d-box"/><text x="186" y="308" class="d-t sm">Edge nodes · IPC, GPU</text>
+              <rect x="440" y="282" width="258" height="42" rx="8" class="d-box"/><text x="456" y="308" class="d-t sm">Plant hub · 3 servers</text>
+              <rect x="710" y="282" width="256" height="42" rx="8" class="d-box"/><text x="726" y="308" class="d-t sm">Cloud · optional</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption><b>Figure 3.</b> The layer view. Read top to bottom: each capability is delivered by applications, which read and write the data, which runs on the technology.</figcaption>
+      </figure>
+
+      <h3>4.1 Data layer</h3>
+      <p>Data falls into three domains with different owners and lifetimes. The serial number joins them all: every record of a unit can be found from it.</p>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th>Domain</th><th>Contents</th><th>System of record</th><th>Where it lives</th></tr></thead>
+          <tbody>
+            <tr><td>Reference</td><td>Part specs and revisions, tolerances, reaction plans, stations, device registry, alarm codes, model, rule and policy versions</td><td>MES for specs; platform registry for the rest</td><td>Plant hub; a signed copy on each edge node</td></tr>
+            <tr><td>Operational</td><td>Measurements, operator notes, images, signal features, machine status</td><td>The edge node, until synced</td><td>Edge for 7 days; historian and image archive after</td></tr>
+            <tr><td>Decision</td><td>Inspection results, alerts, QA reviews, audits, labels, evaluation reports</td><td>Plant traceability store</td><td>Plant hub; labels and reports also in the cloud</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th>Entity</th><th>Key</th><th>Links to</th></tr></thead>
+          <tbody>
+            <tr><td>Unit</td><td class="mono">serial</td><td>Work order and part revision, from the MES</td></tr>
+            <tr><td>Station visit</td><td class="mono">serial + station</td><td>One unit at one station: its readings, note, images, signal window</td></tr>
+            <tr><td>Reading</td><td class="mono">device + seq</td><td>A station visit; values per characteristic</td></tr>
+            <tr><td>Note</td><td class="mono">device + seq</td><td>A station visit; text, language, pseudonymous operator id</td></tr>
+            <tr><td>Image</td><td class="mono">content hash</td><td>A station visit; heatmap and vision score</td></tr>
+            <tr><td>Signal window</td><td class="mono">machine + window</td><td>Machine; features and health index</td></tr>
+            <tr><td>Inspection</td><td class="mono">station visit</td><td>Disposition, reasons, trace, policy version, each model's version and answer</td></tr>
+            <tr><td>Review</td><td class="mono">inspection</td><td>Reviewer, decision, note, time</td></tr>
+            <tr><td>Alert</td><td class="mono">station + level, while open</td><td>The inspections that raised it, reasons, likely cause</td></tr>
+            <tr><td>Label</td><td class="mono">inspection</td><td>The truth for its inputs: from a review, an audit or a downstream finding</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li><b>Schemas are versioned</b> (<code>measurement/v1</code>, <code>inspection/v2</code>). Consumers reject unknown versions; old versions stay readable.</li>
+        <li><b>Lineage is stored, not reconstructed:</b> each inspection records the exact spec revision, rule set, policy and model versions it used.</li>
+        <li><b>Retention:</b> raw data 7 days at the edge; images kept only for held, reviewed, audited or labelled units; decision records per the traceability requirement (open).</li>
+        <li><b>Personal data:</b> notes and reviews carry pseudonymous ids. Names live only in the sign-in system, so training data never contains them.</li>
+      </ul>
+
+      <h3>4.2 Application layer</h3>
+      <p>Decision apps run on the edge, work apps on the plant hub, and assistants help people but never decide.</p>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th>Group</th><th>Applications</th><th>Tier</th><th>Decides dispositions?</th></tr></thead>
+          <tbody>
+            <tr><td>Edge decision apps</td><td>Collectors (OPC UA, camera, signal), <code>inspect</code>, model services (Laya, vision, signal), <code>line-ui</code>, edge agent</td><td>Edge</td><td><span class="pill pass">Yes</span> within the policy</td></tr>
+            <tr><td>Plant work apps</td><td>QA review, dashboards, alert router, MES connector, historian service, registry and rollout</td><td>Plant hub</td><td>Only a named reviewer</td></tr>
+            <tr><td>Assistants</td><td>Shift summary, investigation assistant, 8D and CAPA drafting, work-instruction Q&amp;A, note translation</td><td>Plant hub</td><td><span class="pill hold">No</span> drafts only</td></tr>
+            <tr><td>Lifecycle apps</td><td>Label store, evaluation runner, training pipelines</td><td>Plant hub or cloud</td><td>No</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th>From</th><th>To</th><th>How</th><th>Contract</th></tr></thead>
+          <tbody>
+            <tr><td>Devices</td><td>Collectors</td><td>OPC UA subscriptions, camera SDK, sensor drivers</td><td>PLC tag map per station, in config</td></tr>
+            <tr><td>Collectors</td><td><code>inspect</code>, store</td><td>Edge MQTT</td><td><code>measurement</code>, <code>note</code>, <code>image</code>, <code>signal</code> topics</td></tr>
+            <tr><td><code>inspect</code></td><td>Model services</td><td>Local HTTP with a timeout</td><td>Typed answer, confidence, model version</td></tr>
+            <tr><td>Edge</td><td>Plant hub</td><td>MQTT bridge, mutual TLS</td><td><code>inspection</code>, <code>alert</code>, <code>status</code> topics</td></tr>
+            <tr><td>Plant hub</td><td>Edge</td><td>MQTT <code>cmd</code>, signed downloads</td><td>Config, rules, policy, model versions</td></tr>
+            <tr><td>Apps, assistants</td><td>Plant data</td><td>REST with sign-in and roles</td><td>Read APIs per entity; review is the only write</td></tr>
+            <tr><td>MES connector</td><td>MES</td><td>Vendor API or ISA-95 messages</td><td>Work orders and specs in; dispositions and genealogy out</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>4.3 Technology layer</h3>
+      <p>The stack is open-source and runs the same containers on every tier. Applications talk only to MQTT, PostgreSQL, S3 and HTTP interfaces, so replacing a broker or a bucket is a config change.</p>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th>Concern</th><th>Edge node</th><th>Plant hub</th><th>Cloud (optional)</th></tr></thead>
+          <tbody>
+            <tr><td>Hardware</td><td>Fanless industrial PC; GPU module on vision lines</td><td>3 servers or VMs; 1 GPU server for on-prem LLMs</td><td>Object storage, on-demand GPUs</td></tr>
+            <tr><td>OS and runtime</td><td>Ubuntu LTS, Docker; k3s later</td><td>Ubuntu LTS, Docker or Kubernetes</td><td>Managed Kubernetes</td></tr>
+            <tr><td>Messaging</td><td>Mosquitto</td><td>EMQX or HiveMQ cluster</td><td>Via DMZ relay</td></tr>
+            <tr><td>Storage</td><td>SQLite (WAL), local files</td><td>PostgreSQL + TimescaleDB, MinIO</td><td>Datasets, models</td></tr>
+            <tr><td>Model runtimes</td><td>PyTorch (Laya); ONNX Runtime or TensorRT (vision, signal)</td><td>vLLM, or hosted LLM API via DMZ</td><td>PyTorch training</td></tr>
+            <tr><td>Identity</td><td>X.509 device certs, TPM</td><td>SSO, roles, secret store</td><td>Cloud IAM</td></tr>
+            <tr><td>Observability</td><td>Metrics and logs, buffered offline</td><td>Prometheus, Grafana, Loki</td><td>Training metrics</td></tr>
+            <tr><td>Network</td><td>Line VLAN, outbound only</td><td>IEC 62443 zones and conduits</td><td>Reached outbound from the DMZ</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section id="messaging">
+      <h2><span class="n">5</span>Data and messaging backbone</h2>
+      <p class="point">MQTT is the backbone, organised as a unified namespace by plant, line and station. OPC UA is how the edge reads PLCs. Every consumer is idempotent on <code>(device, seq)</code>, as the demo's ingest API already is.</p>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th>Topic</th><th>Publisher</th><th>Content</th><th>Leaves the edge?</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">p1/l3/cnc-02/measurement</td><td>collector</td><td>One unit's readings at a station</td><td>Yes</td></tr>
+            <tr><td class="mono">p1/l3/cnc-02/note</td><td>HMI</td><td>Operator note text and language</td><td>Yes</td></tr>
+            <tr><td class="mono">p1/l3/aoi-01/image</td><td>camera collector</td><td>Image reference and hash</td><td>Reference only</td></tr>
+            <tr><td class="mono">p1/l3/cnc-02/signal</td><td>signal collector</td><td>Features once per second: RMS, peak, band energies</td><td>Yes; raw waveform stays</td></tr>
+            <tr><td class="mono">p1/l3/cnc-02/inspection</td><td>inspect</td><td>Disposition, reasons, versions, trace</td><td>Yes</td></tr>
+            <tr><td class="mono">p1/l3/cnc-02/alert</td><td>inspect</td><td>Watch or stop, reasons, likely cause</td><td>Yes</td></tr>
+            <tr><td class="mono">p1/l3/edge/status</td><td>edge node</td><td>Heartbeat, versions, buffer depth; last-will marks it offline</td><td>Yes</td></tr>
+            <tr><td class="mono">p1/l3/edge/cmd</td><td>plant hub</td><td>Config and model updates; never to a PLC</td><td>Down only</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <pre class="code" aria-label="Message envelope">{"schema": "measurement/v1", "device": "cnc-02-plc", "station": "CNC-02",
+ "serial": "HSG7731-000123", "seq": 1695456000123, "ts": "2026-09-23T08:00:00.123Z",
+ "payload": {"bore_d": 42.012, "spindle_vib": 3.1}}</pre>
+      <ul>
+        <li><b>At-least-once delivery</b> (MQTT QoS 1). Duplicates are expected and dropped by <code>(device, seq)</code> at every consumer.</li>
+        <li><b><code>seq</code> rises per device in milliseconds</b>, so a restarted device never reuses numbers, the rule the demo gateway follows.</li>
+        <li><b>Images and raw waveforms stay on the edge</b> unless a unit is held, reviewed or sampled for labelling.</li>
+        <li><b>HTTP ingest remains</b> for devices that cannot speak MQTT, on the same contract as the demo.</li>
+      </ul>
+    </section>
+
+    <!-- 6 -->
+    <section id="edge">
+      <h2><span class="n">6</span>Edge node design</h2>
+      <p class="point">About ten small containers per line. Each model runs in its own service, so a crash, update or memory spike in one model cannot stop inspection.</p>
+      <figure>
+        <div class="fig">
+          <svg viewBox="0 0 1000 330" role="img" aria-labelledby="edge-t">
+            <title id="edge-t">Edge node services and how data moves between them</title>
+            <rect x="12" y="12" width="976" height="306" rx="14" class="d-zone"/>
+            <text x="30" y="36" class="d-cap">Edge node · Docker Compose</text>
+            <g>
+              <rect x="30" y="54" width="180" height="50" rx="9" class="d-box"/><text x="46" y="84" class="d-t sm">collect-opcua</text>
+              <rect x="30" y="116" width="180" height="50" rx="9" class="d-box"/><text x="46" y="146" class="d-t sm">collect-camera</text>
+              <rect x="30" y="178" width="180" height="50" rx="9" class="d-box"/><text x="46" y="208" class="d-t sm">collect-signal</text>
+              <rect x="30" y="240" width="180" height="50" rx="9" class="d-box"/><text x="46" y="262" class="d-t sm">HMI notes</text><text x="46" y="280" class="d-s">MQTT from the HMI</text>
+            </g>
+            <rect x="262" y="140" width="130" height="74" rx="9" class="d-box"/><text x="278" y="170" class="d-t sm">broker</text><text x="278" y="190" class="d-s">Mosquitto</text>
+            <rect x="440" y="116" width="200" height="122" rx="10" class="d-acc"/>
+            <text x="456" y="142" class="d-t d-acc-t">inspect</text>
+            <text x="456" y="164" class="d-s">one worker per station</text>
+            <text x="456" y="182" class="d-s">rules · SPC · alarm table</text>
+            <text x="456" y="200" class="d-s">policy gate · trace</text>
+            <text x="456" y="218" class="d-s">timeout → hold</text>
+            <g>
+              <rect x="700" y="54" width="170" height="50" rx="9" class="d-box"/><text x="716" y="76" class="d-t sm">laya</text><text x="716" y="93" class="d-s">notes, 2 choice questions</text>
+              <rect x="700" y="116" width="170" height="50" rx="9" class="d-box"/><text x="716" y="138" class="d-t sm">vision</text><text x="716" y="155" class="d-s">anomaly + classifier</text>
+              <rect x="700" y="178" width="170" height="50" rx="9" class="d-box"/><text x="716" y="200" class="d-t sm">signal-model</text><text x="716" y="217" class="d-s">health index</text>
+            </g>
+            <rect x="440" y="258" width="200" height="44" rx="9" class="d-soft"/><text x="456" y="285" class="d-t sm">store · 7 days</text>
+            <rect x="700" y="252" width="130" height="50" rx="9" class="d-soft"/><text x="716" y="282" class="d-t sm">line-ui</text>
+            <rect x="842" y="252" width="130" height="50" rx="9" class="d-soft"/><text x="858" y="274" class="d-t sm">agent</text><text x="858" y="291" class="d-s">health, updates</text>
+            <g>
+              <path d="M210 79 H236 V170 H258" class="d-arrow" marker-end="url(#ar)"/>
+              <path d="M210 141 H236" class="d-arrow"/>
+              <path d="M210 203 H236 V180" class="d-arrow"/>
+              <path d="M210 265 H236 V190" class="d-arrow"/>
+              <path d="M392 177 H436" class="d-arrow" marker-end="url(#ar)"/>
+              <path d="M640 150 H670 V79 H696" class="d-arrow acc" marker-end="url(#ara)"/>
+              <path d="M640 160 H670 V141 H696" class="d-arrow acc" marker-end="url(#ara)"/>
+              <path d="M640 200 H696" class="d-arrow acc" marker-end="url(#ara)"/>
+              <path d="M540 238 V254" class="d-arrow" marker-end="url(#ar)"/>
+              <path d="M327 140 V110 H960 V36" class="d-arrow dash" marker-end="url(#ar)"/>
+              <text x="880" y="66" class="d-s">bridge to</text><text x="880" y="80" class="d-s">plant hub</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption><b>Figure 4.</b> Inside an edge node. <code>inspect</code> calls each model service with a timeout; a missing answer holds the unit, never passes it.</figcaption>
+      </figure>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th>Failure at the edge</th><th>What happens</th></tr></thead>
+          <tbody>
+            <tr><td>Plant hub unreachable</td><td>Inspection continues. Results queue in the bridge and store; <code>line-ui</code> shows holds so a line lead can review on the spot.</td></tr>
+            <tr><td>A model service down</td><td>Units that need it are held; units that don't, such as records without a note, flow as normal.</td></tr>
+            <tr><td>Edge node down</td><td>PLCs run the line on their own logic. Collectors resend their buffers; any gap is flagged and those units are held.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 7 -->
+    <section id="ai">
+      <h2><span class="n">7</span>AI capabilities</h2>
+      <p class="point">Three model families run at the edge, each on the data it reads well. Only Laya has been measured so far; vision and signal figures are targets for the pilot.</p>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th>Capability</th><th>Reads</th><th>Approach</th><th>Output to the policy</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Language · Laya</td><td>Operator notes; later shift logs, maintenance requests, nonconformance reports</td><td>Typed <code>choice</code> questions, one forward pass, routed by language</td><td>Topic and defect kind, calibrated confidence</td><td><span class="pill done">Built</span></td></tr>
+            <tr><td>Vision defects</td><td>Camera images at final inspection</td><td>Anomaly detection on good parts, then a classifier once labels exist</td><td>Anomaly score, class, heatmap</td><td><span class="pill later">Proposed</span></td></tr>
+            <tr><td>Predictive maintenance</td><td>Vibration, spindle load, torque curves, leak-test pressure curves</td><td>Per-machine baseline, multivariate anomaly score</td><td>Health index, anomaly flag, likely component</td><td><span class="pill later">Proposed</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>7.1 Language: what the Laya measurements showed</h3>
+      <p>Three findings from the demo shaped how Laya is used everywhere in the platform. The charts below are the measurements behind them.</p>
+
+      <figure>
+        <div class="fig chart" data-chart>
+          <svg viewBox="0 0 720 210" role="img" aria-labelledby="lat-t">
+            <title id="lat-t">Laya latency per call: whole record on CPU, note only on CPU, and GPU per the Laya README</title>
+            <g class="c-grid">
+              <line x1="220" x2="220" y1="18" y2="168"/><line x1="340" x2="340" y1="18" y2="168"/><line x1="460" x2="460" y1="18" y2="168"/><line x1="580" x2="580" y1="18" y2="168"/><line x1="700" x2="700" y1="18" y2="168"/>
+            </g>
+            <g class="c-axis" text-anchor="middle">
+              <text x="220" y="188">0</text><text x="340" y="188">1,000</text><text x="460" y="188">2,000</text><text x="580" y="188">3,000</text><text x="700" y="188">4,000 ms</text>
+            </g>
+            <g class="c-lab" text-anchor="end">
+              <text x="208" y="50">Whole record · CPU</text>
+              <text x="208" y="100">Note only · CPU</text>
+              <text x="208" y="150">Note only · GPU*</text>
+            </g>
+            <rect x="220" y="34" width="296.3" height="24" rx="3" class="c-s1"/>
+            <line x1="516.3" x2="681.3" y1="46" y2="46" class="c-whisk"/><line x1="681.3" x2="681.3" y1="38" y2="54" class="c-whisk"/>
+            <text x="524" y="30" class="c-val">2,469</text>
+            <rect x="220" y="84" width="54.7" height="24" rx="3" class="c-s1"/>
+            <line x1="274.7" x2="289" y1="96" y2="96" class="c-whisk"/><line x1="289" x2="289" y1="88" y2="104" class="c-whisk"/>
+            <text x="298" y="101" class="c-val">456</text>
+            <rect x="220" y="134" width="4" height="24" rx="2" class="c-s1"/>
+            <text x="232" y="151" class="c-val">≈ 33</text>
+            <rect x="220" y="30" width="480" height="32" class="c-hit" data-tip="&lt;b&gt;Whole record, CPU&lt;/b&gt;&lt;br&gt;median 2,469 ms · p95 3,844 ms&lt;br&gt;36 records, measured"/>
+            <rect x="220" y="80" width="480" height="32" class="c-hit" data-tip="&lt;b&gt;Note only, CPU&lt;/b&gt;&lt;br&gt;median 456 ms · p95 575 ms&lt;br&gt;18 notes, measured"/>
+            <rect x="220" y="130" width="480" height="32" class="c-hit" data-tip="&lt;b&gt;Note only, GPU&lt;/b&gt;&lt;br&gt;about 33 ms per call&lt;br&gt;from the Laya README (T4); not measured here"/>
+          </svg>
+        </div>
+        <figcaption><b>Figure 5. Latency per Laya call.</b> Bar = median, whisker = p95. Reading the note alone is about 5× faster than reading the whole record on a 2019 laptop CPU (torch 2.2.2). *GPU figure from the Laya README, not measured in this project.</figcaption>
+      </figure>
+
+      <div class="two">
+        <figure>
+          <div class="fig chart" data-chart>
+            <div class="legend"><span><i style="background:var(--series-1)"></i>Yes/no question: P(defect reported)</span><span><i style="background:var(--series-2)"></i>Choice question: confidence in correct topic</span></div>
+            <svg viewBox="0 0 440 250" role="img" aria-labelledby="ml-t">
+              <title id="ml-t">Non-English notes on the multilingual checkpoint: yes/no question versus choice question</title>
+              <g class="c-grid"><line x1="44" x2="430" y1="190" y2="190"/><line x1="44" x2="430" y1="152.5" y2="152.5"/><line x1="44" x2="430" y1="77.5" y2="77.5"/><line x1="44" x2="430" y1="40" y2="40"/></g>
+              <line x1="44" x2="430" y1="115" y2="115" class="c-ref"/>
+              <g class="c-axis" text-anchor="end"><text x="38" y="194">0</text><text x="38" y="156.5">.25</text><text x="38" y="119">.50</text><text x="38" y="81.5">.75</text><text x="38" y="44">1.0</text></g>
+              <text x="428" y="110" class="c-axis" text-anchor="end">gate 0.50</text>
+              <g>
+                <rect x="72" y="189" width="40" height="1" rx="0" class="c-s1"/><rect x="114" y="101.5" width="40" height="88.5" rx="3" class="c-s2"/>
+                <rect x="202" y="167.5" width="40" height="22.5" rx="3" class="c-s1"/><rect x="244" y="89.5" width="40" height="100.5" rx="3" class="c-s2"/>
+                <rect x="332" y="185.5" width="40" height="4.5" rx="2" class="c-s1"/><rect x="374" y="143.5" width="40" height="46.5" rx="3" class="c-s2"/>
+              </g>
+              <g class="c-val" text-anchor="middle">
+                <text x="92" y="182">.00</text><text x="134" y="95">.59</text>
+                <text x="222" y="161">.15</text><text x="264" y="83">.67</text>
+                <text x="352" y="179">.03</text><text x="394" y="137">.31</text>
+              </g>
+              <g class="c-lab" text-anchor="middle"><text x="113" y="212">Spanish</text><text x="243" y="212">Chinese</text><text x="373" y="212">German</text></g>
+              <g class="c-axis" text-anchor="middle"><text x="113" y="230">scratches</text><text x="243" y="230">torque slip</text><text x="373" y="230">porous lot</text></g>
+              <rect x="66" y="40" width="94" height="150" class="c-hit" data-tip="&lt;b&gt;Spanish&lt;/b&gt;: scratches from new trays&lt;br&gt;yes/no: 0.00 · choice: part defect 0.59"/>
+              <rect x="196" y="40" width="94" height="150" class="c-hit" data-tip="&lt;b&gt;Chinese&lt;/b&gt;: nutrunner slipped on bolt 3&lt;br&gt;yes/no: 0.15 · choice: part defect 0.67"/>
+              <rect x="326" y="40" width="94" height="150" class="c-hit" data-tip="&lt;b&gt;German&lt;/b&gt;: porosity, casting lot L-8812&lt;br&gt;yes/no: 0.03 · choice: material problem 0.31"/>
+            </svg>
+          </div>
+          <figcaption><b>Figure 6. Ask choices, not yes/no.</b> On the multilingual checkpoint, yes/no scored near 0 on notes that plainly report a problem. As a choice, the top answer was correct for all three.</figcaption>
+        </figure>
+
+        <figure>
+          <div class="fig chart" data-chart>
+            <div class="legend"><span><i style="background:var(--good)"></i>✓ passed automatically</span><span><i style="background:var(--hold)"></i>⏸ held for review</span></div>
+            <svg viewBox="0 0 440 250" role="img" aria-labelledby="bn-t">
+              <title id="bn-t">Benign shift notes on a good part: Laya confidence and outcome per note</title>
+              <g class="c-grid"><line x1="44" x2="430" y1="190" y2="190"/><line x1="44" x2="430" y1="152.5" y2="152.5"/><line x1="44" x2="430" y1="77.5" y2="77.5"/><line x1="44" x2="430" y1="40" y2="40"/></g>
+              <line x1="44" x2="430" y1="115" y2="115" class="c-ref"/>
+              <g class="c-axis" text-anchor="end"><text x="38" y="194">0</text><text x="38" y="156.5">.25</text><text x="38" y="119">.50</text><text x="38" y="81.5">.75</text><text x="38" y="44">1.0</text></g>
+              <text x="428" y="110" class="c-axis" text-anchor="end">gate 0.50</text>
+              <rect x="60" y="53.5" width="44" height="136.5" rx="3" class="c-good"/>
+              <rect x="122" y="101.5" width="44" height="88.5" rx="3" class="c-good"/>
+              <rect x="184" y="40" width="44" height="150" rx="3" class="c-good"/>
+              <rect x="246" y="134.5" width="44" height="55.5" rx="3" class="c-hold"/>
+              <rect x="308" y="118" width="44" height="72" rx="3" class="c-hold"/>
+              <rect x="370" y="47.5" width="44" height="142.5" rx="3" class="c-good"/>
+              <g class="c-val" text-anchor="middle">
+                <text x="82" y="47">.91</text><text x="144" y="95">.59</text><text x="206" y="34">1.0</text>
+                <text x="268" y="128">.37</text><text x="330" y="112">.48</text><text x="392" y="41">.95</text>
+              </g>
+              <g class="c-lab" text-anchor="middle"><text x="82" y="212">EN</text><text x="144" y="212">DE</text><text x="206" y="212">ZH</text><text x="268" y="212">ES</text><text x="330" y="212">HI</text><text x="392" y="212">EN</text></g>
+              <g class="c-axis" text-anchor="middle"><text x="82" y="230">en</text><text x="144" y="230">multi</text><text x="206" y="230">multi</text><text x="268" y="230">en ✗</text><text x="330" y="230">multi</text><text x="392" y="230">en</text></g>
+              <rect x="56" y="40" width="52" height="150" class="c-hit" data-tip="&lt;b&gt;EN&lt;/b&gt; “Shift handover, line running normally.”&lt;br&gt;nothing wrong · 0.91 · pass"/>
+              <rect x="118" y="40" width="52" height="150" class="c-hit" data-tip="&lt;b&gt;DE&lt;/b&gt; “Schichtübergabe, keine Auffälligkeiten.”&lt;br&gt;nothing wrong · 0.59 · pass"/>
+              <rect x="180" y="40" width="52" height="150" class="c-hit" data-tip="&lt;b&gt;ZH&lt;/b&gt; “交接班，设备运行正常。”&lt;br&gt;nothing wrong · 1.00 · pass"/>
+              <rect x="242" y="40" width="52" height="150" class="c-hit" data-tip="&lt;b&gt;ES&lt;/b&gt; “Cambio de turno, todo en orden.”&lt;br&gt;routed to the English checkpoint&lt;br&gt;read as machine problem · 0.37 · hold"/>
+              <rect x="304" y="40" width="52" height="150" class="c-hit" data-tip="&lt;b&gt;HI&lt;/b&gt; “शिफ्ट बदली, लाइन सामान्य चल रही है।”&lt;br&gt;nothing wrong · 0.48, just under the gate · hold"/>
+              <rect x="366" y="40" width="52" height="150" class="c-hit" data-tip="&lt;b&gt;EN&lt;/b&gt; “Coolant topped up, parts look good.”&lt;br&gt;nothing wrong · 0.95 · pass"/>
+            </svg>
+          </div>
+          <figcaption><b>Figure 7. Benign notes: 2 of 6 held.</b> Both errors are cautious. The Spanish note was routed to the English checkpoint (✗). Second row: checkpoint used.</figcaption>
+        </figure>
+      </div>
+
+      <div class="callout acc">
+        <h4>Integration rules for every Laya use</h4>
+        <p><b>Give Laya the human text alone.</b> With rule output mixed in (“Leak rate 0.61 ml/min, within tolerance”), it answered <i>leak</i> for healthy parts and missed an operator's dent report.</p>
+        <p><b>Use choice questions.</b> Yes/no questions fail on the multilingual checkpoint (Figure 6).</p>
+        <p><b>Set <code>TORCHINDUCTOR_COMPILE_THREADS=1</code>.</b> With torch 2.2, each checkpoint load forked 12 compile workers that kept a server's port bound after it exited.</p>
+        <p><b>Measure a question on new messages before building on it.</b> In planning, Laya could not tell a confirmed report from a possible one, or read urgency or how critical an order is to the customer; a short word list in three languages could. Asking the same thing twice in different wordings and requiring agreement removed confident errors on the inbox (0, against 2–3 for either wording alone).</p>
+      </div>
+
+      <p>The planning module uses the same service for disruption messages, planner commands, rejection comments and shift notes. Its design, measurements and user guide are separate documents: <a href="plant-aps-design.html">Plant APS design</a> and <a href="aps-workbench-guide.html">APS workbench guide</a>.</p>
+
+      <h3>7.2 Vision defects</h3>
+      <ul>
+        <li>Start with anomaly detection trained on good parts only (PatchCore or PaDiM family, for example from Anomalib), because defect images are rare at first. Add a supervised classifier once QA reviews have labelled enough real defects.</li>
+        <li>Map the anomaly score to a calibrated probability on a held-out set of good and defective images, so the 50% gate means something.</li>
+        <li>Store the heatmap with the image so a reviewer sees where the model looked. Target: scoring inside one station cycle (cycle time is an open question).</li>
+      </ul>
+      <h3>7.3 Predictive maintenance</h3>
+      <ul>
+        <li>Features per second or per cycle: RMS, peak, kurtosis, FFT band energies, spindle load, and the tool-life counter from the PLC.</li>
+        <li>A per-machine baseline plus a multivariate anomaly score (isolation forest or a small autoencoder) produces a health index.</li>
+        <li>Remaining-useful-life estimates only once real failure history exists; until then, a health trend and a warning, not a date.</li>
+      </ul>
+    </section>
+
+    <!-- 8 -->
+    <section id="llm">
+      <h2><span class="n">8</span>Laya and LLMs: who does what</h2>
+      <p class="point">Laya decides; LLMs explain. Laya sits in the real-time loop for every unit, because its answers are typed, calibrated and fast on edge hardware. LLMs work beside people, on demand, and never make a disposition.</p>
+      <div class="tbl">
+        <table>
+          <thead><tr><th></th><th>Laya</th><th>LLM</th></tr></thead>
+          <tbody>
+            <tr><td>Output</td><td>One option from a fixed set, with a calibrated probability</td><td>Free text or tool calls</td></tr>
+            <tr><td>Speed, hardware</td><td>0.46 s per note on the edge CPU (measured)</td><td>Seconds per answer on a GPU server or hosted API (not measured)</td></tr>
+            <tr><td>Offline at the edge</td><td>Yes</td><td>No: plant hub or cloud</td></tr>
+            <tr><td>How it fails</td><td>Wrong option, but its confidence says how likely</td><td>Fluent text that can be wrong, with no reliable score</td></tr>
+            <tr><td>Automatic gate</td><td><span class="pill pass">Yes</span> on confidence</td><td><span class="pill hold">No</span></td></tr>
+            <tr><td>Cost per call</td><td>Near zero on existing hardware</td><td>GPU time or per-token fees</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <figure>
+        <div class="fig">
+          <svg viewBox="0 0 1000 250" role="img" aria-labelledby="hand-t">
+            <title id="hand-t">Hand-off between Laya, the policy, the QA reviewer and the LLM assistant</title>
+            <rect x="20" y="92" width="150" height="62" rx="9" class="d-box"/><text x="36" y="118" class="d-t sm">Text arrives</text><text x="36" y="136" class="d-s">note, request, report</text>
+            <rect x="206" y="92" width="140" height="62" rx="9" class="d-acc"/><text x="222" y="118" class="d-t sm d-acc-t">Laya guard</text><text x="222" y="136" class="d-s">prompt injection?</text>
+            <rect x="206" y="196" width="140" height="44" rx="9" class="d-warn"/><text x="222" y="223" class="d-t sm">Quarantine</text>
+            <rect x="382" y="92" width="150" height="62" rx="9" class="d-acc"/><text x="398" y="118" class="d-t sm d-acc-t">Laya questions</text><text x="398" y="136" class="d-s">typed, calibrated</text>
+            <rect x="568" y="92" width="130" height="62" rx="9" class="d-box"/><text x="584" y="118" class="d-t sm">≥ gate?</text><text x="584" y="136" class="d-s">confidence</text>
+            <rect x="740" y="20" width="160" height="56" rx="9" class="d-box"/><text x="756" y="44" class="d-t sm">Policy acts</text><text x="756" y="62" class="d-s">disposition, routing</text>
+            <rect x="740" y="146" width="160" height="56" rx="9" class="d-box"/><text x="756" y="170" class="d-t sm">QA reviewer</text><text x="756" y="188" class="d-s">decides</text>
+            <rect x="520" y="190" width="170" height="50" rx="9" class="d-hold"/><text x="536" y="212" class="d-t sm">LLM assistant</text><text x="536" y="229" class="d-s">translate, explain</text>
+            <rect x="920" y="146" width="66" height="56" rx="9" class="d-soft"/><text x="930" y="178" class="d-t sm">Label</text>
+            <path d="M170 123 H202" class="d-arrow" marker-end="url(#ar)"/>
+            <path d="M346 123 H378" class="d-arrow acc" marker-end="url(#ara)"/><text x="350" y="114" class="d-s">clean</text>
+            <path d="M276 154 V192" class="d-arrow" marker-end="url(#ar)"/><text x="284" y="178" class="d-s">flagged</text>
+            <path d="M532 123 H564" class="d-arrow acc" marker-end="url(#ara)"/>
+            <path d="M698 110 H718 V48 H736" class="d-arrow acc" marker-end="url(#ara)"/><text x="704" y="40" class="d-s">yes</text>
+            <path d="M698 136 H718 V174 H736" class="d-arrow" marker-end="url(#ar)"/><text x="704" y="198" class="d-s">no</text>
+            <path d="M690 215 H716 V190 H736" class="d-arrow dash" marker-end="url(#ar)"/>
+            <path d="M900 174 H916" class="d-arrow" marker-end="url(#ar)"/>
+          </svg>
+        </div>
+        <figcaption><b>Figure 8.</b> Laya handles the confident majority automatically. The uncertain slice goes to a person; the LLM makes that person faster, it does not replace them. Reviews become labels.</figcaption>
+      </figure>
+
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th>Job</th><th>Who</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>Classify each operator note in the unit's decision</td><td>Laya</td><td>Per unit, real time, needs a gate</td></tr>
+            <tr><td>Route maintenance requests by trade</td><td>Laya</td><td>Fixed set of trades</td></tr>
+            <tr><td>Urgency; is the sender sure; what a delay costs the customer</td><td>Rules</td><td>Laya measured unreliable on these; the cues are a few words</td></tr>
+            <tr><td>Planning inbox and planner commands</td><td>Laya, two readings that must agree</td><td>Event kind and intent; facts come from rules</td></tr>
+            <tr><td>Why a proposal was rejected; breakdowns in shift notes</td><td>Laya, suggestion only</td><td>Measured good enough to suggest, not to act</td></tr>
+            <tr><td>Why an order is late</td><td>Schedule analysis</td><td>Computed from the schedule, not generated</td></tr>
+            <tr><td>Classify nonconformance reports</td><td>Laya</td><td>Fixed defect taxonomy</td></tr>
+            <tr><td>Screen text an agent will act on</td><td>Laya guard</td><td>Catch prompt injection before the LLM reads it</td></tr>
+            <tr><td>Explain a held unit; translate its note</td><td>LLM</td><td>Helps a person decide faster</td></tr>
+            <tr><td>Shift handover summary</td><td>LLM</td><td>Free text for people, once per shift</td></tr>
+            <tr><td>Draft 8D and CAPA reports</td><td>LLM</td><td>A draft an engineer edits and signs</td></tr>
+            <tr><td>Investigation: “why did CNC-02 scrap rise?”</td><td>LLM, read-only tools</td><td>Queries historian and traceability, cites records</td></tr>
+            <tr><td>Work-instruction questions</td><td>LLM, document search</td><td>Answers from the plant's documents with citations</td></tr>
+            <tr><td>Propose Laya questions and test notes</td><td>LLM, reviewed</td><td>Synthetic Spanish or Hindi notes to measure weak languages</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li>An LLM never writes a disposition, approves a model or touches a PLC. Its only write is a draft a named person accepts.</li>
+        <li>LLM tools are read-only with the reviewer role; every prompt, tool call and answer is logged with the user who asked.</li>
+        <li>An LLM is not a second automatic judge on uncertain units: two uncalibrated opinions agreeing is not evidence.</li>
+        <li>Load follows people, not units: a few summaries per line per day plus one explanation per held unit (about 4% of records in the demo run).</li>
+      </ul>
+    </section>
+
+    <!-- 9 -->
+    <section id="policy">
+      <h2><span class="n">9</span>Decision policy</h2>
+      <p class="point">Models can make the system more cautious, never less. A model can hold a unit or send it to rework; only the rules or a named person can scrap a unit or release one the rules failed.</p>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th class="r">#</th><th>Evidence (first match wins)</th><th>Outcome</th><th>Who acts</th></tr></thead>
+          <tbody>
+            <tr><td class="r">1</td><td>A required reading or model answer is missing</td><td><span class="pill hold">⏸ Hold</span></td><td>QA</td></tr>
+            <tr><td class="r">2</td><td>A product characteristic is out of tolerance</td><td><span class="pill rework">↻ Rework</span> or <span class="pill scrap">✕ Scrap</span> per reaction plan</td><td>Automatic</td></tr>
+            <tr><td class="r">2a</td><td>…and a confident note or gauge signal says the measurement is suspect</td><td><span class="pill hold">⏸ Hold</span> for gauge check</td><td>QA, metrology</td></tr>
+            <tr><td class="r">3</td><td>Vision defect probability at or above the gate</td><td><span class="pill rework">↻ Rework</span>, or hold for critical classes</td><td>Automatic / QA</td></tr>
+            <tr><td class="r">4</td><td>Vision probability between a low floor and the gate</td><td><span class="pill hold">⏸ Hold</span></td><td>QA</td></tr>
+            <tr><td class="r">5</td><td>A confident note reports a defect, bad material or a measurement problem</td><td><span class="pill hold">⏸ Hold</span></td><td>QA</td></tr>
+            <tr><td class="r">6</td><td>Laya below the gate on a note</td><td><span class="pill hold">⏸ Hold</span></td><td>QA</td></tr>
+            <tr><td class="r">7</td><td>None of the above</td><td><span class="pill pass">✓ Pass</span></td><td>Automatic</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <figure>
+        <div class="fig chart" data-chart>
+          <svg viewBox="0 0 720 280" role="img" aria-labelledby="tw-t">
+            <title id="tw-t">Tool-wear scenario: bore diameter per unit against control and specification limits, with the line stop and first out-of-tolerance unit marked</title>
+            <g class="c-grid">
+              <line x1="70" x2="700" y1="226" y2="226"/><line x1="70" x2="700" y1="178" y2="178"/><line x1="70" x2="700" y1="130" y2="130"/><line x1="70" x2="700" y1="82" y2="82"/><line x1="70" x2="700" y1="34" y2="34"/>
+            </g>
+            <g class="c-axis" text-anchor="end">
+              <text x="62" y="230">42.00</text><text x="62" y="182">42.02</text><text x="62" y="134">42.04</text><text x="62" y="86">42.06</text><text x="62" y="38">42.08</text>
+            </g>
+            <line x1="70" x2="700" y1="154" y2="154" class="c-ref"/><text x="698" y="148" class="c-axis" text-anchor="end">UCL 42.030</text>
+            <line x1="70" x2="700" y1="106" y2="106" class="c-spec"/><text x="698" y="100" class="c-axis" text-anchor="end" style="fill:var(--bad)">USL 42.050</text>
+            <g class="c-axis" text-anchor="middle">
+              <text x="100" y="248">1</text><text x="166" y="248">2</text><text x="232" y="248">3</text><text x="298" y="248">4</text><text x="364" y="248">5</text><text x="430" y="248">6</text><text x="496" y="248">7</text><text x="562" y="248">8</text><text x="628" y="248">9</text><text x="694" y="248">10</text>
+              <text x="397" y="268">unit in the scenario</text>
+            </g>
+            <line x1="298" x2="298" y1="20" y2="226" class="c-whisk" style="stroke:var(--bad);stroke-dasharray:3 3"/>
+            <text x="304" y="26" class="c-lab" style="fill:var(--bad);font-weight:600">■ stop raised</text>
+            <line x1="496" x2="496" y1="20" y2="226" class="c-ref"/>
+            <text x="502" y="26" class="c-lab">first part out of tolerance</text>
+            <path d="M100 216.4 L166 194.8 L232 173.2 L298 151.6 L364 130 L430 108.4 L496 86.8 L562 65.2 L628 43.6 L694 22" class="c-line"/>
+            <g>
+              <circle cx="100" cy="216.4" r="4.5" class="c-s1"/><circle cx="166" cy="194.8" r="4.5" class="c-s1"/><circle cx="232" cy="173.2" r="4.5" class="c-s1"/>
+              <circle cx="298" cy="151.6" r="6" class="c-s1" style="stroke:var(--surface);stroke-width:2"/><circle cx="364" cy="130" r="4.5" class="c-s1"/><circle cx="430" cy="108.4" r="4.5" class="c-s1"/>
+              <circle cx="496" cy="86.8" r="5" style="fill:var(--bad)"/><circle cx="562" cy="65.2" r="5" style="fill:var(--bad)"/><circle cx="628" cy="43.6" r="5" style="fill:var(--bad)"/><circle cx="694" cy="22" r="5" style="fill:var(--bad)"/>
+            </g>
+            <g>
+              <rect x="70" y="20" width="63" height="206" class="c-hit" data-tip="&lt;b&gt;Unit 1&lt;/b&gt; bore 42.004 mm · pass"/>
+              <rect x="133" y="20" width="66" height="206" class="c-hit" data-tip="&lt;b&gt;Unit 2&lt;/b&gt; bore 42.013 mm · pass"/>
+              <rect x="199" y="20" width="66" height="206" class="c-hit" data-tip="&lt;b&gt;Unit 3&lt;/b&gt; bore 42.022 mm · pass"/>
+              <rect x="265" y="20" width="66" height="206" class="c-hit" data-tip="&lt;b&gt;Unit 4&lt;/b&gt; bore 42.031 mm&lt;br&gt;SPC signal + operator: “chatter noise, tool T14 near end of life”&lt;br&gt;Laya: machine problem 0.95 → &lt;b&gt;stop&lt;/b&gt;"/>
+              <rect x="331" y="20" width="66" height="206" class="c-hit" data-tip="&lt;b&gt;Unit 5&lt;/b&gt; bore 42.040 mm · pass, stop alert open"/>
+              <rect x="397" y="20" width="66" height="206" class="c-hit" data-tip="&lt;b&gt;Unit 6&lt;/b&gt; bore 42.049 mm · pass, stop alert open"/>
+              <rect x="463" y="20" width="66" height="206" class="c-hit" data-tip="&lt;b&gt;Unit 7&lt;/b&gt; bore 42.058 mm · scrap"/>
+              <rect x="529" y="20" width="66" height="206" class="c-hit" data-tip="&lt;b&gt;Unit 8&lt;/b&gt; bore 42.067 mm · scrap"/>
+              <rect x="595" y="20" width="66" height="206" class="c-hit" data-tip="&lt;b&gt;Unit 9&lt;/b&gt; bore 42.076 mm · scrap"/>
+              <rect x="661" y="20" width="39" height="206" class="c-hit" data-tip="&lt;b&gt;Unit 10&lt;/b&gt; bore 42.085 mm · scrap"/>
+            </g>
+          </svg>
+        </div>
+        <figcaption><b>Figure 9. Two independent signals stop the line early.</b> Simulated tool wear: SPC flags the drift and the operator's chatter note reads as a machine problem, so the stop comes 3 units before the first bad part. Bore values follow the scenario's drift without noise; the measured run raised the stop at 42.029 mm.</figcaption>
+      </figure>
+
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Alert level</th><th>Raised when</th><th>Response</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pill watch">▲ Watch</span></td><td>Any one signal: SPC rule, process limit, alarm code, signal anomaly, or a confident machine-problem note</td><td>Line dashboard; one alert per station while open</td></tr>
+            <tr><td><span class="pill stop">■ Stop recommended</span></td><td>Numeric drift plus a machine-problem note or a signal anomaly</td><td>Line lead paged; confirms the stop at the machine</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">The platform recommends a stop; a person presses the button. The policy is versioned and signed like a model, and every disposition records which version made it.</p>
+    </section>
+
+    <!-- 10 -->
+    <section id="hub">
+      <h2><span class="n">10</span>Plant hub</h2>
+      <p class="point">Where people work with the system: QA review, cross-line dashboards, the long-term record and the MES link. Inspection never waits for it.</p>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th>Component</th><th>Job</th><th>Proposed technology</th></tr></thead>
+          <tbody>
+            <tr><td>Plant broker</td><td>Receives every edge bridge; sends config and models down</td><td>EMQX or HiveMQ cluster; Mosquitto for one line</td></tr>
+            <tr><td>Historian</td><td>Measurements, signal features, health indices over time</td><td>TimescaleDB</td></tr>
+            <tr><td>Traceability store</td><td>One record per unit per station, with versions, trace and reviewer</td><td>PostgreSQL</td></tr>
+            <tr><td>Image archive</td><td>Images and heatmaps for held, reviewed and sampled units</td><td>MinIO or any S3 store</td></tr>
+            <tr><td>QA review and dashboards</td><td>Review queue, line and plant views, per-unit drill-down</td><td>The demo's dashboard, grown into a multi-line app</td></tr>
+            <tr><td>Alert router</td><td>Pages the line lead on a stop; posts watch alerts</td><td>Teams, email or SMS</td></tr>
+            <tr><td>MES connector</td><td>Work orders and specs in; dispositions and genealogy out</td><td>Depends on the plant's MES</td></tr>
+            <tr><td>LLM assistants</td><td>Explanations, summaries, report drafts</td><td>Plant GPU server or hosted API through the DMZ</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 11 -->
+    <section id="lifecycle">
+      <h2><span class="n">11</span>Model lifecycle and feedback loop</h2>
+      <p class="point">Every QA review is a label, and every model, rule or policy change passes the same five gates before it decides anything on a line.</p>
+      <figure>
+        <div class="fig">
+          <svg viewBox="0 0 1000 176" role="img" aria-labelledby="lc-t">
+            <title id="lc-t">Lifecycle: labels, offline evaluation, shadow, canary, fleet rollout, with rollback</title>
+            <g>
+              <path d="M20 30 H176 L200 70 L176 110 H20 L44 70 Z" class="d-box"/>
+              <text x="52" y="66" class="d-t sm">Labels</text><text x="52" y="84" class="d-s">reviews, audits</text>
+              <path d="M210 30 H366 L390 70 L366 110 H210 L234 70 Z" class="d-box"/>
+              <text x="242" y="66" class="d-t sm">Offline eval</text><text x="242" y="84" class="d-s">plant's own data</text>
+              <path d="M400 30 H556 L580 70 L556 110 H400 L424 70 Z" class="d-box"/>
+              <text x="432" y="66" class="d-t sm">Shadow</text><text x="432" y="84" class="d-s">logged, not used</text>
+              <path d="M590 30 H746 L770 70 L746 110 H590 L614 70 Z" class="d-acc"/>
+              <text x="622" y="66" class="d-t sm d-acc-t">Canary</text><text x="622" y="84" class="d-s">one line decides</text>
+              <path d="M780 30 H956 L980 70 L956 110 H780 L804 70 Z" class="d-acc"/>
+              <text x="812" y="66" class="d-t sm d-acc-t">Fleet rollout</text><text x="812" y="84" class="d-s">signed, per line</text>
+            </g>
+            <path d="M880 110 V150 H110 V116" class="d-arrow dash" marker-end="url(#ar)"/>
+            <text x="420" y="166" class="d-s">drift or regression → rollback to the version kept on disk, and back to labels</text>
+          </svg>
+        </div>
+        <figcaption><b>Figure 10.</b> A quality engineer signs off each gate. A failing gate sends the change back a step.</figcaption>
+      </figure>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Metric</th><th>Why it matters</th></tr></thead>
+          <tbody>
+            <tr><td>Escape rate of auto-released units</td><td>The number that matters most; comes from random audits (for example 1% per station) and downstream findings</td></tr>
+            <tr><td>False-hold rate</td><td>Reviewer time spent on good parts</td></tr>
+            <tr><td>Agreement with reviewers</td><td>Plain accuracy against human decisions</td></tr>
+            <tr><td>Calibration error</td><td>Whether “80% confident” is right 80% of the time; the gate depends on it</td></tr>
+            <tr><td>Hold rate and confidence over time</td><td>Early sign of drift: new operators, a new product, a changed camera</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The gate for each model and class is the lowest confidence at which the escape rate on reviewed and audited data stays under target. It is recomputed monthly and changes only through the same approval.</p>
+      <p><b>Improving Laya</b> goes through the same gates, cheapest step first, all with <code>laya_train</code> in the repo: reword questions and tune gates on a dev set; calibrate (the multilingual checkpoint ships with no fitted temperatures, and fitting needs a few hundred labelled answers per question type and option count); fine-tune on the plant's own labelled texts on a GPU inside the plant once a few thousand exist, then calibrate on separate records. Labels come from normal use: QA reviews, and every planner decision on a Laya reading in planning. A trained checkpoint replaces a published one only for the module it was trained for, and only after it beats it on the held-out set.</p>
+      <p>Every calibration and fine-tuning run records its data, settings, curves, before-and-after scores, temperatures and how far each part of the network moved; the platform shows them at <code>/training/</code>. The first demonstration run fine-tuned the multilingual checkpoint on 41 planning messages and lifted accuracy on 50 others from 63% to 78%, with calibration error from 0.22 to 0.08: too little data to deploy, but proof that the loop runs on this hardware (11 minutes on a laptop CPU).</p>
+    </section>
+
+    <!-- 12 -->
+    <section id="security">
+      <h2><span class="n">12</span>Security</h2>
+      <p class="point">Zones and conduits per IEC 62443: the plant floor is never reachable from outside, and every connection carries its own certificate. The demo's shared bearer key over plain HTTP is replaced in phase 1.</p>
+      <figure>
+        <div class="fig">
+          <svg viewBox="0 0 1000 300" role="img" aria-labelledby="sec-t">
+            <title id="sec-t">Security zones from cloud to control, with outbound-only connections</title>
+            <g>
+              <rect x="20" y="14" width="760" height="46" rx="8" class="d-soft"/><text x="36" y="42" class="d-t sm">Cloud</text><text x="200" y="42" class="d-s">training, registry · never initiates a connection into the plant</text>
+              <rect x="20" y="70" width="760" height="46" rx="8" class="d-warn"/><text x="36" y="98" class="d-t sm">DMZ · level 3.5</text><text x="200" y="98" class="d-s">sync relay · outbound only</text>
+              <rect x="20" y="126" width="760" height="46" rx="8" class="d-box"/><text x="36" y="154" class="d-t sm">Plant · level 3</text><text x="200" y="154" class="d-s">plant hub, MES, sign-in · accepts edge bridges</text>
+              <rect x="20" y="182" width="760" height="46" rx="8" class="d-acc"/><text x="36" y="210" class="d-t sm d-acc-t">Edge</text><text x="200" y="210" class="d-s">one node per line · reads PLCs over OPC UA, read-only account</text>
+              <rect x="20" y="238" width="760" height="46" rx="8" class="d-soft"/><text x="36" y="266" class="d-t sm">Control · levels 0–2</text><text x="200" y="266" class="d-s">PLCs, sensors, cameras, HMIs · reach only their line's edge node</text>
+            </g>
+            <g>
+              <path d="M840 262 V222" class="d-arrow" marker-end="url(#ar)"/>
+              <path d="M840 206 V166" class="d-arrow acc" marker-end="url(#ara)"/>
+              <path d="M840 150 V110" class="d-arrow" marker-end="url(#ar)"/>
+              <path d="M840 94 V54" class="d-arrow" marker-end="url(#ar)"/>
+              <text x="856" y="246" class="d-s">OPC UA</text>
+              <text x="856" y="190" class="d-s">MQTT, mTLS</text>
+              <text x="856" y="134" class="d-s">outbound</text>
+              <text x="856" y="78" class="d-s">outbound</text>
+              <text x="820" y="30" class="d-cap">Connections</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption><b>Figure 11.</b> Every arrow is initiated from the lower zone. Nothing reaches down into control, and the cloud never connects in.</figcaption>
+      </figure>
+      <ul>
+        <li><b>Identity:</b> one X.509 certificate per edge node and per collector; MQTT topic ACLs let a node publish only its own line's topics. Keys in the TPM where the hardware has one.</li>
+        <li><b>Supply chain:</b> container images, models, rules and policies are signed; edge nodes refuse anything unsigned or signed by an unknown key. In the source repository, <code>main</code> changes only through reviewed pull requests; no branch can be force-pushed or deleted by contributors.</li>
+        <li><b>People:</b> single sign-on with four roles: operator, QA reviewer, quality engineer (approves models, rules and policy), administrator. Reviews, approvals and config changes go to an append-only audit log.</li>
+        <li><b>Untrusted text:</b> notes, supplier documents and web content are data, never instructions. Anything an AI agent will act on passes Laya's prompt-injection guard first.</li>
+      </ul>
+    </section>
+
+    <!-- 13 -->
+    <section id="sizing">
+      <h2><span class="n">13</span>Deployment and sizing</h2>
+      <p class="point">A line without camera inspection runs on a CPU-only industrial PC; vision adds a GPU at the edge. Figures are sizing estimates, except Laya's latency, which was measured.</p>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th>Tier</th><th>Proposed hardware</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>Edge, no vision</td><td>Fanless IPC: 8 cores, 32 GB RAM, 1 TB SSD</td><td>Laya on CPU took 0.46 s per note, and notes are rare. Both checkpoints (421M and 322M parameters) need roughly 3 GB RAM in full precision (estimated)</td></tr>
+            <tr><td>Edge, with vision</td><td>The same plus an NVIDIA GPU, or a Jetson AGX Orin-class module</td><td>Image scoring within one station cycle</td></tr>
+            <tr><td>Plant hub</td><td>Three servers or VMs: broker, database with replica, apps; one GPU server for on-prem LLMs</td><td>Survives one machine failing</td></tr>
+            <tr><td>Cloud</td><td>Object storage; on-demand GPU for training</td><td>Training is occasional</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Data per line</th><th class="r">Per day</th><th class="r">7-day edge buffer</th></tr></thead>
+          <tbody>
+            <tr><td>Measurement, note and result messages (~1 KB each)</td><td class="r">~15 MB</td><td class="r">~100 MB</td></tr>
+            <tr><td>Signal features, 1 per second, 3 machines</td><td class="r">~50 MB</td><td class="r">~350 MB</td></tr>
+            <tr><td>Images, one 2 MB image per unit</td><td class="r">~2.9 GB</td><td class="r">~20 GB</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">Assumes one unit per minute through five stations; both the rate and the image size need confirming. Images dominate, which is why they stay at the edge unless a unit is held, reviewed or sampled.</p>
+    </section>
+
+    <!-- 14 -->
+    <section id="reliability">
+      <h2><span class="n">14</span>Reliability and failure modes</h2>
+      <p class="point">Every failure makes the system hold more units or buffer more data; none makes it release a unit it could not check.</p>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th>Failure</th><th>What happens</th><th>Recovery</th></tr></thead>
+          <tbody>
+            <tr><td>Plant network or hub down</td><td>Edge keeps inspecting; holds reviewed on the line dashboard</td><td>Bridge drains; hub backfills from the 7-day store</td></tr>
+            <tr><td>Cloud down</td><td>Nothing on the line changes</td><td>Training and rollout wait</td></tr>
+            <tr><td>Model service crashes or times out</td><td>Units needing it are held; others flow</td><td>Container restarts</td></tr>
+            <tr><td>New model misbehaves</td><td>Hold rate or disagreement jumps on the canary line</td><td>Rollback to the version on disk, offline</td></tr>
+            <tr><td>Edge node down</td><td>PLCs run the line; no dispositions are made</td><td>Collectors resend; gaps flagged and held</td></tr>
+            <tr><td>Sensor sends no reading</td><td>That unit is held (rule 1)</td><td>Maintenance; the alert names the station</td></tr>
+            <tr><td>Duplicates, out of order</td><td>Dropped or reordered by <code>(device, seq)</code></td><td>None needed</td></tr>
+            <tr><td>Backlog builds up</td><td>Broker and ingest push back; collectors buffer</td><td>Workers catch up; a growing queue raises a watch alert</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Each row becomes an automated test that kills or blocks the component and checks the outcome. The demo already tests gateway buffering through an outage.</p>
+    </section>
+
+    <!-- 15 -->
+    <section id="plan">
+      <h2><span class="n">15</span>Build plan</h2>
+      <p class="point">Backbone first, then the feedback loop, so every model added after it is measured from day one. Phases 1 to 4 run entirely on simulators; real hardware arrives in phase 5.</p>
+      <figure>
+        <div class="fig">
+          <svg viewBox="0 0 1000 124" role="img" aria-labelledby="plan-t">
+            <title id="plan-t">Seven phases from the finished demo to plant rollout</title>
+            <g>
+              <path d="M10 20 H130 L148 56 L130 92 H10 Z" style="fill:var(--good-soft);stroke:var(--good);stroke-width:1.2"/>
+              <text x="22" y="50" class="d-t sm">0 · Demo</text><text x="22" y="70" class="d-s">done</text>
+              <path d="M150 20 H270 L288 56 L270 92 H150 L168 56 Z" class="d-acc"/>
+              <text x="176" y="50" class="d-t sm d-acc-t">1 · Backbone</text><text x="176" y="70" class="d-s">next</text>
+              <path d="M290 20 H410 L428 56 L410 92 H290 L308 56 Z" class="d-box"/>
+              <text x="316" y="50" class="d-t sm">2 · Feedback</text><text x="316" y="70" class="d-s">loop, registry</text>
+              <path d="M430 20 H550 L568 56 L550 92 H430 L448 56 Z" class="d-box"/>
+              <text x="456" y="50" class="d-t sm">3 · Signals</text><text x="456" y="70" class="d-s">predictive maint.</text>
+              <path d="M570 20 H690 L708 56 L690 92 H570 L588 56 Z" class="d-box"/>
+              <text x="596" y="50" class="d-t sm">4 · Vision</text><text x="596" y="70" class="d-s">GPU edge build</text>
+              <path d="M710 20 H830 L848 56 L830 92 H710 L728 56 Z" class="d-box"/>
+              <text x="736" y="50" class="d-t sm">5 · Pilot</text><text x="736" y="70" class="d-s">real Line 3</text>
+              <path d="M850 20 H990 V92 H850 L868 56 Z" class="d-box"/>
+              <text x="876" y="50" class="d-t sm">6 · Rollout</text><text x="876" y="70" class="d-s">every line</text>
+            </g>
+            <text x="10" y="116" class="d-s">Simulators only ────────────────────────────────── phases 1–4</text>
+            <text x="716" y="116" class="d-s">real hardware ─── phases 5–6</text>
+          </svg>
+        </div>
+      </figure>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th>Phase</th><th>Builds</th><th>Exit criteria</th></tr></thead>
+          <tbody>
+            <tr><td>0 · Line 3 demo <span class="pill done">Done</span></td><td>Rules, SPC, Laya on notes, policy gate, QA review, dashboard, simulated gateway</td><td>69 offline tests; every scenario gives its expected outcome with real checkpoints</td></tr>
+            <tr><td>1 · Backbone <span class="pill next">Next</span></td><td>Split into edge services and plant hub; Mosquitto; OPC UA collector against a simulator; PostgreSQL; mTLS; Docker Compose</td><td>All demo scenarios pass end to end over MQTT; hub-down and model-down tests pass</td></tr>
+            <tr><td>2 · Feedback loop</td><td>Audit sampling, label store, metrics dashboard, signed registry, shadow and canary, rollback</td><td>Gate computed from reviewed data; rollback works with the network unplugged</td></tr>
+            <tr><td>3 · Predictive maintenance</td><td>Signal collector, features, per-machine anomaly model, health index</td><td>In simulated tool wear, the signal warning comes before SPC</td></tr>
+            <tr><td>4 · Vision</td><td>Camera collector, anomaly model, calibration, heatmaps in review, GPU build</td><td>Calibrated on a public defect dataset; fits the assumed cycle time</td></tr>
+            <tr><td>5 · Line 3 pilot</td><td>Real PLC tags, sensors and camera; shadow first, then canary</td><td>Goal targets met on real data; zero escapes found by audits</td></tr>
+            <tr><td>6 · Plant rollout</td><td>One edge node per line from the same images and a per-line config</td><td>A new line onboards by config alone</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Predictive maintenance comes before vision because it uses sensors most machines already have; vision needs cameras, lighting, a GPU and labelled images. Phase 1 starts by moving the demo's worker, rules and policy into an <code>inspect</code> service that subscribes to MQTT, with its 69 tests as the regression suite.</p>
+    </section>
+
+    <!-- 16 -->
+    <section id="decisions">
+      <h2><span class="n">16</span>Open decisions and risks</h2>
+      <p class="point">Nine decisions need an owner before phase 1 ends; the MES and cloud-versus-on-prem choices change the design most.</p>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th>Decision</th><th>Options</th><th>Recommendation</th></tr></thead>
+          <tbody>
+            <tr><td>Which MES, and how it integrates</td><td>Vendor REST, ISA-95 (B2MML), database views</td><td>Depends on the MES; config files until then</td></tr>
+            <tr><td>Cloud or fully on-prem</td><td>Cloud training and registry; all on the plant hub</td><td>Build so the hub can run it all; cloud optional</td></tr>
+            <tr><td>MQTT payload format</td><td>Plain JSON, versioned; Sparkplug B</td><td>JSON now; Sparkplug B only if SCADA needs it</td></tr>
+            <tr><td>Edge orchestration</td><td>Docker Compose; k3s</td><td>Compose for the pilot; decide at five nodes</td></tr>
+            <tr><td>Edge hardware for vision</td><td>IPC with NVIDIA GPU; Jetson AGX Orin class</td><td>After resolution and cycle time are known</td></tr>
+            <tr><td>Cycle time and image resolution</td><td>From the process team</td><td>Needed to size vision</td></tr>
+            <tr><td>Goal targets</td><td>Auto-release, escapes, outage length</td><td>Confirm or replace the proposals</td></tr>
+            <tr><td>Traceability retention</td><td>Customer and regulatory requirements</td><td>Needed to size the plant database</td></tr>
+            <tr><td>Where LLM assistants run</td><td>Open-weight model on a plant GPU; hosted API via DMZ</td><td>Decide by data-sovereignty rules</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tbl wide">
+        <table>
+          <thead><tr><th>Risk</th><th>Impact</th><th>Mitigation</th></tr></thead>
+          <tbody>
+            <tr><td>Laya weaker on some languages</td><td>False holds; a missed note in a rare language</td><td>Choice questions, the gate, audits; evaluate on real notes before auto-release</td></tr>
+            <tr><td>Few real defect images</td><td>Vision hard to train and calibrate</td><td>Anomaly detection on good parts; public datasets; labels from reviews</td></tr>
+            <tr><td>Little failure history</td><td>No remaining-useful-life estimate</td><td>Health index and warnings first</td></tr>
+            <tr><td>Reviews only see held units</td><td>Auto-release escapes go unmeasured</td><td>Random audits; downstream findings joined by serial</td></tr>
+            <tr><td>Operators write few notes</td><td>The language layer has little to read</td><td>Quick-pick reasons plus free text; show what notes caught</td></tr>
+            <tr><td>IT/OT security approval is slow</td><td>Pilot slips</td><td>Start the zone review in phase 1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <footer>
+        Sources: the Line 3 demo (<code>demos/quality_inspection</code>, <a href="https://github.com/clydechen0228/SmartMom/pull/1">PR #1</a>), its <code>evaluate.py</code> runs on 2026-09-23, and the Laya README for GPU latency. Numbers not marked as measured are proposals for the team to confirm.
+      </footer>
+    </section>
+  </main>
+</div>
+
+<button class="theme-btn" id="theme" type="button" aria-label="Switch light or dark theme">◐ Theme</button>
+
+<script>
+(function () {
+  "use strict";
+  // Theme toggle: remembered per viewer when storage is available.
+  var root = document.documentElement;
+  try { var saved = localStorage.getItem("sfe-theme"); if (saved) root.setAttribute("data-theme", saved); } catch (e) {}
+  document.getElementById("theme").addEventListener("click", function () {
+    var cur = root.getAttribute("data-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    var next = cur === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("sfe-theme", next); } catch (e) {}
+  });
+
+  // Contents: collapse on phones, highlight the section in view.
+  var det = document.getElementById("toc-details");
+  if (matchMedia("(max-width: 980px)").matches) det.removeAttribute("open");
+  var links = Array.prototype.slice.call(document.querySelectorAll("#toc a"));
+  var byId = {};
+  links.forEach(function (a) { byId[a.getAttribute("href").slice(1)] = a; });
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) {
+          links.forEach(function (a) { a.classList.remove("on"); });
+          var a = byId[en.target.id]; if (a) a.classList.add("on");
+        }
+      });
+    }, { rootMargin: "-20% 0px -70% 0px" });
+    document.querySelectorAll("main section").forEach(function (s) { io.observe(s); });
+  }
+
+  // Chart tooltips: every mark with data-tip, by pointer or keyboard.
+  document.querySelectorAll("[data-chart]").forEach(function (box) {
+    var tip = document.createElement("div");
+    tip.className = "tip"; tip.hidden = true; box.appendChild(tip);
+    function show(el, x, y) {
+      tip.innerHTML = el.getAttribute("data-tip");
+      tip.hidden = false;
+      var bw = box.clientWidth, tw = tip.offsetWidth;
+      var left = x + 14; if (left + tw > bw - 8) left = x - tw - 14; if (left < 8) left = 8;
+      tip.style.left = left + box.scrollLeft + "px";
+      tip.style.top = Math.max(8, y - 12) + "px";
+    }
+    box.querySelectorAll("[data-tip]").forEach(function (el) {
+      el.setAttribute("tabindex", "0");
+      el.addEventListener("pointermove", function (ev) {
+        var r = box.getBoundingClientRect(); show(el, ev.clientX - r.left, ev.clientY - r.top);
+      });
+      el.addEventListener("pointerleave", function () { tip.hidden = true; });
+      el.addEventListener("focus", function () {
+        var r = box.getBoundingClientRect(), b = el.getBoundingClientRect();
+        show(el, b.left - r.left + b.width / 2, b.top - r.top + 20);
+      });
+      el.addEventListener("blur", function () { tip.hidden = true; });
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

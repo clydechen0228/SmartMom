@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>__TITLE__</title>
+<style>
+:root {
+  --bg: #f3f6f5; --panel: #ffffff; --sunk: #eaefee; --ink: #17201f; --ink-2: #394644; --muted: #5d6b69;
+  --line: #d3dcda; --line-strong: #aebcb9; --accent: #0e6b70; --accent-ink: #0a575b; --accent-soft: #dff0ef;
+  --before: #8a97a3; --after: #0e6b70; --reward: #b8650f; --good: #16794a; --good-soft: #def2e6; --bad: #b8372a; --bad-soft: #fbe5e2;
+  --warn-soft: #fbefd6; --warn: #8a5a00;
+  --sans: "IBM Plex Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #101514; --panel: #161c1b; --sunk: #1c2423; --ink: #e3eae8; --ink-2: #c0cbc9; --muted: #8fa09d;
+    --line: #28312f; --line-strong: #3b4745; --accent: #4fb3b8; --accent-ink: #7fcacd; --accent-soft: #15302f;
+    --before: #7d8a95; --after: #4fb3b8; --reward: #e39a4a; --good: #52c285; --good-soft: #15301f; --bad: #ef7b6d; --bad-soft: #3a1c19;
+    --warn-soft: #33280f; --warn: #e3a640;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #101514; --panel: #161c1b; --sunk: #1c2423; --ink: #e3eae8; --ink-2: #c0cbc9; --muted: #8fa09d;
+  --line: #28312f; --line-strong: #3b4745; --accent: #4fb3b8; --accent-ink: #7fcacd; --accent-soft: #15302f;
+  --before: #7d8a95; --after: #4fb3b8; --reward: #e39a4a; --good: #52c285; --good-soft: #15301f; --bad: #ef7b6d; --bad-soft: #3a1c19;
+  --warn-soft: #33280f; --warn: #e3a640;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.55 var(--sans); padding-inline: 16px; }
+:root[lang="zh-CN"] body { line-height: 1.7; }
+.num, table { font-variant-numeric: tabular-nums; }
+header { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 14px 0 10px; border-bottom: 1px solid var(--line); }
+header h1 { margin: 0; font-size: 19px; margin-right: auto; }
+header .sub { width: 100%; font-size: 12.5px; color: var(--muted); order: 3; }
+.back { font-size: 12.5px; color: var(--accent-ink); text-decoration: none; }
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: var(--panel); color: var(--ink); padding: 5px 12px; font: 500 13px var(--sans); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+main { max-width: 1240px; margin: 0 auto; padding-block: 16px 60px; display: grid; gap: 16px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+h2 { font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; font-weight: 650; }
+h3 { font-size: 14px; margin: 14px 0 6px; }
+.note { font-size: 12.5px; color: var(--muted); }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th { text-align: left; background: var(--sunk); color: var(--muted); font-size: 11.5px; font-weight: 650; padding: 7px 10px; white-space: nowrap; }
+td { padding: 6px 10px; border-top: 1px solid var(--line); vertical-align: top; }
+td.r, th.r { text-align: right; }
+tr.pick { cursor: pointer; }
+tr.pick:hover { background: var(--sunk); }
+tr.sel { background: var(--accent-soft); }
+.badge { display: inline-block; font: 600 11px var(--sans); border-radius: 999px; padding: 1px 8px; background: var(--sunk); color: var(--ink-2); }
+.badge.finetune { background: var(--accent-soft); color: var(--accent-ink); }
+.up { color: var(--good); font-weight: 600; } .down { color: var(--bad); font-weight: 600; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.tile { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.tile .k { font-size: 12px; color: var(--muted); }
+.tile .v { font-size: 22px; font-weight: 650; }
+.tile .d { font-size: 12px; color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 860px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.chart svg { display: block; max-width: 100%; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink-2); margin: 2px 0 6px; }
+.legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: 3px; margin-right: 5px; }
+.legend i.box { height: 10px; width: 10px; vertical-align: -1px; }
+.ax { fill: var(--muted); font: 11px var(--mono); }
+.axl { fill: var(--muted); font: 11px var(--sans); }
+.grid line { stroke: var(--line); }
+.lbl { fill: var(--ink-2); font: 12px var(--sans); }
+.val { fill: var(--ink); font: 600 11px var(--mono); }
+.kept { stroke: var(--accent); stroke-dasharray: 3 3; }
+.tip { position: fixed; z-index: 10; pointer-events: none; background: var(--panel); border: 1px solid var(--line-strong); border-radius: 8px; padding: 6px 9px; font-size: 12.5px; box-shadow: 0 6px 20px rgba(0,0,0,.15); }
+.warnbox { background: var(--warn-soft); color: var(--ink); border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+.chg { font-weight: 650; color: var(--accent-ink); }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.tabs button { border: 1px solid var(--line); background: none; border-radius: 999px; padding: 2px 11px; font: 12.5px var(--sans); color: var(--ink-2); cursor: pointer; }
+.tabs button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); }
+input.filter { border: 1px solid var(--line); background: var(--sunk); color: var(--ink); border-radius: 7px; padding: 5px 8px; font: 13px var(--sans); width: min(320px, 100%); }
+.gold { font-family: var(--mono); font-size: 12px; }
+.lineage { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; }
+.lineage span.node { border: 1px solid var(--line); border-radius: 8px; padding: 3px 9px; background: var(--sunk); }
+.empty { color: var(--muted); padding: 20px 0; }
+button:focus-visible, input:focus-visible, tr.pick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<header>
+  <a class="back" id="back" href="../" hidden>← Platform</a>
+  <h1 id="h-title">Laya training runs</h1>
+  <div class="seg" role="group" aria-label="Language / 语言"><button id="l-en" aria-pressed="true">EN</button><button id="l-zh" aria-pressed="false">中文</button></div>
+  <div class="sub" id="h-sub"></div>
+</header>
+<main id="main"></main>
+<div class="tip" id="tip" hidden></div>
+<script type="application/json" id="runs-data">/*__RUNS__*/[]</script>
+<script>
+"use strict";
+const RUNS = JSON.parse(document.getElementById("runs-data").textContent);
+const I18N = {
+  en: {
+    title: "Laya training runs", sub: "Every calibration and fine-tuning run: the data it saw, what it changed and whether it helped. Scores come from held-out records the run never trained on.",
+    runs: "Runs", run: "Run", kind: "Kind", from: "Started from", when: "Finished", data: "Data", result: "On held-out records",
+    finetune: "fine-tune", calibrate: "calibrate", none: "No runs yet. Run `python -m laya_train finetune …` or `calibrate …`; each run writes run.json next to its checkpoint.",
+    records: "records", answers: "answers", acc: "Accuracy", nll: "Log loss", ece: "Calibration error", gw: "Confident but wrong",
+    before: "before", after: "after", lower: "lower is better", higher: "higher is better", of: "of",
+    curves: "Improvement curves", step_loss: "Training loss per step", step_reward: "Proper-score reward per step",
+    epoch_scores: "Dev set per epoch (epoch 0 = before training)", epoch_nll: "Dev log loss per epoch", kept: "kept",
+    step: "step", epoch: "epoch", share: "share", loss: "loss", reward: "reward",
+    byq: "Held-out accuracy by question", bylang: "Held-out accuracy by language",
+    params: "What was adjusted", settings: "Settings", trained: "Trained", total_params: "parameters", of_which: "of which trained",
+    temps: "Temperatures (confidence scaling)", bucket: "Bucket", changed: "changed",
+    wchange: "How much each part of the network moved (relative change of its weights)", module: "Part", rel: "relative change",
+    lineage: "Lineage (history in the checkpoint)", published: "published checkpoint",
+    datasets: "Records", train: "train", dev: "dev", calib: "calibration", test: "held-out test", filter: "Filter text…",
+    text: "Text", lang: "Lang", source: "Source", gold: "Right answer", perq: "Answers per question",
+    kept_epoch: "Kept epoch", kept0: "No epoch beat the starting model on the dev set, so its weights were kept.",
+    small: "Small data: with this few records the numbers move by chance. Treat this run as a demonstration of the loop, not as a model to deploy.",
+    fit_set: "On the records it was fitted on", device: "Device", seconds: "Run time", s: "s",
+    cal_note: "Calibration changes only the temperatures; the weights are not touched, so accuracy cannot change.",
+    back: "← Platform", ckpt_default: "checkpoint default",
+  },
+  zh: {
+    title: "Laya 训练记录", sub: "每次校准和微调：使用的数据、调整了什么、是否有效。分数来自训练中从未见过的保留测试记录。",
+    runs: "运行记录", run: "运行", kind: "类型", from: "起始模型", when: "完成时间", data: "数据", result: "保留测试集结果",
+    finetune: "微调", calibrate: "校准", none: "尚无运行记录。运行 `python -m laya_train finetune …` 或 `calibrate …`，每次运行都会在检查点旁写入 run.json。",
+    records: "条记录", answers: "个答案", acc: "准确率", nll: "对数损失", ece: "校准误差", gw: "高置信度但错误",
+    before: "训练前", after: "训练后", lower: "越低越好", higher: "越高越好", of: "/",
+    curves: "改进曲线", step_loss: "每步训练损失", step_reward: "每步适当评分奖励",
+    epoch_scores: "每轮开发集分数（第 0 轮 = 训练前）", epoch_nll: "每轮开发集对数损失", kept: "保留",
+    step: "步", epoch: "轮", share: "比例", loss: "损失", reward: "奖励",
+    byq: "各问题的测试准确率", bylang: "各语言的测试准确率",
+    params: "调整了什么", settings: "设置", trained: "训练部分", total_params: "个参数", of_which: "其中训练",
+    temps: "温度（置信度缩放）", bucket: "分组", changed: "已调整",
+    wchange: "网络各部分的变化幅度（权重相对变化）", module: "部分", rel: "相对变化",
+    lineage: "来源（检查点中的历史）", published: "官方检查点",
+    datasets: "记录", train: "训练", dev: "开发", calib: "校准", test: "保留测试", filter: "筛选文本…",
+    text: "文本", lang: "语言", source: "来源", gold: "正确答案", perq: "各问题的答案数",
+    kept_epoch: "保留的轮次", kept0: "没有任何一轮在开发集上优于起始模型，因此保留了原始权重。",
+    small: "数据量很小：这么少的记录会让结果随机波动。请把这次运行视为流程演示，而不是可部署的模型。",
+    fit_set: "在用于拟合的记录上", device: "设备", seconds: "运行时长", s: "秒",
+    cal_note: "校准只调整温度，不改动权重，因此准确率不会变化。",
+    back: "← 平台", ckpt_default: "沿用检查点设置",
+  },
+};
+let LANG = "en", SEL = null, DATATAB = "train", FILTER = "";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const t = k => I18N[LANG][k] ?? I18N.en[k] ?? k;
+const store = { get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+const pct = v => v == null ? "—" : (v * 100).toFixed(1) + "%";
+const f3 = v => v == null ? "—" : Number(v).toFixed(3);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+function delta(b, a, lowerBetter, fmt) {
+  if (b == null || a == null) return "";
+  const d = a - b; if (Math.abs(d) < 1e-9) return ` <span class="note">±0</span>`;
+  const good = lowerBetter ? d < 0 : d > 0;
+  return ` <span class="${good ? "up" : "down"}">${d > 0 ? "+" : "−"}${fmt(Math.abs(d))}</span>`;
+}
+
+// ---------- charts: one scale per chart, marks and labels from the same scale ----------
+function tipOn(el, html) {
+  el.addEventListener("mousemove", ev => { const tp = $("#tip"); tp.innerHTML = html; tp.hidden = false;
+    tp.style.left = Math.min(ev.clientX + 12, innerWidth - tp.offsetWidth - 8) + "px"; tp.style.top = (ev.clientY + 12) + "px"; });
+  el.addEventListener("mouseleave", () => $("#tip").hidden = true);
+}
+function niceMax(v) { if (v <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))); for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return m * p; return 10 * p; }
+function lineChart(el, series, o) {
+  const W = Math.max(320, el.clientWidth || 560), H = 220, L = 48, R = 14, T = 12, B = 34;
+  const xs = series.flatMap(s => s.points.map(p => p[0])), ys = series.flatMap(s => s.points.map(p => p[1]));
+  if (!xs.length) { el.innerHTML = `<div class="empty">—</div>`; return; }
+  const x0 = o.xMin ?? Math.min(...xs), x1 = Math.max(...xs, x0 + 1);
+  // round tick steps (1, 2, 2.5, 5 x 10^n) that cover the data; tiny dips below 0 stay at 0
+  let lo = Math.min(...ys), hi = Math.max(...ys);
+  if (lo > -0.05 * Math.abs(hi)) lo = Math.min(0, Math.max(lo, 0));
+  const step = o.yMax != null ? (o.yMax - (o.yMin ?? 0)) / 4 : niceMax((hi - lo) / 4 || 1);
+  const y0 = o.yMin ?? Math.floor(lo / step) * step, y1 = o.yMax ?? Math.max(y0 + step, Math.ceil(hi / step) * step);
+  const X = v => L + (v - x0) / (x1 - x0) * (W - L - R), Y = v => T + (1 - (Math.max(y0, Math.min(y1, v)) - y0) / (y1 - y0)) * (H - T - B);
+  let g = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.title || "")}"><g class="grid">`;
+  for (let v = y0; v <= y1 + step / 1000; v += step) { g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/>`;
+    g += `<text class="ax" x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${o.fmt ? o.fmt(v) : +v.toFixed(2)}</text>`; }
+  g += `</g>`;
+  const xt = o.xTicks || [...new Set([x0, Math.round((x0 + x1) / 2), x1])];
+  xt.forEach(v => g += `<text class="ax" x="${X(v)}" y="${H - B + 16}" text-anchor="middle">${v}</text>`);
+  g += `<text class="axl" x="${W - R}" y="${H - 4}" text-anchor="end">${esc(o.xLabel || "")}</text>`;
+  (o.marks || []).forEach(m => g += `<line class="kept" x1="${X(m.x)}" x2="${X(m.x)}" y1="${T}" y2="${H - B}"/><text class="axl" x="${X(m.x) + 4}" y="${T + 10}">${esc(m.label)}</text>`);
+  series.forEach(s => {
+    const d = s.points.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(" ");
+    g += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round"/>`;
+    if (s.points.length <= 30) s.points.forEach(p => g += `<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="4" fill="${s.color}" stroke="${css("--panel")}" stroke-width="2"/>`);
+  });
+  const hits = [...new Set(xs)].sort((a, b) => a - b);
+  hits.forEach((x, i) => {
+    const w = hits.length > 1 ? (W - L - R) / (hits.length - 1) : 20;
+    const rows = series.map(s => { const p = s.points.find(q => q[0] === x); return p ? `<i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${s.color}"></i> ${esc(s.name)}: <b>${o.fmt ? o.fmt(p[1]) : p[1]}</b>` : ""; }).filter(Boolean).join("<br>");
+    g += `<rect class="hit" data-x="${x}" x="${X(x) - w / 2}" y="${T}" width="${w}" height="${H - T - B}" fill="transparent"/>`;
+    hits[i] = { x, html: `${esc(o.xLabel || "")} ${x}<br>${rows}` };
+  });
+  el.innerHTML = `<div class="legend">${series.map(s => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join("")}</div>` + g + `</svg>`;
+  el.querySelectorAll("rect.hit").forEach(r => { const h = hits.find(q => String(q.x) === r.dataset.x); if (h) tipOn(r, h.html); });
+}
+function pairBars(el, rows, o) {
+  if (!rows.length) { el.innerHTML = `<div class="empty">—</div>`; return; }
+  const W = Math.max(320, el.clientWidth || 560), rowH = 34, L = 132, R = 56, H = rows.length * rowH + 8;
+  const X = v => L + v / o.max * (W - L - R);
+  let g = `<svg viewBox="0 0 ${W} ${H}" role="img">`;
+  rows.forEach((r, i) => {
+    const y = 4 + i * rowH;
+    g += `<text class="lbl" x="${L - 8}" y="${y + 17}" text-anchor="end">${esc(r.label)}</text>`;
+    if (r.before != null) g += `<rect x="${L}" y="${y + 3}" width="${Math.max(2, X(r.before) - L)}" height="11" rx="3" fill="${css("--before")}"/>`;
+    if (r.after != null) g += `<rect x="${L}" y="${y + 16}" width="${Math.max(2, X(r.after) - L)}" height="11" rx="3" fill="${css("--after")}"/>`;
+    g += `<text class="val" x="${X(Math.max(r.before ?? 0, r.after ?? 0)) + 6}" y="${y + 19}">${o.fmt(r.after ?? r.before)}</text>`;
+    g += `<rect class="hit" data-i="${i}" x="0" y="${y}" width="${W}" height="${rowH}" fill="transparent"/>`;
+  });
+  el.innerHTML = `<div class="legend"><span><i class="box" style="background:${css("--before")}"></i>${t("before")}</span><span><i class="box" style="background:${css("--after")}"></i>${t("after")}</span></div>` + g + `</svg>`;
+  el.querySelectorAll("rect.hit").forEach(h => { const r = rows[+h.dataset.i]; tipOn(h, `<b>${esc(r.label)}</b> (n=${r.n})<br>${t("before")}: ${o.fmt(r.before)}<br>${t("after")}: ${o.fmt(r.after)}`); });
+}
+function hBars(el, rows, fmt) {
+  if (!rows.length) { el.innerHTML = `<div class="empty">—</div>`; return; }
+  const W = Math.min(760, Math.max(320, el.clientWidth || 560)), rowH = 22, L = 150, R = 70, H = rows.length * rowH + 6, max = Math.max(...rows.map(r => r.value), 1e-9);
+  const X = v => L + v / max * (W - L - R);
+  let g = `<svg viewBox="0 0 ${W} ${H}" role="img">`;
+  rows.forEach((r, i) => {
+    const y = 3 + i * rowH;
+    g += `<text class="lbl" x="${L - 8}" y="${y + 14}" text-anchor="end">${esc(r.label)}</text><rect x="${L}" y="${y + 4}" width="${Math.max(r.value > 0 ? 2 : 0, X(r.value) - L)}" height="12" rx="3" fill="${css("--after")}"/>`;
+    g += `<text class="val" x="${X(r.value) + 6}" y="${y + 14}">${fmt(r.value)}</text><rect class="hit" data-i="${i}" x="0" y="${y}" width="${W}" height="${rowH}" fill="transparent"/>`;
+  });
+  el.innerHTML = g + `</svg>`;
+  el.querySelectorAll("rect.hit").forEach(h => { const r = rows[+h.dataset.i]; tipOn(h, `<b>${esc(r.label)}</b><br>${fmt(r.value)} · ${r.params.toLocaleString()} ${t("total_params")}`); });
+}
+
+// ---------- page ----------
+function headline(r) {
+  const b = r.test && r.test.before && r.test.before.all, a = r.test && r.test.after && r.test.after.all;
+  if (!b || !a) return "—";
+  return `${t("acc")} ${pct(b.accuracy)} → <b>${pct(a.accuracy)}</b> · ${t("ece")} ${f3(b.ece)} → <b>${f3(a.ece)}</b>`;
+}
+function dataCounts(r) {
+  const d = r.data || {}; return ["train", "dev", "calib", "test"].filter(k => d[k] && d[k].records).map(k => `${t(k)} ${d[k].records}`).join(" · ");
+}
+function runList() {
+  if (!RUNS.length) return `<section class="panel"><div class="empty">${esc(t("none"))}</div></section>`;
+  return `<section class="panel"><h2>${t("runs")}</h2><div class="tbl"><table><thead><tr><th>${t("run")}</th><th>${t("kind")}</th><th>${t("from")}</th><th>${t("when")}</th><th>${t("data")}</th><th>${t("result")}</th></tr></thead><tbody>
+    ${RUNS.map((r, i) => `<tr class="pick ${i === SEL ? "sel" : ""}" tabindex="0" data-i="${i}"><td class="gold">${esc(r.name)}</td><td><span class="badge ${esc(r.kind)}">${t(r.kind)}</span></td><td>${esc(r.init)}</td><td class="num">${esc(r.finished || "")}</td><td>${esc(dataCounts(r))}</td><td>${headline(r)}</td></tr>`).join("")}
+  </tbody></table></div></section>`;
+}
+function tiles(r) {
+  const b = r.test && r.test.before && r.test.before.all, a = r.test && r.test.after && r.test.after.all;
+  if (!b || !a) return "";
+  const tile = (k, bv, av, lower, fmt, d) => `<div class="tile"><div class="k">${k}</div><div class="v num">${fmt(av)}${delta(bv, av, lower, fmt)}</div><div class="d">${t("before")} ${fmt(bv)} · ${d}</div></div>`;
+  return `<div class="tiles">
+    ${tile(t("acc"), b.accuracy, a.accuracy, false, pct, t("higher"))}
+    ${tile(t("nll"), b.nll, a.nll, true, f3, t("lower"))}
+    ${tile(t("ece"), b.ece, a.ece, true, f3, t("lower"))}
+    ${tile(t("gw"), b.gated_wrong, a.gated_wrong, true, v => v, `${t("of")} ${a.gated} · ${t("lower")}`)}
+  </div>`;
+}
+function detail(r) {
+  const small = ((r.data && r.data.train && r.data.train.records) || (r.data && r.data.calib && r.data.calib.records) || 0) < 300;
+  let h = `<section class="panel"><h2>${t("run")} · ${esc(r.name)}</h2>
+    <div class="note">${t(r.kind)} · ${t("from")} <b>${esc(r.init)}</b> · ${esc(r.finished || "")}${r.device ? " · " + t("device") + " " + esc(r.device) : ""}${r.seconds ? " · " + t("seconds") + " " + Math.round(r.seconds) + " " + t("s") : ""}</div>
+    ${small ? `<div class="warnbox" style="margin-top:8px">${t("small")}</div>` : ""}
+    <h3>${t("result")} (${r.data && r.data.test ? r.data.test.answers : 0} ${t("answers")})</h3>${tiles(r) || `<div class="note">—</div>`}
+    ${r.kind === "calibrate" ? `<div class="note" style="margin-top:6px">${t("cal_note")}</div>` : ""}
+    ${r.kept_epoch != null ? `<div class="note" style="margin-top:6px">${t("kept_epoch")}: <b>${r.kept_epoch}</b>${r.kept_epoch === 0 ? " — " + t("kept0") : ""}</div>` : ""}
+  </section>`;
+  if (r.kind === "finetune") {
+    h += `<section class="panel"><h2>${t("curves")}</h2><div class="grid2">
+      <div><h3>${t("step_loss")}</h3><div class="chart" id="c-loss"></div></div>
+      <div><h3>${t("step_reward")}</h3><div class="chart" id="c-reward"></div></div>
+      <div><h3>${t("epoch_scores")}</h3><div class="chart" id="c-epoch"></div></div>
+      <div><h3>${t("epoch_nll")}</h3><div class="chart" id="c-enll"></div></div>
+    </div></section>`;
+  }
+  if (r.test) h += `<section class="panel"><div class="grid2"><div><h3>${t("byq")}</h3><div class="chart" id="c-byq"></div></div><div><h3>${t("bylang")}</h3><div class="chart" id="c-bylang"></div></div></div></section>`;
+  // parameters
+  const cfg = r.config || {};
+  const tb = (r.temperatures || {}).before || {}, ta = (r.temperatures || {}).after || {};
+  const trow = (label, b, a) => `<tr><td class="gold">${esc(label)}</td><td class="r">${b ?? "—"}</td><td class="r">${a ?? "—"}</td><td>${b !== a ? `<span class="chg">${t("changed")}</span>` : ""}</td></tr>`;
+  const buckets = [...new Set([...Object.keys(tb.by_options || {}), ...Object.keys(ta.by_options || {})])].sort();
+  h += `<section class="panel"><h2>${t("params")}</h2><div class="grid2"><div>
+      <h3>${t("settings")}</h3><div class="tbl"><table><tbody>
+      ${r.trained ? `<tr><td>${t("trained")}</td><td><b>${esc(r.trained)}</b></td></tr>` : ""}
+      ${r.params ? `<tr><td>${t("total_params")}</td><td class="num">${r.params.total.toLocaleString()} · ${t("of_which")} <b>${r.params.trained.toLocaleString()}</b></td></tr>` : ""}
+      ${Object.entries(cfg).map(([k, v]) => `<tr><td class="gold">${esc(k)}</td><td class="num">${v == null ? `<span class="note">${t("ckpt_default")}</span>` : esc(v)}</td></tr>`).join("")}
+      </tbody></table></div></div><div>
+      <h3>${t("temps")}</h3><div class="tbl"><table><thead><tr><th>${t("bucket")}</th><th class="r">${t("before")}</th><th class="r">${t("after")}</th><th></th></tr></thead><tbody>
+      ${["choice", "score", "noul"].map(q => trow(q, (tb.by_type || {})[q], (ta.by_type || {})[q])).join("")}
+      ${buckets.map(k => trow(k, (tb.by_options || {})[k], (ta.by_options || {})[k])).join("")}
+      </tbody></table></div></div></div>
+      ${r.weight_changes ? `<h3>${t("wchange")}</h3><div class="chart" id="c-weights"></div>` : ""}
+      <h3>${t("lineage")}</h3><div class="lineage"><span class="node">${esc(r.init_dir && r.init_dir.includes("convaiinnovations") ? t("published") + " · " + r.init : r.init)}</span>
+      ${(r.lineage || []).map(s => `→ <span class="node">${esc(s.step)} · ${esc(s.at || "")}${s.answers ? " · " + s.answers + " " + t("answers") : ""}${s.kept_epoch != null ? " · " + t("kept") + " " + s.kept_epoch : ""}</span>`).join(" ")}</div>
+    </section>`;
+  // records
+  const tabs = ["train", "dev", "calib", "test"].filter(k => r.data && r.data[k] && r.data[k].records);
+  if (!tabs.includes(DATATAB)) DATATAB = tabs[0];
+  const d = (r.data || {})[DATATAB] || { rows: [], questions: {} };
+  const rows = (d.rows || []).filter(x => !FILTER || x.text.toLowerCase().includes(FILTER.toLowerCase()));
+  h += `<section class="panel"><h2>${t("datasets")}</h2>
+    <div class="tabs">${tabs.map(k => `<button data-tab="${k}" aria-pressed="${k === DATATAB}">${t(k)} · ${r.data[k].records}</button>`).join("")}</div>
+    <div class="note">${d.records} ${t("records")}, ${d.answers} ${t("answers")} · ${Object.entries(d.languages || {}).map(([k, v]) => `${esc(k)} ${v}`).join(" · ")}</div>
+    <h3>${t("perq")}</h3><div class="tbl"><table><tbody>${Object.entries(d.questions || {}).map(([q, c]) => `<tr><td class="gold">${esc(q)}</td><td>${Object.entries(c).map(([k, v]) => `${esc(k)} <b>${v}</b>`).join(" · ")}</td></tr>`).join("")}</tbody></table></div>
+    <h3>${t("text")}</h3><input class="filter" id="flt" placeholder="${esc(t("filter"))}" value="${esc(FILTER)}">
+    <div class="tbl" style="margin-top:6px;max-height:420px;overflow:auto"><table><thead><tr><th>${t("text")}</th><th>${t("lang")}</th><th>${t("source")}</th><th>${t("gold")}</th></tr></thead><tbody>
+    ${rows.map(x => `<tr><td>${esc(x.text)}</td><td>${esc(x.lang || "")}</td><td class="note">${esc(x.source || "")}</td><td class="gold">${Object.entries(x.gold).map(([q, a]) => esc(q + "=" + a)).join("<br>")}</td></tr>`).join("")}
+    </tbody></table></div></section>`;
+  return h;
+}
+function draw(r) {
+  if (r.kind === "finetune") {
+    const st = r.steps || [], ep = (r.epochs || []).filter(e => e.dev);
+    const marks = r.kept_epoch != null ? [{ x: r.kept_epoch, label: t("kept") }] : [];
+    lineChart($("#c-loss"), [{ name: t("loss"), color: css("--after"), points: st.map(s => [s.step, s.loss]) }], { xLabel: t("step"), title: t("step_loss") });
+    lineChart($("#c-reward"), [{ name: t("reward"), color: css("--reward"), points: st.map(s => [s.step, s.reward]) }], { xLabel: t("step"), title: t("step_reward") });
+    lineChart($("#c-epoch"), [{ name: t("acc"), color: css("--after"), points: ep.map(e => [e.epoch, e.dev.accuracy]) },
+                              { name: t("ece"), color: css("--before"), points: ep.map(e => [e.epoch, e.dev.ece]) }],
+              { xLabel: t("epoch"), yMin: 0, yMax: 1, fmt: v => (v * 100).toFixed(0) + "%", marks, xTicks: ep.map(e => e.epoch), title: t("epoch_scores") });
+    lineChart($("#c-enll"), [{ name: t("nll"), color: css("--after"), points: ep.map(e => [e.epoch, e.dev.nll]) }],
+              { xLabel: t("epoch"), marks, xTicks: ep.map(e => e.epoch), fmt: v => v.toFixed(2), title: t("epoch_nll") });
+  }
+  if (r.test) {
+    const b = r.test.before || {}, a = r.test.after || {};
+    const rows = pre => Object.keys(a).filter(k => k.startsWith(pre)).sort().map(k => ({ label: k.slice(pre.length), before: b[k] && b[k].accuracy, after: a[k].accuracy, n: a[k].n }));
+    pairBars($("#c-byq"), rows("q:"), { max: 1, fmt: pct });
+    pairBars($("#c-bylang"), rows("lang:"), { max: 1, fmt: pct });
+  }
+  if (r.weight_changes && $("#c-weights"))
+    hBars($("#c-weights"), r.weight_changes.map(w => ({ label: w.module, value: w.relative_change, params: w.params })), v => (v * 100).toFixed(2) + "%");
+}
+function render() {
+  document.title = t("title"); $("#h-title").textContent = t("title"); $("#h-sub").textContent = t("sub"); $("#back").textContent = t("back");
+  let h = runList();
+  if (SEL != null && RUNS[SEL]) h += detail(RUNS[SEL]);
+  $("#main").innerHTML = h;
+  $("#main").querySelectorAll("tr.pick").forEach(tr => { const go = () => { SEL = +tr.dataset.i; FILTER = ""; location.hash = RUNS[SEL].name.replace(/[^A-Za-z0-9._~-]/g, "_"); render(); };
+    tr.onclick = go; tr.onkeydown = e => { if (e.key === "Enter") go(); }; });
+  $("#main").querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { DATATAB = b.dataset.tab; render(); });
+  const flt = $("#flt"); if (flt) flt.oninput = e => { FILTER = e.target.value; const pos = e.target.selectionStart; render(); const f = $("#flt"); f.focus(); f.setSelectionRange(pos, pos); };
+  if (SEL != null && RUNS[SEL]) draw(RUNS[SEL]);
+}
+let rsz; addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => { if (SEL != null && RUNS[SEL]) draw(RUNS[SEL]); }, 150); });
+function setLang(l) { LANG = l; store.set("laya-train-lang", l); document.documentElement.lang = l === "zh" ? "zh-CN" : "en";
+  $("#l-en").setAttribute("aria-pressed", l === "en"); $("#l-zh").setAttribute("aria-pressed", l === "zh"); render(); }
+$("#l-en").onclick = () => setLang("en"); $("#l-zh").onclick = () => setLang("zh");
+if (location.pathname.includes("/training")) $("#back").hidden = false;
+const want = location.hash.slice(1);
+SEL = RUNS.length ? Math.max(0, RUNS.findIndex(r => r.name.replace(/[^A-Za-z0-9._~-]/g, "_") === want)) : null;
+setLang(store.get("laya-train-lang", (navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"));
+</script>
+</body>
+</html>
