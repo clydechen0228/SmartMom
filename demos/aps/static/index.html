@@ -328,6 +328,7 @@ details summary { cursor: pointer; font-size: 13px; }
         <h2 data-i18n="history">Versions and events</h2>
         <div class="note" id="rejtally" style="margin-bottom:6px"></div>
         <div class="hist" id="hist"></div>
+        <div class="note" id="labelcount" style="margin-top:8px" title="Decisions on Laya readings, saved for training"></div>
       </section>
     </div>
   </div>
@@ -400,6 +401,8 @@ const I18N = {
     report_down: "Report machine down",
     r_hedged: "the sender is unsure — try it as a what-if", cue_line_stop: "customer's line would stop → priority 3", cue_flexible: "customer is flexible",
     suggest_whatif: "The sender is not sure yet: run it as a what-if first.",
+    mark_as: "Actually:", cond_ok: "OK", cond_watch: "Watch", cond_stop: "Stop",
+    labels_collected: "Training labels collected", laya_right_share: "Laya was right on",
   },
   zh: {
     title: "一号工厂 · APS 工作台", subtitle: "L1 与 L3 产线 · 订单来自 SAP · 派工至 MES · 准时交付优先",
@@ -464,6 +467,8 @@ const I18N = {
     report_down: "上报设备停机",
     r_hedged: "发件人不确定——建议先做假设分析", cue_line_stop: "客户会停线 → 优先级 3", cue_flexible: "客户不急",
     suggest_whatif: "发件人尚不确定：建议先作为假设场景运行。",
+    mark_as: "实际情况：", cond_ok: "正常", cond_watch: "需关注", cond_stop: "停机",
+    labels_collected: "已收集的训练标签", laya_right_share: "Laya 正确率",
   },
 };
 let LANG = "en", S = null, VIEW = "cur", SEL = null, FILTER = "", ZOOM = 0.2, READING = null, SCD = null, EXPLAIN = null, CMD = null, TRIAGE = null;
@@ -771,9 +776,9 @@ function readForm(prefix) {
   fieldsOf(kind).forEach(f => { const el = $(`#${prefix}-${f}`); if (el && el.value !== "") ev[f] = ["machine", "order", "material"].includes(f) ? el.value : Number(el.value); });
   return ev;
 }
-async function submitEvent(ev, msgEl) {
+async function submitEvent(ev, msgEl, readingId) {
   try {
-    await post("api/events", ev);
+    await post("api/events", readingId ? { ...ev, reading_id: readingId } : ev);
     if (READING && READING.suggestion) await post(`api/suggestions/${READING.suggestion}/close`, { used: true }).catch(() => {});
     READING = null; await refresh(); VIEW = "prop";
   }
@@ -791,8 +796,8 @@ function manualPanel() {
   $("#mf-sc").disabled = !!(S.job && S.job.running);
   $("#mf-sc").onclick = () => runScenario(readForm("mf"), "", $("#mf-msg"));
 }
-async function runScenario(ev, label, msgEl) {
-  try { await post("api/scenarios", { ...ev, label }); await refresh(); }
+async function runScenario(ev, label, msgEl, readingId) {
+  try { await post("api/scenarios", readingId ? { ...ev, label, reading_id: readingId } : { ...ev, label }); await refresh(); }
   catch (e) { msgEl.innerHTML = `<div class="errbox">${esc(e.message)}</div>`; }
 }
 
@@ -870,13 +875,15 @@ function readingPanel() {
   box.innerHTML = html + "</div>";
   const d = $("#rd-dismiss"); if (d) d.onclick = async () => {
     if (READING && READING.suggestion) await post(`api/suggestions/${READING.suggestion}/close`, { used: false }).catch(() => {});
+    else if (READING && READING.reading_id && READING.classification)       // a weak label: "nothing to do"
+      await post("api/labels", { reading_id: READING.reading_id, kind: "no_action", source: "dismissed", weak: true }).catch(() => {});
     READING = null; readingPanel(); refresh();
   };
   const k = $("#rd-kind"); if (k) k.onchange = e => { READING.event = { ...READING.event, kind: e.target.value }; readingPanel(); };
   const go = $("#rd-go");
-  if (go) { go.disabled = !!(S.job && S.job.running) || !!S.proposal; go.onclick = () => submitEvent(readForm("rd"), $("#rd-msg")); }
+  if (go) { go.disabled = !!(S.job && S.job.running) || !!S.proposal; go.onclick = () => submitEvent(readForm("rd"), $("#rd-msg"), r.reading_id); }
   const sc = $("#rd-sc");
-  if (sc) { sc.disabled = !!(S.job && S.job.running); sc.onclick = () => runScenario(readForm("rd"), r.text, $("#rd-msg")); }
+  if (sc) { sc.disabled = !!(S.job && S.job.running); sc.onclick = () => runScenario(readForm("rd"), r.text, $("#rd-msg"), r.reading_id); }
 }
 
 // ---------- after a rejection ----------
@@ -904,6 +911,7 @@ function followPanel() {
     catch (e) { $("#follow-msg").innerHTML = `<div class="errbox">${esc(e.message)}</div>`; }
   });
   $("#follow").querySelectorAll("[data-rf]").forEach(b => b.onclick = () => {
+    if (r.reading_id) post("api/labels", { reading_id: r.reading_id, gold: { reason: b.dataset.rf }, source: "clicked_step" }).catch(() => {});
     const ev = r.steps[b.dataset.rf].event;
     READING = { text: r.text, classification: null, event_type: ev.kind, confidence: 1, gate: 0.5, event: { ...ev },
                 missing: (NEEDS[ev.kind] || []).filter(f => ev[f] == null || ev[f] === "") };
@@ -916,16 +924,20 @@ function rejTally() {
 }
 
 // ---------- shift notes ----------
-let NOTE_SAMPLES = [];
+let NOTE_SAMPLES = [], MARKED = {};
 function notesPanel() {
   $("#notechips").innerHTML = NOTE_SAMPLES.map((n, i) => `<button class="chip" data-n="${i}" title="${esc(n.text)}">${esc(n.text)}</button>`).join("");
   $("#notechips").querySelectorAll(".chip").forEach(b => b.onclick = () => readNote(NOTE_SAMPLES[+b.dataset.n].text));
   $("#notelist").innerHTML = (S.notes || []).slice().reverse().map((n, i) => `<div class="note-row ${n.flagged ? "bad" : ""}">
       <span><b class="mono">${esc(n.machine || "?")}</b> · ${n.flagged ? `<span class="flag">⚠ ${t("note_flag")}</span>` : t("note_ok")} · ${t("p_problem")} ${(n.p_problem * 100).toFixed(0)}%</span>
       <span class="note">${esc(n.text)}</span>
-      ${n.flagged && n.machine ? `<span><button class="btn" data-down="${esc(n.machine)}" data-i="${i}">${t("report_down")}</button></span>` : ""}</div>`).join("");
+      <span class="row">${n.flagged && n.machine ? `<button class="btn" data-down="${esc(n.machine)}" data-i="${i}">${t("report_down")}</button>` : ""}
+        ${n.reading_id ? `<span class="note">${t("mark_as")}</span>${["ok", "watch", "stop"].map(c => `<button class="fbtn" data-mark="${c}" data-i="${i}" aria-pressed="${MARKED[n.reading_id] === c}">${t("cond_" + c)}</button>`).join("")}` : ""}</span></div>`).join("");
+  const markNote = (n, c) => { MARKED[n.reading_id] = c; post("api/labels", { reading_id: n.reading_id, gold: { condition: c }, source: "planner_marked" }).catch(() => {}); };
+  $("#notelist").querySelectorAll("[data-mark]").forEach(b => b.onclick = () => { markNote(S.notes.slice().reverse()[+b.dataset.i], b.dataset.mark); notesPanel(); });
   $("#notelist").querySelectorAll("[data-down]").forEach(b => b.onclick = () => {
     const n = S.notes.slice().reverse()[+b.dataset.i];
+    if (n.reading_id && !MARKED[n.reading_id]) markNote(n, "stop");
     READING = { text: n.text, classification: null, event_type: "machine_down", confidence: 1, gate: 0.5,
                 event: { kind: "machine_down", machine: n.machine }, missing: ["hours"] };
     readingPanel(); $("#reading").scrollIntoView({ block: "nearest" });
@@ -948,6 +960,8 @@ async function ask(forceIntent) {
   $("#cmdout").innerHTML = `<div class="note">…</div>`;
   try {
     CMD = await post("api/command", { text });
+    if (forceIntent && CMD.reading && CMD.reading.reading_id)
+      post("api/labels", { reading_id: CMD.reading.reading_id, gold: { intent: forceIntent }, source: "planner_picked" }).catch(() => {});
     if (forceIntent) CMD.action = forceIntent === "why" ? (CMD.reading.fields.order ? "explain_client" : "need_order") : forceIntent === "what_if" ? "scenario_client" : "complete";
     if (CMD.action === "explain_client") { CMD.explanation = await api("api/explain/" + CMD.reading.fields.order); CMD.action = "explain"; }
     if (CMD.action === "scenario_client") {
@@ -994,6 +1008,8 @@ function history() {
   S.versions.slice().reverse().forEach(v => items.push(`<div class="approved"><b>v${v.id}</b> · ${esc(v.reason)} · ${t("by")} ${esc(v.approver)} · ${t("k_otd")} ${pct(v.kpis.otd)}</div>`));
   S.events.slice().reverse().forEach(e => items.push(`<div class="${e.outcome}">${when(e.at)} · ${esc(evName(e.event.kind))} ${esc(e.event.machine || e.event.order || e.event.material || "")} · ${t(e.outcome)}${e.by ? " · " + esc(e.by) : ""}</div>`));
   $("#hist").innerHTML = items.slice(0, 12).join("") || `<div class="empty">—</div>`;
+  const lb = S.labels;
+  $("#labelcount").innerHTML = lb && lb.total ? `${t("labels_collected")}: <b>${lb.total}</b> · ${t("laya_right_share")} ${Math.round(100 * lb.laya_right / lb.total)}%` : "";
 }
 
 // ---------- status ----------
@@ -1020,7 +1036,7 @@ let lastSig = "";
 async function refresh() {
   try {
     S = await api("api/state");
-    const sig = JSON.stringify([S.now, S.versions.length, S.proposal && S.proposal.id, S.job && [S.job.running, S.job.error], S.engine && S.engine.state, S.events.length, (S.suggestions || []).map(x => x.id), (S.scenarios || []).map(x => [x.id, x.stale]), (S.notes || []).length, S.last_rejected && S.last_rejected.proposal]);
+    const sig = JSON.stringify([S.now, S.versions.length, S.proposal && S.proposal.id, S.job && [S.job.running, S.job.error], S.engine && S.engine.state, S.events.length, (S.suggestions || []).map(x => x.id), (S.scenarios || []).map(x => [x.id, x.stale]), (S.notes || []).length, S.last_rejected && S.last_rejected.proposal, S.labels && S.labels.total]);
     if (sig !== lastSig) { lastSig = sig; render(); } else statusBar();
   } catch (e) { $("#jobbar").style.display = "block"; $("#jobbar").textContent = e.message; }
 }

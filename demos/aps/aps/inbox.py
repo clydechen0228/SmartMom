@@ -323,10 +323,17 @@ def to_event(kind: str, fields: Dict[str, object]) -> dict:
 
 
 # --- classifiers ------------------------------------------------------------------------
+def models_from_env() -> Dict[str, str]:
+    """Checkpoints to use instead of the published ones: $LAYA_ENGLISH, $LAYA_MULTILINGUAL
+    (a directory written by laya_train, or a hub id)."""
+    return {k: os.environ[v] for k, v in (("english", "LAYA_ENGLISH"), ("multilingual", "LAYA_MULTILINGUAL"))
+            if os.environ.get(v)}
+
+
 class LayaClassifier:
     kind = "laya"
 
-    def __init__(self, device: Optional[str] = None, router=None):
+    def __init__(self, device: Optional[str] = None, router=None, models: Optional[Dict[str, str]] = None):
         os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
         os.environ.setdefault("USE_TF", "0")
         os.environ.setdefault("TORCHINDUCTOR_COMPILE_THREADS", "1")   # see quality demo
@@ -339,6 +346,18 @@ class LayaClassifier:
         from examples_common import pick_device
         self.version = laya.__version__
         self.device = device or pick_device()
+        # Custom checkpoints (fine-tuned or calibrated with laya_train) replace the published
+        # ones for planning only. They load as separate agents: the router still decides
+        # English vs. multilingual, a router shared with other modules keeps its checkpoints,
+        # and the injection guard always runs on the published model.
+        self.models = dict(models if models is not None else models_from_env())
+        unknown = set(self.models) - {"english", "multilingual"}
+        if unknown:
+            raise ValueError("custom checkpoints can replace 'english' or 'multilingual', not %s" % sorted(unknown))
+        for name, path in self.models.items():
+            if os.path.isdir(path) and not os.path.exists(os.path.join(path, "rl_agent_config.json")):
+                raise FileNotFoundError("%s checkpoint %s has no rl_agent_config.json" % (name, path))
+        self.custom: Dict[str, object] = {}
         self.router = router or Router(device=self.device, max_loaded=3)
         gq = laya.guard_questions()
         self.guard_questions = {k: gq[k] for k in GUARD_KEYS}
@@ -347,8 +366,11 @@ class LayaClassifier:
     def warm(self):
         self.state = "loading"
         try:
+            from laya import load as load_agent
             for m in ("english", "multilingual"):
-                self.router.load(m)
+                self.router.load(m)                  # published: guard, and anything not overridden
+            for m, path in self.models.items():
+                self.custom[m] = load_agent(path, device=self.device)
             self.state = "ready"
         except Exception as e:
             self.state, self.error = "error", "%s: %s" % (type(e).__name__, e)
@@ -358,7 +380,15 @@ class LayaClassifier:
 
     def classify(self, text: str, questions: Optional[dict] = None) -> dict:
         t0 = time.time()
-        res = self.router.predict(text, questions or QUESTIONS)
+        qs = questions or QUESTIONS
+        decision = dict(self.router.route(text, qs))
+        agent = self.custom.get(decision.get("model"))
+        if agent is not None:
+            res = agent.system_one(text, qs)
+            decision.update(repo=self.models[decision["model"]], custom=True)
+            res["routing"] = decision
+        else:
+            res = self.router.predict(text, qs)
         return {"answers": res["answers"], "routing": dict(res.get("routing") or {}),
                 "ms": round((time.time() - t0) * 1000, 1)}
 
@@ -371,8 +401,11 @@ class LayaClassifier:
                 "model": (res.get("routing") or {}).get("model"), "ms": round((time.time() - t0) * 1000, 1)}
 
     def info(self):
+        from laya.router import _repo_str
+        ckpts = {k: _repo_str(v) for k, v in self.router.models.items() if k in ("english", "multilingual")}
+        ckpts.update(self.models)
         return {"kind": self.kind, "version": self.version, "device": self.device,
-                "state": self.state, "error": self.error}
+                "state": self.state, "error": self.error, "checkpoints": ckpts, "custom": sorted(self.models)}
 
 
 _KEYWORDS = [   # mock only
@@ -469,6 +502,7 @@ def read_note(classifier, text: str, plant) -> dict:
     p_bad = 1 - a["probabilities"].get("ok", 0)
     fields = extract(text, plant.machines, plant.orders)
     return {"text": text, "machine": fields.get("machine"), "condition": a["choice"], "p_problem": round(p_bad, 3),
+            "probabilities": a["probabilities"],
             "flagged": p_bad >= NOTE_FLAG, "routing": res.get("routing"), "ms": res.get("ms")}
 
 

@@ -49,3 +49,9 @@ credentials.json
 .conda311/
 .playwright-mcp/
 __pycache__/
+
+# labels collected from planners (plant text; keep inside the plant)
+demos/aps/data/labels/
+# training work files and checkpoints
+work/
+ckpt/

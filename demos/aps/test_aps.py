@@ -10,6 +10,7 @@ import time
 os.environ.setdefault("APS_FULL_S", "15")
 os.environ.setdefault("APS_REPAIR_S", "10")
 HERE = os.path.dirname(os.path.abspath(__file__))
+os.environ.setdefault("APS_LABELS", os.path.join(__import__("tempfile").mkdtemp(), "labels.jsonl"))  # never the real log
 sys.path.insert(0, HERE)
 
 from aps import inbox  # noqa: E402
@@ -302,6 +303,51 @@ check_("clock blocked while a proposal is open", c.post("/api/clock", json={"min
 check_("approve", c.post("/api/proposal/%d/decide" % pid, json={"approve": True, "who": "qa"}).json()["version"], 2)
 pub = c.get("/api/publish").json()
 check_("publish preview", (pub["version"], len(pub["dispatch"])), (2, 8))
+
+# --- labels from planner decisions -> training records ---------------------------------------
+from aps import labels as labels_mod  # noqa: E402
+check_("inbox gold for a machine down", labels_mod.inbox_gold("machine_down"),
+       {"kind": "stopped", "domain": "machine", "machine_issue": "stopped"})
+check_("inbox gold for a due change", labels_mod.inbox_gold("due_change"),
+       {"kind": "date_change", "domain": "customer", "order_change": "date"})
+rd = c.post("/api/inbox/read", json={"text": "CNC-03 is down since 6:00, repair takes 4 hours."}).json()
+check_("every reading gets an id", bool(rd.get("reading_id")), True)
+c.post("/api/events", json={"kind": "machine_degrading", "machine": "CNC-03", "percent": 20, "reading_id": rd["reading_id"]})
+deadline = time.time() + 60
+while time.time() < deadline and c.get("/api/state").json()["job"]["running"]:
+    time.sleep(0.5)
+logged = labels_mod.read(server.A.labels.path)
+check_("submitted event -> label with the planner's kind", (logged[-1]["gold"]["kind"], logged[-1]["meta"]["source"],
+                                                             logged[-1]["meta"]["laya_right"]), ("slow", "planner_submitted", False))
+st = c.get("/api/state").json()
+if st["proposal"]:
+    c.post("/api/proposal/%d/decide" % st["proposal"]["id"], json={"approve": False, "who": "qa"})
+rd2 = c.post("/api/inbox/read", json={"text": "Reminder: team lunch on Friday."}).json()
+check_("dismissal stored as a weak label", c.post("/api/labels", json={"reading_id": rd2["reading_id"], "kind": "no_action",
+                                                                       "source": "dismissed", "weak": True}).json()["stored"], True)
+check_("unknown reading id ignored", c.post("/api/labels", json={"reading_id": "nope", "kind": "no_action"}).json()["stored"], False)
+nr = c.post("/api/notes/read", json={"text": "CNC-02 spindle getting louder towards the end of the shift."}).json()
+check_("note mark -> label", c.post("/api/labels", json={"reading_id": nr["reading_id"], "gold": {"condition": "watch"}}).json()["stored"], True)
+check_("answers outside the question are refused", c.post("/api/labels", json={"reading_id": nr["reading_id"],
+                                                                               "gold": {"condition": "exploded"}}).json()["stored"], False)
+# the re-run earlier ("Too many changes" -> narrow) was a label too
+check_("label count on the workbench", c.get("/api/state").json()["labels"]["total"], 4)
+exp = labels_mod.export(server.A.labels.path)
+check_("export: strong labels only by default", sorted(r["meta"]["source"] for r in exp), ["aps.inbox", "aps.note", "aps.rejection"])
+check_("export: weak labels on request", len(labels_mod.export(server.A.labels.path, include_weak=True)), 4)
+check_("export leaves held-out texts out", len(labels_mod.export(server.A.labels.path, include_weak=True,
+                                                                exclude_texts=["Reminder: team lunch on Friday."])), 3)
+held = labels_mod.heldout()
+check_("held-out records cover every hand-labelled set",
+       sorted({r["meta"]["source"] for r in held}), ["aps.commands", "aps.inbox_dev", "aps.notes_dev", "aps.notes_test",
+                                                     "aps.reject_dev", "aps.reject_test", "aps.samples"])
+try:
+    inbox.LayaClassifier.__init__(object.__new__(inbox.LayaClassifier), models={"typed": "/tmp"})
+    check_("bad checkpoint name refused", False, True)
+except ValueError:
+    check_("bad checkpoint name refused", True, True)
+except Exception as e:                      # laya import problems are not this test's concern
+    check_("bad checkpoint name refused", type(e).__name__, "ValueError")
 
 print("%d passed, %d failed" % (len(PASS), len(FAIL)))
 for f in FAIL:

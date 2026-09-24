@@ -58,7 +58,7 @@ console = _load("laya_console", os.path.join(ROOT, "webui", "server.py"))
 
 ARGS = argparse.Namespace(host="127.0.0.1", port=8100, mock=True, device=None, interval=2.5,
                           db=os.path.join(DEMOS, "quality_inspection", "data", "platform.db"),
-                          simulate=True, plan_on_start=True)
+                          simulate=True, plan_on_start=True, aps_laya_english=None, aps_laya_multilingual=None)
 
 
 class Genealogy:
@@ -206,7 +206,9 @@ async def lifespan(app: FastAPI):
         qi.S.order_of = GENEALOGY.order_of
         # planning: same router, one warm-up for everyone
         from aps import inbox as aps_inbox
-        clf = aps_inbox.LayaClassifier(SHARED["device"], router=router) if router else aps_inbox.MockClassifier()
+        models = aps_inbox.models_from_env()
+        models.update({k: v for k, v in (("english", ARGS.aps_laya_english), ("multilingual", ARGS.aps_laya_multilingual)) if v})
+        clf = aps_inbox.LayaClassifier(SHARED["device"], router=router, models=models) if router else aps_inbox.MockClassifier()
         aps.start(ARGS.mock, ARGS.device, plan_on_start=ARGS.plan_on_start, classifier=clf)
         if router is not None:
             qi.ARGS.engine.warm_async()
@@ -252,7 +254,18 @@ def portal():
     return FileResponse(os.path.join(HERE, "static", "index.html"), headers={"Cache-Control": "no-cache"})
 
 
-for prefix in ("quality", "aps", "laya", "docs"):
+@app.get("/training/")
+def training():
+    """Laya training runs (laya_train): data, settings, curves, before and after. Read live
+    from the checkpoint directory ($LAYA_RUNS, default ckpt/ in the repo)."""
+    from fastapi.responses import HTMLResponse
+    from laya_train.report import render
+    from laya_train.runlog import load_runs
+    root = os.environ.get("LAYA_RUNS", os.path.join(ROOT, "ckpt"))
+    return HTMLResponse(render(load_runs(root)), headers={"Cache-Control": "no-cache"})
+
+
+for prefix in ("quality", "aps", "laya", "docs", "training"):
     app.add_api_route("/" + prefix, (lambda p=prefix: RedirectResponse("/%s/" % p)), include_in_schema=False)
 
 
@@ -278,6 +291,8 @@ def main():
     ap.add_argument("--device", default=None)
     ap.add_argument("--interval", type=float, default=ARGS.interval, help="quality line: seconds between readings")
     ap.add_argument("--db", default=ARGS.db)
+    ap.add_argument("--aps-laya-english", default=None, help="planning only: English checkpoint (e.g. from laya_train)")
+    ap.add_argument("--aps-laya-multilingual", default=None, help="planning only: checkpoint for 中文, Deutsch …")
     a = ap.parse_args()
     ARGS.host, ARGS.port, ARGS.mock, ARGS.device, ARGS.interval, ARGS.db = a.host, a.port, a.mock, a.device, a.interval, a.db
     os.makedirs(os.path.dirname(os.path.abspath(ARGS.db)), exist_ok=True)

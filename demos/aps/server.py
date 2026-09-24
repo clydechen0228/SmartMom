@@ -14,7 +14,7 @@ import sys
 import threading
 import time
 import traceback
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -24,6 +24,7 @@ from fastapi.responses import FileResponse  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
 from aps import inbox  # noqa: E402
+from aps import labels as labels_mod  # noqa: E402
 from aps.explain import explain, load_by_day  # noqa: E402
 from aps.kpis import kpis  # noqa: E402
 from aps.plant import DAY, HORIZON_DAYS, SHIFT_END, load_plant  # noqa: E402
@@ -46,6 +47,16 @@ class EventBody(BaseModel):
     shift_hours: Optional[float] = None
     priority: Optional[int] = Field(default=None, ge=1, le=3)
     source: Optional[str] = Field(default=None, max_length=2000)
+    reading_id: Optional[str] = Field(default=None, max_length=32)   # the Laya reading it came from
+
+
+class LabelBody(BaseModel):
+    """A planner decision on a Laya reading, for training data."""
+    reading_id: str = Field(max_length=32)
+    kind: Optional[str] = None                     # inbox: the event kind the message really was
+    gold: Dict[str, str] = {}                      # or answers per question id
+    source: str = Field(default="planner", max_length=40)
+    weak: bool = False
 
 
 class ScenarioBody(EventBody):
@@ -81,6 +92,7 @@ class App:
         self._sid = 0
         self.rejections: list = []             # Laya's reading of each rejection comment
         self.notes: list = []                  # shift notes read by Laya, newest last
+        self.labels = labels_mod.LabelLog()    # planner decisions on Laya readings -> training data
 
     def suggest(self, source: str, title: str, event: dict, detail: str = "", key: Optional[str] = None,
                 title_zh: str = "", detail_zh: str = "") -> dict:
@@ -223,6 +235,7 @@ def state():
             "rejections": rejection_tally(),
             "notes": A.notes[-8:],
             "machine_flags": machine_flags(),
+            "labels": A.labels.summary(),
         }
         out["current_kpis"] = kpis(pl.plant, pl.schedule, pl.done)
         if prop:
@@ -254,24 +267,30 @@ def plan():
 
 @app.post("/api/events", status_code=202)
 def event(body: EventBody):
-    ev = {k: v for k, v in body.model_dump().items() if v is not None}
+    ev = {k: v for k, v in body.model_dump().items() if v is not None and k != "reading_id"}
     try:
         A.pl.validate(dict(ev))
     except EventError as e:
         raise HTTPException(400, str(e))
     if A.pl.proposal:
         raise HTTPException(409, "approve or reject the open proposal first")
-    return A.run_job("repair", lambda: A.pl.propose(ev))
+    out = A.run_job("repair", lambda: A.pl.propose(ev))
+    if body.reading_id:
+        A.labels.label_event(body.reading_id, ev["kind"])
+    return out
 
 
 @app.post("/api/scenarios", status_code=202)
 def scenario(body: ScenarioBody):
-    ev = {k: v for k, v in body.model_dump().items() if v not in (None, "") and k != "label"}
+    ev = {k: v for k, v in body.model_dump().items() if v not in (None, "") and k not in ("label", "reading_id")}
     try:
         A.pl.validate(dict(ev))
     except EventError as e:
         raise HTTPException(400, str(e))
-    return A.run_job("scenario", lambda: A.pl.what_if(ev, body.label))
+    out = A.run_job("scenario", lambda: A.pl.what_if(ev, body.label))
+    if body.reading_id:
+        A.labels.label_event(body.reading_id, ev["kind"])
+    return out
 
 
 @app.get("/api/scenarios/{sid}")
@@ -329,6 +348,10 @@ def decide(pid: int, body: DecideBody):
     comment = body.comment.strip()
     if not body.approve and comment and A.clf is not None and A.clf.state == "ready":
         r = inbox.read_rejection(A.clf, comment, A.pl.last_rejected, A.pl.plant)
+        r["reading_id"] = A.labels.register("rejection", comment, {"reason": inbox.REJECT_Q},
+                                            {"reason": {"choice": r["reason"], "confidence": r["confidence"],
+                                                        "probabilities": r["probabilities"]}},
+                                            (r.get("routing") or {}).get("model"))
         with A.lock:
             A.rejections = (A.rejections + [{"ts": time.time(), "proposal": pid, "reason": r["reason"],
                                             "confidence": r["confidence"], "comment": comment}])[-50:]
@@ -359,7 +382,11 @@ def rerun(body: RerunBody):
         A.pl.validate(dict(ev))
     except EventError as e:
         raise HTTPException(400, str(e))
-    return A.run_job("repair", lambda: A.pl.propose(ev))
+    out = A.run_job("repair", lambda: A.pl.propose(ev))
+    rid = (last.get("reading") or {}).get("reading_id")
+    if rid:
+        A.labels.label(rid, {"reason": labels_mod.RERUN_REASON[body.mode]}, "clicked_step")
+    return out
 
 
 @app.get("/api/notes/samples")
@@ -373,6 +400,10 @@ def read_note(body: TextBody):
     if A.clf is None or A.clf.state != "ready":
         raise HTTPException(503, "the language model is still loading")
     r = inbox.read_note(A.clf, body.text, A.pl.plant)
+    r["reading_id"] = A.labels.register("note", body.text, {"condition": inbox.NOTE_Q},
+                                        {"condition": {"choice": r["condition"], "confidence": None,
+                                                       "probabilities": r.get("probabilities")}},
+                                        (r.get("routing") or {}).get("model"))
     r["ts"], r["at"] = time.time(), A.pl.now
     with A.lock:
         A.notes = (A.notes + [r])[-20:]
@@ -402,8 +433,26 @@ def read(body: TextBody):
 
 
 def prepare(r: dict) -> dict:
-    """Hook for server-side adjustments; priority and urgency come from inbox.read_message."""
+    """Give the reading an id, so the planner's decision on it becomes a training label."""
+    qs = inbox.COMMAND_QUESTIONS if "intent" in r else inbox.QUESTIONS
+    cls = r.get("classification") or {}
+    r["reading_id"] = A.labels.register("command" if "intent" in r else "inbox", r["text"], qs,
+                                        cls.get("answers") or {}, (cls.get("routing") or {}).get("model"))
     return r
+
+
+@app.post("/api/labels")
+def add_label(body: LabelBody):
+    """The planner's decision on a reading that no event carried: a dismissal, a picked
+    intent, a clicked next step, a marked shift note."""
+    gold = labels_mod.inbox_gold(body.kind) if body.kind else dict(body.gold)
+    rec = A.labels.label(body.reading_id, gold, body.source, "weak" if body.weak else "strong")
+    return {"stored": rec is not None}
+
+
+@app.get("/api/labels/stats")
+def label_stats():
+    return {"path": A.labels.path, "jobs": A.labels.stats()}
 
 
 URGENCY_RANK = {"today": 0, "this_week": 1, "info": 2}
@@ -496,9 +545,11 @@ def index():
     return FileResponse(os.path.join(STATIC, "index.html"), headers={"Cache-Control": "no-cache"})
 
 
-def start(mock: bool, device: Optional[str] = None, plan_on_start: bool = True, classifier=None):
+def start(mock: bool, device: Optional[str] = None, plan_on_start: bool = True, classifier=None,
+          labels_path: Optional[str] = None, models: Optional[dict] = None):
     A.pl = Planning(load_plant())
-    A.clf = classifier or (inbox.MockClassifier() if mock else inbox.LayaClassifier(device))
+    A.labels = labels_mod.LabelLog(labels_path)
+    A.clf = classifier or (inbox.MockClassifier() if mock else inbox.LayaClassifier(device, models=models))
     A.clf.warm_async()
     if plan_on_start:
         A.run_job("full_plan", A.pl.full_plan)
@@ -510,8 +561,13 @@ def main():
     ap.add_argument("--port", type=int, default=8095)
     ap.add_argument("--mock", action="store_true", help="keyword stand-in instead of Laya")
     ap.add_argument("--device", default=None)
+    ap.add_argument("--laya-english", default=None, help="checkpoint for English text: a directory or hub id")
+    ap.add_argument("--laya-multilingual", default=None, help="checkpoint for other languages (中文, Deutsch …)")
+    ap.add_argument("--labels", default=None, help="label log (default data/labels/labels.jsonl or $APS_LABELS)")
     args = ap.parse_args()
-    start(args.mock, args.device)
+    models = inbox.models_from_env()
+    models.update({k: v for k, v in (("english", args.laya_english), ("multilingual", args.laya_multilingual)) if v})
+    start(args.mock, args.device, labels_path=args.labels, models=models or None)
     import uvicorn
     print("plant APS on http://%s:%d (%s)" % (args.host, args.port, "mock" if args.mock else "Laya"))
     uvicorn.run(app, host=args.host, port=args.port, log_level="warning", timeout_graceful_shutdown=3)

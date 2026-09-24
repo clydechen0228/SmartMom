@@ -9,6 +9,7 @@ import time
 
 os.environ.setdefault("APS_FULL_S", "10")
 HERE = os.path.dirname(os.path.abspath(__file__))
+os.environ.setdefault("APS_LABELS", os.path.join(__import__("tempfile").mkdtemp(), "labels.jsonl"))  # never the real log
 sys.path.insert(0, HERE)
 
 import server as platform  # noqa: E402
