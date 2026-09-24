@@ -510,7 +510,7 @@ The design follows the zone-and-conduit model of IEC 62443: the plant floor is n
 - OPC UA sessions use Sign and Encrypt with a read-only account on the PLC.
 - Keys live in the edge node's TPM where the hardware has one, otherwise in an encrypted file unlocked at boot.
 
-**Software supply chain:** container images, models, rules and policies are all signed. An edge node refuses anything unsigned or signed by an unknown key.
+**Software supply chain:** container images, models, rules and policies are all signed. An edge node refuses anything unsigned or signed by an unknown key. In the source repository, `main` changes only through reviewed pull requests, and no branch can be force-pushed or deleted by contributors (see `CONTRIBUTING.md`).
 
 **People:** single sign-on with four roles: operator, QA reviewer, quality engineer (approves models, rules and policy), administrator. Every review, approval and config change is written to an append-only audit log.
 

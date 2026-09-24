@@ -362,6 +362,7 @@ root starts and stops it and the Laya service:
 
 Details: `demos/platform/README.md`, `demos/aps/README.md`,
 `demos/quality_inspection/README.md`. Training Laya on plant data: `laya_train/README.md`.
+Contributing (pull requests only; `main` is protected): `CONTRIBUTING.md`.
 
 ---
 

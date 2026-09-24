@@ -1,3 +1,37 @@
+# SmartMom
+
+**A smart-factory MOM (manufacturing operations management) platform built on
+[Laya](#laya), for edge and plant-level AI.** It runs on one laptop CPU and shows, with
+measured numbers, where a small calibrated classifier helps a plant and where rules, a
+solver or a person must decide.
+
+| Module | What it does | Where |
+|---|---|---|
+| Quality inspection | IoT gateway, rules and SPC on station data, Laya on operator notes in any language, a policy that releases or holds each unit, QA review | [`demos/quality_inspection`](demos/quality_inspection/README.md) |
+| Planning (APS) | SAP-shaped orders, a CP-SAT schedule optimised for on-time delivery, event repairs, what-if scenarios, why-late causes, a Laya inbox and command bar | [`demos/aps`](demos/aps/README.md) |
+| Platform | Every module in one process with one shared Laya model, and a live link from quality to planning | [`demos/platform`](demos/platform/README.md) |
+| Laya training | Labels from normal use; evaluate, calibrate and fine-tune Laya; a page of every run | [`laya_train`](laya_train/README.md) |
+| Laya service | The HTTP service behind Claude Code's Laya tools and the WebFetch guard | [`GUIDE.md`](GUIDE.md) |
+
+```bash
+./run.sh start      # the platform → http://127.0.0.1:8100/  (./run.sh help lists every command)
+```
+
+**Design documents** (English, some also 中文): [smart-factory edge platform](docs/smart-factory-edge-platform.html),
+[platform architecture](docs/smart-factory-platform-architecture.md),
+[plant APS design](docs/plant-aps-design.html), [APS workbench guide](docs/aps-workbench-guide.html).
+With the platform running they are also at http://127.0.0.1:8100/docs/.
+
+**Contributing:** open a pull request; `main` changes only through reviewed pull requests.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+**Status:** a working demonstration. The numbers in the documents were measured on a
+laptop with synthetic plant data; real plant data, SAP and MES connections are next steps.
+
+---
+
+<a id="laya"></a>
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/NandhaKishorM/laya/main/assets/logo-lockup-dark.png" />
@@ -432,10 +466,6 @@ Runtime on 2xT4 is roughly 4-5 hours for 4 epochs over ~30k questions.
 For your own labelled texts, **[`laya_train/`](laya_train/README.md)** runs the same RLCD loop as a
 library and command line (single GPU, CPU head-only, or `torchrun`), plus evaluation against the
 published checkpoints and temperature calibration on held-out data.
-
-**Plant demos.** `demos/` holds a smart-factory platform built on Laya (quality inspection,
-planning, the Laya console, training runs). From the repo root: `./run.sh start`, then
-http://127.0.0.1:8100/. `./run.sh help` lists every command; see [`GUIDE.md`](GUIDE.md#9-the-plant-demos-and-runsh).
 
 ---
 

@@ -1073,7 +1073,7 @@ footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
       </figure>
       <ul>
         <li><b>Identity:</b> one X.509 certificate per edge node and per collector; MQTT topic ACLs let a node publish only its own line's topics. Keys in the TPM where the hardware has one.</li>
-        <li><b>Supply chain:</b> container images, models, rules and policies are signed; edge nodes refuse anything unsigned or signed by an unknown key.</li>
+        <li><b>Supply chain:</b> container images, models, rules and policies are signed; edge nodes refuse anything unsigned or signed by an unknown key. In the source repository, <code>main</code> changes only through reviewed pull requests; no branch can be force-pushed or deleted by contributors.</li>
         <li><b>People:</b> single sign-on with four roles: operator, QA reviewer, quality engineer (approves models, rules and policy), administrator. Reviews, approvals and config changes go to an append-only audit log.</li>
         <li><b>Untrusted text:</b> notes, supplier documents and web content are data, never instructions. Anything an AI agent will act on passes Laya's prompt-injection guard first.</li>
       </ul>
