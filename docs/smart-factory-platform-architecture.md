@@ -569,7 +569,7 @@ Build the backbone first, then the feedback loop, so that every model added afte
 
 | Phase | Builds | Exit criteria |
 | --- | --- | --- |
-| 0. Line 3 demo (done) | Rules, SPC, Laya on notes, policy gate, QA review, dashboard, simulated gateway ([PR #1](https://github.com/clydechen0228/laya/pull/1)) | 69 offline tests pass; every fault scenario gives its expected outcome with the real checkpoints |
+| 0. Line 3 demo (done) | Rules, SPC, Laya on notes, policy gate, QA review, dashboard, simulated gateway ([PR #1](https://github.com/clydechen0228/SmartMom/pull/1)) | 69 offline tests pass; every fault scenario gives its expected outcome with the real checkpoints |
 | 1. Edge and plant backbone | Split the demo into edge services and a plant hub; Mosquitto on both; OPC UA collector against an OPC UA simulator; PostgreSQL; mutual TLS; Docker Compose | All demo scenarios pass end to end over MQTT; the hub-down and model-down failure tests pass |
 | 2. Feedback loop | Audit sampling, label store, model metrics dashboard, registry with signed artifacts, shadow and canary modes, rollback | The gate is computed from reviewed data; a rollback works with the network unplugged |
 | 3. Predictive maintenance | Signal collector, feature pipeline, per-machine anomaly model, health index on the dashboard | In a simulated tool-wear run, the signal warning comes before the SPC signal |
